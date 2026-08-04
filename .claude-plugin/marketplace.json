@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "kazu",
+  "description": "個人開発で使う Claude Code プラグインのカタログ",
+  "owner": {
+    "name": "Kazu",
+    "url": "https://github.com/Kazu-K0032"
+  },
+  "plugins": [
+    {
+      "name": "aidd",
+      "source": "./plugins/aidd",
+      "description": "AIDD × DocDD の定型作業（ADR・ナレッジ・コミット・PR 準備・技術調査）を Skill 化したツールキット",
+      "category": "productivity"
+    }
+  ]
+}
