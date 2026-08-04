@@ -16,6 +16,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:commit` | ステージ済み差分から Conventional Commits 形式のメッセージを提案 |
 | `/aidd:research` | 技術調査を `aidd-research` に委譲し、引用付きで回答 |
 | `/aidd:agent-promote` | 繰り返している作業を永続カスタムエージェントへ昇格 |
+| `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 
 同梱エージェント。
 
@@ -38,9 +39,10 @@ aidd/
 ├── .claude-plugin/
 │   └── plugin.json      # プラグインのマニフェスト
 ├── skills/              # Skill 本体（1 ディレクトリ 1 Skill）
-│   └── adr/
-│       ├── SKILL.md
-│       └── _template.md
+│   ├── adr/
+│   │   ├── SKILL.md
+│   │   └── _template.md
+│   └── ...              # 各 Skill が補助ファイル・scripts/ を持つ
 ├── agents/              # サブエージェント定義
 │   └── aidd-research.md
 ├── workflows/           # 複数エージェントを束ねるスクリプト
