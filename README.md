@@ -61,19 +61,43 @@ Claude Code のセッション内で次を実行する。
 
 ## 開発
 
-このリポジトリを編集して動作確認する手順。
+### clone
 
 ```bash
-# 1. clone（個人アカウント用の SSH エイリアス経由）
+# 個人アカウント用の SSH エイリアス経由で clone する
 git clone git@github-kazu-k0032:Kazu-K0032/claude-plugins.git
+cd claude-plugins
 
-# 2. clone したディレクトリで Claude Code を起動し、ローカルのまま登録する
-/plugin marketplace add .
-/plugin install aidd@kazu
-/reload-plugins
+# コミット identity をこのリポジトリだけに設定する（global は未設定のため必須）
+git config --local user.name  "Kazu"
+git config --local user.email "111069418+Kazu-K0032@users.noreply.github.com"
 ```
 
-`plugin.json` の `version` を上げたコミットだけがユーザーへ更新として届く。Skill を直したら必ず上げる。
+### 編集中の動作確認
+
+push 前に試すなら `--plugin-dir` でセッション限定で読み込む。マーケットプレイスへの登録もキャッシュへのコピーも起きないため、GitHub 経由の登録（同名 `kazu`）と競合しない。
+
+```bash
+claude --plugin-dir ./plugins/aidd
+```
+
+マニフェストの構文確認だけなら CLI で足りる。
+
+```bash
+claude plugin validate .
+```
+
+### リリース
+
+```bash
+# 1. plugin.json の version を上げる（上げたコミットだけが更新として届く）
+# 2. push する
+git push
+
+# 3. 利用側で取得する
+/plugin marketplace update kazu
+/reload-plugins
+```
 
 ### 制約
 
