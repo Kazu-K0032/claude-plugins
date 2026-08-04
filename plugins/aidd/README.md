@@ -23,6 +23,12 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | --- | --- |
 | `aidd-research` | 公式ドキュメントを調査し、引用（英語は和訳付き）で回答する |
 
+同梱 Workflow（複数エージェントを決まった順序で動かすスクリプト）。
+
+| Workflow | 用途 |
+| --- | --- |
+| `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証してレポートを出力 |
+
 これで移植対象の 8 スキルが揃った。WordPress / AWS 固有の Skill（`debug-log`・`staatic-sync` 等）は案件リポジトリのローカルに残し、このプラグインには含めない。
 
 ## ディレクトリ構成
@@ -37,6 +43,8 @@ aidd/
 │       └── _template.md
 ├── agents/              # サブエージェント定義
 │   └── aidd-research.md
+├── workflows/           # 複数エージェントを束ねるスクリプト
+│   └── pr-review.js
 └── references/          # Skill が実行時に読む共通規約
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
@@ -81,3 +89,9 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 ### `allowed-tools` に `Write` を入れない
 
 出力先が可変でパスパターンを固定できないため、ファイル書き込みは白紙委任せず通常の許可プロンプトを通す。ADR のように「ユーザー承認が前提」の Skill では、この方が意図に合う。
+
+### 外部へ直接書き込まない
+
+レビュー結果・レポートは必ず `tmp/<ブランチ名>/` へ出力し、**PR へのコメント投稿はしない**。`pr-review` は移植元では `gh pr comment` で投稿していたが、このプラグインでは投稿処理を削除した。
+
+理由は 2 つ。プラグインは複数プロジェクトへ配られるため、どのリポジトリでも同じ判断で外部へ書き込むのは危険。もう 1 つは、レビュー結果は人が読んで採否を決めるべきもので、投稿は判断のあとに来る操作だから。
