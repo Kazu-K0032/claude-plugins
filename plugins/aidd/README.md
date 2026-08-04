@@ -17,6 +17,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:research` | 技術調査を `aidd-research` に委譲し、引用付きで回答 |
 | `/aidd:agent-promote` | 繰り返している作業を永続カスタムエージェントへ昇格 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
+| `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
 
 同梱エージェント。
 

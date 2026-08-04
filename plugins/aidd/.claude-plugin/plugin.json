@@ -1,6 +1,6 @@
 {
   "name": "aidd",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "AIDD × DocDD の定型作業を Skill 化したツールキット。ADR 作成・ナレッジ執筆・コミット文生成・PR 下書き・技術調査・Skill 整合チェックを含む",
   "author": {
     "name": "Kazu",
