@@ -91,7 +91,21 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" report <STAR
 
 ## 単価・為替の保守
 
-コスト試算の単価は `analyze.py` の `MODEL_PRICING` に定数として持つ。**単価の唯一の情報源は Anthropic API の公式単価**（`claude-api` skill で確認できる）。単価が変わったら確認し、`MODEL_PRICING` と `PRICING_ASOF` を更新する。円換算レート `USD_JPY`・`FX_ASOF` も実レートに合わせて更新する（未検証値を断定しない方針は `${CLAUDE_PLUGIN_ROOT}/references/ai-research.md` を参照）。
+コスト試算の単価は `analyze.py` の `MODEL_PRICING` に定数として持つ。**単価の唯一の情報源は Anthropic 公式の [Models overview](https://platform.claude.com/docs/en/about-claude/models/overview)**（`claude-api` skill のキャッシュ表でも確認できるが、キャッシュ日が古い場合があるため公式ページを正とする）。
+
+新しいモデルが出たら、または単価が変わったら次を更新する。
+
+| 定数 | 内容 |
+| --- | --- |
+| `MODEL_PRICING` | モデル ID → (input, output) USD / 100万トークン |
+| `MODEL_NAME_MAP` | モデル ID → レポート上の表示名 |
+| `PRICING_ASOF` | 単価を確認した日 |
+| `SONNET5_INTRO` / `SONNET5_INTRO_END` | 期間限定の導入価格 |
+| `USD_JPY` / `FX_ASOF` | 円換算レートと設定日 |
+
+未登録のモデルは金額が 0 で計上され、`> 単価未登録: <モデル名>` の警告が出る。この警告が出たら公式ページで単価を確認して追記する。
+
+**推測で単価を書かない**（未検証値を断定しない方針は `${CLAUDE_PLUGIN_ROOT}/references/ai-research.md` を参照）。
 
 ## 保守
 

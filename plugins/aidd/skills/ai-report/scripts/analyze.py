@@ -52,28 +52,52 @@ REWORK_RE = re.compile("|".join(re.escape(p) for p in REWORK_PATTERNS))
 # --- モデル表示名・料金定数 -------------------------------------------------
 # モデル ID → 表示名（render_models / render_cost で共通利用）
 MODEL_NAME_MAP = {
+    "claude-fable-5": "Fable 5",
+    "claude-mythos-5": "Mythos 5",
+    "claude-opus-5": "Opus 5",
     "claude-opus-4-8": "Opus 4.8",
     "claude-opus-4-7": "Opus 4.7",
+    "claude-opus-4-6": "Opus 4.6",
+    "claude-opus-4-5": "Opus 4.5",
+    "claude-opus-4-5-20251101": "Opus 4.5",
+    "claude-opus-4-1": "Opus 4.1",
+    "claude-opus-4-1-20250805": "Opus 4.1",
     "claude-sonnet-5": "Sonnet 5",
     "claude-sonnet-4-6": "Sonnet 4.6",
-    "claude-fable-5": "Fable 5",
+    "claude-sonnet-4-5": "Sonnet 4.5",
+    "claude-sonnet-4-5-20250929": "Sonnet 4.5",
     "claude-haiku-4-5": "Haiku 4.5",
     "claude-haiku-4-5-20251001": "Haiku 4.5",
+    "<synthetic>": "（合成メッセージ）",
 }
-# 料金の唯一の情報源（SSOT）は `/claude-api` skill（Anthropic API 公式単価）。
-# 単価が変わったら /claude-api で最新を確認し、下記の値と PRICING_ASOF・USD_JPY を更新すること。
+# 料金の唯一の情報源（SSOT）は Anthropic 公式の Models overview / Pricing ページ。
+# 単価が変わったら公式ページ（または `claude-api` skill）で確認し、
+# 下記の値と PRICING_ASOF・USD_JPY を更新すること。
 # references/ai-research.md「未検証値を断定しない」に準拠し、確認日を明記する。
-PRICING_ASOF = "2026-06-24"  # 単価を確認した日（/claude-api skill キャッシュ時点）
+# 確認元: https://platform.claude.com/docs/en/about-claude/models/overview
+PRICING_ASOF = "2026-08-04"  # 単価を確認した日（公式 Models overview を参照）
 USD_JPY = 155.0  # 1 USD = ◯円（概算値・要更新。実レートに合わせて修正すること）
 FX_ASOF = "2026-07-24"  # 上記為替の設定日
 # モデル ID → (input, output) USD / 100万トークン
 MODEL_PRICING = {
+    "claude-fable-5": (10.00, 50.00),
+    "claude-mythos-5": (10.00, 50.00),  # Fable 5 と同単価（Project Glasswing 限定）
+    "claude-opus-5": (5.00, 25.00),
     "claude-opus-4-8": (5.00, 25.00),
     "claude-opus-4-7": (5.00, 25.00),
+    "claude-opus-4-6": (5.00, 25.00),
+    "claude-opus-4-5": (5.00, 25.00),
+    "claude-opus-4-5-20251101": (5.00, 25.00),
+    "claude-opus-4-1": (15.00, 75.00),  # 非推奨。2026-08-05 で提供終了
+    "claude-opus-4-1-20250805": (15.00, 75.00),
     "claude-sonnet-5": (3.00, 15.00),
     "claude-sonnet-4-6": (3.00, 15.00),
-    "claude-fable-5": (10.00, 50.00),
+    "claude-sonnet-4-5": (3.00, 15.00),
+    "claude-sonnet-4-5-20250929": (3.00, 15.00),
     "claude-haiku-4-5": (1.00, 5.00),
+    "claude-haiku-4-5-20251001": (1.00, 5.00),
+    # Claude Code がローカルで生成する合成メッセージ。API 呼び出しを伴わず課金されない
+    "<synthetic>": (0.00, 0.00),
 }
 # Sonnet 5 導入価格（分析期間の END 日が終了日以前なら適用）
 SONNET5_INTRO = {"claude-sonnet-5": (2.00, 10.00)}
@@ -661,12 +685,12 @@ def total_cost_usd(d):
 
 
 def render_cost(d):
-    """モデル別トークンから概算コスト（推定）を整形する。単価は /claude-api 由来。"""
+    """モデル別トークンから概算コスト（推定）を整形する。単価は Anthropic 公式ページ由来。"""
     tbm = d.get("tok_by_model", {})
     end = d["range"]["end"]
     lines = [
         "### コスト試算（推定）\n",
-        f"> 推定値。単価は `/claude-api` skill 由来（{PRICING_ASOF} 時点）、"
+        f"> 推定値。単価は Anthropic 公式の Models overview 由来（{PRICING_ASOF} 時点）、"
         f"円換算は 1 USD = {USD_JPY:.0f} 円で計算（概算値・要更新）。"
         f"cache は書き込み input×{CACHE_WRITE_MULT}（5分TTL）・読み出し input×{CACHE_READ_MULT} で算出。\n",
         "| モデル | input | output | cache作成 | cache読取 | 概算コスト |",
