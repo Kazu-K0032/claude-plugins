@@ -13,6 +13,8 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:pr-check` | Issue のタスクが PR で実装されているかを照合 |
 | `/aidd:skill-check` | Skill の frontmatter・スコープ・参照切れを点検 |
+| `/aidd:commit` | ステージ済み差分から Conventional Commits 形式のメッセージを提案 |
+| `/aidd:research` | 技術調査を `aidd-research` に委譲し、引用付きで回答 |
 
 同梱エージェント。
 
@@ -20,7 +22,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | --- | --- |
 | `aidd-research` | 公式ドキュメントを調査し、引用（英語は和訳付き）で回答する |
 
-今後 `commit`・`research` を追加する。
+今後 `agent-promote` を追加する。
 
 ## ディレクトリ構成
 
