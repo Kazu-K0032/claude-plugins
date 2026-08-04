@@ -15,6 +15,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:skill-check` | Skill の frontmatter・スコープ・参照切れを点検 |
 | `/aidd:commit` | ステージ済み差分から Conventional Commits 形式のメッセージを提案 |
 | `/aidd:research` | 技術調査を `aidd-research` に委譲し、引用付きで回答 |
+| `/aidd:agent-promote` | 繰り返している作業を永続カスタムエージェントへ昇格 |
 
 同梱エージェント。
 
@@ -22,7 +23,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | --- | --- |
 | `aidd-research` | 公式ドキュメントを調査し、引用（英語は和訳付き）で回答する |
 
-今後 `agent-promote` を追加する。
+これで移植対象の 8 スキルが揃った。WordPress / AWS 固有の Skill（`debug-log`・`staatic-sync` 等）は案件リポジトリのローカルに残し、このプラグインには含めない。
 
 ## ディレクトリ構成
 
