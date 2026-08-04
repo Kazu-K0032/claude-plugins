@@ -9,8 +9,18 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | スキル | 用途 |
 | --- | --- |
 | `/aidd:adr` | ADR（アーキテクチャ決定記録）の新規作成・ステータス更新 |
+| `/aidd:knowledge` | 1 ツール 1 ファイルの入門ドキュメントを作成（公式情報を調査して執筆） |
+| `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
+| `/aidd:pr-check` | Issue のタスクが PR で実装されているかを照合 |
+| `/aidd:skill-check` | Skill の frontmatter・スコープ・参照切れを点検 |
 
-今後 `knowledge`・`commit`・`research`・`skill-check`・`pr-create`・`pr-check` を順次追加する。
+同梱エージェント。
+
+| エージェント | 用途 |
+| --- | --- |
+| `aidd-research` | 公式ドキュメントを調査し、引用（英語は和訳付き）で回答する |
+
+今後 `commit`・`research` を追加する。
 
 ## ディレクトリ構成
 
@@ -23,8 +33,13 @@ aidd/
 │       ├── SKILL.md
 │       └── _template.md
 ├── agents/              # サブエージェント定義
+│   └── aidd-research.md
 └── references/          # Skill が実行時に読む共通規約
-    └── markdown.md
+    ├── markdown.md      # markdownlint 準拠の書式
+    ├── document.md      # SSOT・文体・構造
+    ├── plain-language.md # 平易化の技法
+    ├── response-style.md # 回答スタイルの適用範囲
+    └── ai-research.md   # AI 出力を引用として扱わないための規約
 ```
 
 ## references/ とは何か
