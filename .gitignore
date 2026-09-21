@@ -10,3 +10,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# 一時ファイル/フォルダ
+tmp/
+tmp.*
+temp/
+temp.*
