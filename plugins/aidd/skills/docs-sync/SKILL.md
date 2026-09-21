@@ -2,7 +2,7 @@
 name: docs-sync
 description: 現在のブランチ（基準ブランチ以外）の差分を分析し、コード・インフラ変更に追従して更新すべき md ドキュメントを特定して更新を提案する。ブランチの変更にドキュメントが追従しているか点検したい時に使用する。基準ブランチでは停止する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(date:*), Write(tmp/*/docs-sync_*.md)
+allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
 ---
 
 # ドキュメント追従チェック（docs-sync）

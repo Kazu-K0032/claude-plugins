@@ -98,7 +98,9 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `tmp/<ブランチ名>/` のようにパスパターンを固定できる書き込みは `allowed-tools` に載せる。レポート・下書きの出力はここに該当する。
 
-出力先がプロジェクトごとに変わる Skill（`adr` など）は `Write` を載せず、通常の許可プロンプトを通す。パターンを固定できない書き込みを白紙委任しないため。「ユーザー承認が前提」の Skill では、この方が意図に合う。
+出力先がプロジェクトごとに変わる Skill（`adr` など）は書き込み許可を載せず、通常の許可プロンプトを通す。パターンを固定できない書き込みを白紙委任しないため。「ユーザー承認が前提」の Skill では、この方が意図に合う。
+
+書き込みの許可は `Edit(<パス>)` で書く。Claude Code はファイル権限を `Edit()` と `Read()` の規則だけで判定し、`Write()` / `NotebookEdit()` / `Glob()` のパス規則は受け付けるが参照しない（起動時に警告が出る）。Ref: [Configure permissions](https://code.claude.com/docs/ja/permissions)
 
 ### 同梱スクリプトの実行は `allowed-tools` に載せない
 

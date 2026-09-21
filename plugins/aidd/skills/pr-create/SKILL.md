@@ -3,7 +3,7 @@ name: pr-create
 description: 現在のブランチのコミット内容とIssue情報から、リポジトリの PR テンプレートに沿ったPR本文の下書きと、レビュワー向けの検証コメントを tmp 配下に生成する。ユーザーが PR 本文作成を求めた時に使用する
 argument-hint: "<Issue番号>"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Write(tmp/*/pr-create_*.md), Write(tmp/*/pr-verify_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
 
 # PR本文と検証コメントの作成

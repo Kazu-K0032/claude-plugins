@@ -2,12 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Read(./**/.env*.example)",
       "Read(./**/*.example)",
-      "Edit(./**/.env*.example)",
-      "Edit(./**/*.example)",
-      "Write(./**/.env*.example)",
-      "Write(./**/*.example)"
+      "Edit(./**/*.example)"
     ],
     "deny": [
       "Read(./.env)",
@@ -37,11 +33,9 @@
       "Bash(gh pr create *)",
       "Bash(gh pr merge *)",
       "Bash(gh pr close *)",
-      "Bash(gh pr edit *)",
       "Bash(gh pr review *)",
       "Bash(gh issue create *)",
       "Bash(gh issue close *)",
-      "Bash(gh issue edit *)",
       "Bash(gh issue comment *)",
       "Bash(gh release *)",
       "Bash(gh repo create *)",

@@ -3,7 +3,7 @@ name: issue-pr-sync
 description: 指定した Issue と PR を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文は承認後に直接反映し、ラベル等のサイドバーは適用コマンドを提案する。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時に使用する
 argument-hint: "<Issue番号|URL> <PR番号|URL>"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Write(tmp/**/issue-pr-sync_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/**/issue-pr-sync_*.md)
 ---
 
 # Issue / PR の同期更新

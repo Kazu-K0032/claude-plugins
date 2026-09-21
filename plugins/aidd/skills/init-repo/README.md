@@ -50,8 +50,9 @@ bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファ
 - フックは `bash` と [`jq`](https://jqlang.org/) を使う。どちらも無い環境ではフックが失敗する
 - `settings.json` の `permissions.deny` は「コマンド先頭一致」でしか判定しない。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
-- `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない
+- `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
+- `gh` の書き込み系は deny で塞いでいるが、`gh pr edit` / `gh issue edit` は除外している。`/aidd:issue-pr-sync` が Issue / PR 本文の更新に使うため。塞ぎたい場合は deny に戻す（その場合 issue-pr-sync は下書き出力までになる）
 - `commitlint.config.js` は設定だけ。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る
 
 ## 除外したもの

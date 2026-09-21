@@ -3,7 +3,7 @@ name: ai-report
 description: このリポジトリの Claude Code セッションログを分析し、利用状況や改善点を図表付きレポートにする。AI 利用実績の振り返り・トークンコストの棚卸しを求められた時に使用する
 model: opus
 disable-model-invocation: true
-allowed-tools: Bash(date:*), Read, Agent, Write(tmp/**/.ai-report-qualitative.md), AskUserQuestion
+allowed-tools: Bash(date:*), Read, Agent, Edit(tmp/**/.ai-report-qualitative.md), AskUserQuestion
 argument-hint: "[開始日 YYYY-MM-DD] [終了日 YYYY-MM-DD]"
 ---
 
