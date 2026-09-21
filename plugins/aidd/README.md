@@ -12,7 +12,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:skill-check` | Skill の frontmatter・スコープ・参照切れを点検 |
 | `/aidd:commit` | ステージ済み差分から Conventional Commits 形式のメッセージを提案 |
-| `/aidd:research` | 技術調査を `aidd-research` に委譲し、引用付きで回答 |
+| `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
 
@@ -20,7 +20,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 | エージェント | 用途 |
 | --- | --- |
-| `aidd-research` | 公式ドキュメントを調査し、引用（英語は和訳付き）で回答する |
+| `research` | 公式ドキュメントを調査し、引用（英語は和訳付き）で回答する |
 
 同梱 Workflow（複数エージェントを決まった順序で動かすスクリプト）。
 
@@ -43,7 +43,7 @@ aidd/
 │   │   └── _template.md
 │   └── ...              # 各 Skill が補助ファイル・scripts/ を持つ
 ├── agents/              # サブエージェント定義
-│   └── aidd-research.md
+│   └── research.md
 ├── workflows/           # 複数エージェントを束ねるスクリプト
 │   ├── pr-review.js
 │   └── docs-consistency-audit.js
