@@ -10,6 +10,16 @@
 | --- | --- | --- |
 | [aidd](plugins/aidd/README.md) | AIDD × DocDD の定型作業（ADR・ナレッジ・コミット・PR 準備・技術調査） | `/aidd:adr` |
 
+## リポジトリへの規約の持ち込み
+
+`.claude/rules/`（対象ファイルを開いた時に自動適用される規約）や `.github/` の定型ファイルは、プラグインからは配布できない。これらはテンプレートとして `aidd` プラグインに同梱し、Skill でリポジトリへコピーする。
+
+```text
+/aidd:init-repo
+```
+
+収録物と除外理由は [init-repo の README](plugins/aidd/skills/init-repo/README.md) を参照。
+
 ## 導入方法
 
 Claude Code のセッション内で次を実行する。

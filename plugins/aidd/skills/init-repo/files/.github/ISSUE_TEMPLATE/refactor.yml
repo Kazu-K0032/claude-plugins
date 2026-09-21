@@ -1,0 +1,62 @@
+name: "リファクタリング"
+description: "外部から見た振る舞いを基本変えずにコードの構造・可読性・保守性を改善する"
+title: "[Refactor] "
+labels: ["refactor"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      placeholder: リファクタリングの対象と狙いを一文で説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: 背景・動機
+      description: なぜこのリファクタリングが必要か、現状の課題（重複・可読性・複雑さ等）を記述してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: 改善方針
+      description: どのように構造を変えるか、想定する方針を記述してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 受け入れ基準
+      description: このリファクタリングが完了とみなされる条件。既存の振る舞いが保たれていることの確認も含めてください
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: スコープ外（任意）
+      description: 誤解・スコープクリープを防ぐため、本 Issue で「やらないこと」を明示してください（該当なしの場合は空欄）
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 検討チェックリスト
+      options:
+        - label: 外部から見た振る舞いを変えない（変える場合は機能要求として起票する）
+        - label: 既存テストが通ることを確認する。不足していればテストを追加・更新する（統合テスト / ユニットテスト / E2E）
+        - label: ADR の起票が必要か検討した（アーキテクチャへの影響がある場合は起票する）
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足
+      description: 参考リンク・関連 Issue 等があれば記述してください

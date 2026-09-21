@@ -1,0 +1,60 @@
+name: "リリース"
+description: "本番環境へのリリース作業"
+title: "[Release] "
+labels: ["release"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: リリース概要
+      placeholder: 今回のリリースで本番に反映する内容を一文で説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: changes
+    attributes:
+      label: リリース内容
+      description: 本リリースに含まれる PR / Issue へのリンクを列挙してください
+      value: |
+        - #
+    validations:
+      required: true
+
+  - type: textarea
+    id: pre-release-checklist
+    attributes:
+      label: 事前確認
+      description: リリース前に満たしているべき条件を確認してください
+      value: |
+        - [ ] 検証環境で対象の変更の動作確認を行った
+        - [ ] main の必須ジョブ（CI）が green である
+        - [ ] ドキュメントの追従を確認した（`/aidd:docs-sync`）
+    validations:
+      required: true
+
+  - type: textarea
+    id: release-steps
+    attributes:
+      label: リリース手順
+      description: "手順の詳細・公開後の確認観点はリポジトリの手順書（docs/runbook/）を参照する（SSOT）"
+      value: |
+        - [ ] リリース用ブランチへマージして push する
+        - [ ] デプロイワークフローの成功を確認する
+        - [ ] 本番環境の疎通確認を行う
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollback
+    attributes:
+      label: ロールバック方針（任意）
+      description: "問題発生時の戻し方を記述してください（例: 対象マージを revert して再デプロイする）"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足
+      description: 参考リンク・関係者への連絡事項等があれば記述してください

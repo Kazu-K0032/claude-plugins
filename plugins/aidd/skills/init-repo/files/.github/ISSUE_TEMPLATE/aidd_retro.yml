@@ -1,0 +1,62 @@
+name: "AIDD 振り返り"
+description: "AI 駆動開発のプロセスを振り返り、改善点を記録する。記入後は対象 Issue にコメントとして貼り付ける"
+title: "[Retro] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        振り返りの内容を記入し、対象 Issue のコメントとして貼り付けてください。
+
+  - type: input
+    id: period
+    attributes:
+      label: 対象期間・作業
+      placeholder: "例: 2026-06-01〜2026-06-07 / 〇〇ページの実装"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks_and_fixes
+    attributes:
+      label: 振り返りで行うチェックと修正
+      description: 振り返り前後に実行して修正可能な箇所を確認&修正すること
+      options:
+        - label: "`/aidd:docs-consistency-audit` を実行し、指摘を確認した"
+        - label: "`/aidd:ai-report` を実行し、指摘を確認した"
+        - label: "`/doctor` を実行し、ツールの正常性を確認&修正した"
+
+  - type: textarea
+    id: went_well
+    attributes:
+      label: うまくいったこと
+      description: Claude Code との協働や開発プロセスでよかった点を記述してください
+      placeholder: |
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: issues
+    attributes:
+      label: 課題・改善点
+      description: 問題になったこと、次回に変えたいことを記述してください
+      placeholder: |
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: insights
+    attributes:
+      label: AIとの協働・レポートで気づいたこと
+      description: プロンプトの工夫・Skill/Rule の改善案・ハルシネーション対策など
+      placeholder: |
+        - ...
+
+  - type: textarea
+    id: actions
+    attributes:
+      label: 次回に向けたアクション
+      description: CLAUDE.md / Skill / Rule へ反映すべき内容があれば記述してください
+      placeholder: |
+        - [ ] ...

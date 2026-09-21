@@ -1,0 +1,10 @@
+# GitHub Issue テンプレートの設定
+# Ref: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository#configuring-the-template-chooser
+
+# 空の Issue を禁止し、必ずテンプレートから起票させる
+blank_issues_enabled: false
+# 起票前に確認してほしい場所（検証環境・社内ドキュメント等）があれば有効化する
+# contact_links:
+#   - name: 検証環境で現象を確認する
+#     url: https://example.com/
+#     about: Issue を起票する前に検証環境で現象を確認してください

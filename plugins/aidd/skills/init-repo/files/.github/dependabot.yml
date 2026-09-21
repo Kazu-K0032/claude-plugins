@@ -1,0 +1,32 @@
+# Dependabot（依存パッケージの更新を自動で提案する GitHub の仕組み）の設定。
+# ここは「定期更新（version updates）」の設定のみ。脆弱性を検知する Dependabot alerts と
+# その自動修正（security updates）はリポジトリ設定側で有効化する
+# 対象を github-actions に絞った理由は、各プロジェクトの CI/CD ドキュメントに記載する。
+# Ref: https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference
+
+version: 2
+
+updates:
+  # GitHub Actions だけを対象にする。SHA 固定は「人が手で上げない限り古いまま残る」ことと
+  # 表裏一体のため、ここだけ自動化する。
+  # なお SHA の隣に書いた「# v7.0.1」のようなバージョンのメモも、同じ行にある限り一緒に更新される。
+  - package-ecosystem: "github-actions"
+    # ワークフローは .github/workflows/ に固定のため、ここは常にリポジトリ直下を指す
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      # アクションごとに PR が乱立するとレビューが煩雑になるため、1 回の実行を 1 つの PR にまとめる
+      github-actions:
+        patterns:
+          - "*"
+    # グループ化により 1 回の実行で出る PR は 1 本。この上限が効くのは、前月の PR を merge しない
+    # まま翌月を迎えて PR が積み上がった場合で、5 本たまった時点で新規起票を止める
+    open-pull-requests-limit: 5
+    labels:
+      - "infra"
+      - "dependencies"
+    # コミット規約（aidd プラグインの `/aidd:commit` が参照する commit-rule）の type に合わせる。
+    # 同規約は scope を使わない方針のため include: scope は指定しない
+    commit-message:
+      prefix: "chore"

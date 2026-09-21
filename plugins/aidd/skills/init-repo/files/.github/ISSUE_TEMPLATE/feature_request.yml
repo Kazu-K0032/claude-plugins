@@ -1,0 +1,62 @@
+name: "機能要求・仕様変更"
+description: "新機能の追加、または要件変更による既存機能の変更"
+title: "[Feature] "
+labels: ["feature"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      placeholder: 追加する機能、または変更する既存機能を一文で説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: 背景・動機
+      description: なぜこの機能・変更が必要か、現状の課題を記述してください。要件変更で既存機能を変える場合は変更理由（要件の出所）も記述してください。関連する仕様（docs/specs）・ADR へのリンクも併記してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: concreteness
+    attributes:
+      label: 具体的な内容
+      description: 何を実現するか（UI・データ・挙動の要件）を具体的に記述してください。既存機能の変更なら、変更前と変更後の差分がわかるように記述してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 受け入れ基準
+      description: この機能が完了とみなされる条件。正常系・異常系（エラーハンドリング等）ともに含めてください
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: スコープ外（任意）
+      description: 誤解・スコープクリープを防ぐため、本 Issue で「やらないこと」を明示してください（該当なしの場合は空欄）
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 検討チェックリスト
+      options:
+        - label: テストを追加・更新する（統合テスト / ユニットテスト / E2E）
+        - label: "関連ドキュメント（docs/ 配下）を更新する（DocDD: 実装より先にドキュメントを更新する）"
+        - label: ADR の起票が必要か検討した（技術選定・アーキテクチャへの影響がある場合は起票する）
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足
+      description: 参考リンク・デザイン案等があれば記述してください

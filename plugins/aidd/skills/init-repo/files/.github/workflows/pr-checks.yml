@@ -1,0 +1,51 @@
+name: PR チェック
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  secret-scan:
+    name: シークレットスキャン
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # デフォルト値(depth:1）は差分コミットの情報しか持たずPR全体の差分が必要なスキャンが失敗するため、depth:0を指定して完全な履歴を取得する
+          fetch-depth: 0
+
+      - name: gitleaks をインストール
+        run: |
+          # 2026.06.03時点の最新バージョンを指定 Ref: https://github.com/gitleaks/gitleaks/releases
+          GITLEAKS_VERSION="8.30.1"
+          # -s: 進捗非表示 / -S: エラーは表示 / -L: 転送指示が来たら転送先へ行き直す / -o: 保存先ファイル指定
+          curl -sSL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o /tmp/gitleaks.tar.gz
+          # -x: 展開 / -z: gzip 形式 / -f: 対象ファイル指定 / -C: 展開先ディレクトリ指定 / gitleaks: 展開するファイルを限定
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: PR の差分をシークレットスキャン
+        # github.base_ref を run に直接展開せず env 経由で渡す（コマンドインジェクション対策）
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # リポジトリ直下に .gitleaks.toml があれば独自ルール（許可リスト等）として読ませる。
+          # 無い場合は gitleaks 既定のルールセットだけでスキャンする
+          config_arg=""
+          if [ -f .gitleaks.toml ]; then
+            config_arg="--config .gitleaks.toml"
+          fi
+          # shellcheck disable=SC2086
+          gitleaks git . \
+            --log-opts="origin/${BASE_REF}..HEAD" \
+            --redact \
+            --verbose \
+            $config_arg

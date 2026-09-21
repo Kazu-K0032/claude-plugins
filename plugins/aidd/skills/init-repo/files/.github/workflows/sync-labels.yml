@@ -1,0 +1,34 @@
+name: ラベルを同期する
+
+on:
+  push:
+    branches: [main]
+    # 本ワークフロー自体も対象に含める。Dependabot が ghaction-github-labeler の SHA を
+    # 上げたとき、ここに自ファイルが無いと更新後のアクションが一度も実行されず、
+    # 壊れていても次にラベルを編集するまで気づけないため
+    paths: [".github/labels.yml", ".github/workflows/sync-labels.yml"]
+  # 入力フォームなしで手動実行を許可する
+  workflow_dispatch:
+
+# 権限を無効化する。ジョブレベルで必要な権限だけ付与するため。
+permissions: {}
+
+jobs:
+  sync:
+    name: ラベル同期
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: ソースをチェックアウト
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: labels.yml を GitHub に同期
+        uses: crazy-max/ghaction-github-labeler@548a7c3603594ec17c819e1239f281a3b801ab4d # v6.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yml
+          # labels.yml にないラベルは削除する。デフォルトはfalseだが、削除を許可しているという意図を明示化
+          skip-delete: false
