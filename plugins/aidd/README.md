@@ -9,13 +9,10 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | スキル | 用途 |
 | --- | --- |
 | `/aidd:adr` | ADR（アーキテクチャ決定記録）の新規作成・ステータス更新 |
-| `/aidd:knowledge` | 1 ツール 1 ファイルの入門ドキュメントを作成（公式情報を調査して執筆） |
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
-| `/aidd:pr-check` | Issue のタスクが PR で実装されているかを照合 |
 | `/aidd:skill-check` | Skill の frontmatter・スコープ・参照切れを点検 |
 | `/aidd:commit` | ステージ済み差分から Conventional Commits 形式のメッセージを提案 |
 | `/aidd:research` | 技術調査を `aidd-research` に委譲し、引用付きで回答 |
-| `/aidd:agent-promote` | 繰り返している作業を永続カスタムエージェントへ昇格 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
 
@@ -32,7 +29,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証してレポートを出力 |
 | `docs-consistency-audit` | ドキュメント間の値の矛盾・重複記述・参照方向違反を横断監査 |
 
-これで移植対象の 8 スキルが揃った。WordPress / AWS 固有の Skill（`debug-log`・`staatic-sync` 等）は案件リポジトリのローカルに残し、このプラグインには含めない。
+移植対象は上記 7 スキル。WordPress / AWS 固有の Skill（`debug-log`・`staatic-sync` 等）は案件リポジトリのローカルに残し、このプラグインには含めない。
 
 ## ディレクトリ構成
 
@@ -54,7 +51,6 @@ aidd/
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
-    ├── response-style.md # 回答スタイルの適用範囲
     └── ai-research.md   # AI 出力を引用として扱わないための規約
 ```
 

@@ -204,7 +204,7 @@ def collect_metrics(start, end):
     実際のサブエージェント起動とは無関係（起動0件のセッションでも複数回記録される）のため対象外とする。
 
     ただし agent-name はセッション単位では「そのセッションが何の作業だったか」を表す
-    唯一の手がかりでもある（`/agent-promote` の検索キー）。完全一致で複数セッションに
+    唯一の手がかりでもある（作業テーマの手がかり）。完全一致で複数セッションに
     またがることは無い（毎回 LLM が新しく言葉を選ぶため）ため、閾値による自動候補判定はせず、
     期間内の一覧だけを素材として返す（意味的な重複判断は collect 実行時の Claude に委ねる）。
     """
@@ -223,7 +223,7 @@ def collect_metrics(start, end):
     skill_tool_calls = Counter()  # input.skill → 起動回数（Skill ツール経由 = モデル自動起動。/name 明示起動は commands に別集計）
     workflow_tool_calls = Counter()  # 起動回数。保存済み workflow は名前で集計、アドホック実行は "(アドホック実行)" に集計
     agent_prompts = {}  # description → 実際に渡した prompt のリスト（昇格候補理由の素材。DATA_FILE には保存しない）
-    session_titles = {}  # sessionId → 最新の agent-name（/agent-promote 気づき用。DATA_FILE には保存しない）
+    session_titles = {}  # sessionId → 最新の agent-name（作業テーマの気づき用。DATA_FILE には保存しない）
     daily = Counter()
     hourly = Counter()
     edit_files = Counter()
@@ -339,7 +339,7 @@ def collect_metrics(start, end):
     for ps in agent_prompts.values():
         ps.sort(key=lambda p: p["time"])
 
-    # 期間内セッションのみに絞ったセッションテーマ一覧（/agent-promote 気づき用。DATA_FILE には保存しない）
+    # 期間内セッションのみに絞ったセッションテーマ一覧（作業テーマの気づき用。DATA_FILE には保存しない）
     session_themes = sorted({title for sid, title in session_titles.items() if sid in sessions})
 
     pstats = {}
@@ -948,9 +948,9 @@ def cmd_collect(start, end):
             else:
                 print("（関連プロンプトなし）\n")
 
-    print("\n# セッションテーマ一覧（`/agent-promote` 気づき用。SUMMARY 執筆の素材）\n")
+    print("\n# セッションテーマ一覧（作業テーマの気づき用。SUMMARY 執筆の素材）\n")
     print("セッションの自動タイトル（完全一致では重複しないため件数の閾値判定はしない生の一覧）。\n"
-          "意味的に似た作業テーマが複数あれば、SUMMARY に「`/agent-promote <該当タイトル>` を検討」と"
+          "意味的に似た作業テーマが複数あれば、SUMMARY に「<該当テーマ>の永続カスタムエージェント化を検討」と"
           "1 文添えてください。無ければこの言及自体を省略してください。\n")
     if session_themes:
         for name in session_themes:

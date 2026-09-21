@@ -67,7 +67,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
   | CI が自動検査する項目（必須ジョブの内訳） | CI 構成のドキュメント・`.github/workflows/` |
   | 技術別のレビュー観点 | `.github/instructions/`・コーディング規約 |
   | 重大度分類・網羅的コードレビューの結果 | コードレビュー用の Skill / workflow |
-  | Issue タスクと実装の照合結果 | `pr-check` |
+  | Issue タスクと実装の照合結果 | Issue のタスクリスト |
   | デザイン目視チェック項目 | デザインシステムの規約 |
   | 公開後の確認観点 | 運用手順書 |
 
