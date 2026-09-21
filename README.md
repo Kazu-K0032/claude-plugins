@@ -6,7 +6,7 @@
 
 | プラグイン | 内容 | 呼び出し例 |
 | --- | --- | --- |
-| [aidd](plugins/aidd/README.md) | AIDD × DocDD の定型作業（ADR・コミット・PR 準備・技術調査・ドキュメント追従チェック） | `/aidd:adr` |
+| [aidd](plugins/aidd/README.md) | AIDD × DocDD の定型作業（ADR・コミット・PR 準備・技術調査・ドキュメント追従チェック・利用分析レポート） | `/aidd:adr` |
 
 リポジトリへ規約一式（`.claude/`・`.github/`・ドキュメントの骨組み）を持ち込む [`/aidd:init-repo`](plugins/aidd/skills/init-repo/README.md) も同梱している。プラグイン由来の Skill は必ず `/プラグイン名:スキル名` の形で呼び出す。
 

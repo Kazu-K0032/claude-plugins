@@ -1,6 +1,6 @@
 {
   "name": "aidd",
-  "description": "AIDD × DocDD の定型作業を Skill 化したツールキット。ADR 作成・コミット文生成・PR 下書き・Issue/PR 更新・技術調査・ドキュメント追従チェック・リポジトリ初期セットアップを含む",
+  "description": "AIDD × DocDD の定型作業を Skill 化したツールキット。ADR 作成・コミット文生成・PR 下書き・Issue/PR 更新・技術調査・ドキュメント追従チェック・利用分析レポート・リポジトリ初期セットアップを含む",
   "author": {
     "name": "Kazu",
     "url": "https://github.com/Kazu-K0032"
