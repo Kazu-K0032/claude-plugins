@@ -1,0 +1,9 @@
+{
+  // 固有名詞辞書の検知をスキップする
+  "cSpell.words": [
+    "aidd",
+    "kazu",
+    "ssot",
+    "frontmatter",
+  ]
+}
