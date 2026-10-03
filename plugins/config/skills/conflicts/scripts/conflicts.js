@@ -105,7 +105,9 @@ function installedPlugins(ctx, ids) {
       installs.find((i) => i.scope === 'user') ||
       installs[installs.length - 1];
     if (match && match.installPath && fs.existsSync(match.installPath)) {
-      result.push({ id, name: id.split('@')[0], installPath: match.installPath });
+      const manifest = readJson(path.join(match.installPath, '.claude-plugin', 'plugin.json'), ctx.errors) || {};
+      // 呼び出し名の名前空間はマニフェストの name。無ければ enabledPlugins の ID から取る
+      result.push({ id, name: manifest.name || id.split('@')[0], installPath: match.installPath, manifest });
     } else {
       ctx.errors.push({ file: id, error: '有効化されているが、導入先が見つからない' });
     }
@@ -113,14 +115,28 @@ function installedPlugins(ctx, ids) {
   return result;
 }
 
+function toArray(value) {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+// マニフェストのパスはプラグインのルートからの相対パス（"./..."）
+function pluginPath(plugin, rel) {
+  return path.resolve(plugin.installPath, rel);
+}
+
 function collectMcpServers(ctx, plugins) {
   const servers = [];
   const add = (source, defs) => {
     for (const [name, def] of Object.entries(defs || {})) {
+      if (!def || typeof def !== 'object') continue;
       // env・headers は秘匿値を含みうるので、起動方法だけを残す
       servers.push({ name, source, command: def.command || def.url || null, args: def.args || [] });
     }
   };
+  // .mcp.json 形式（mcpServers で包む）と、サーバー名をキーにした素の形式の両方を受ける
+  const unwrap = (data) => (data && data.mcpServers && typeof data.mcpServers === 'object' ? data.mcpServers : data);
+
   const claudeJson = readJson(path.join(ctx.home, '.claude.json'), ctx.errors);
   if (claudeJson) {
     add('user (~/.claude.json)', claudeJson.mcpServers);
@@ -131,28 +147,70 @@ function collectMcpServers(ctx, plugins) {
   const mcpJson = readJson(path.join(ctx.project, '.mcp.json'), ctx.errors);
   if (mcpJson) add('project (.mcp.json)', mcpJson.mcpServers);
   for (const p of plugins) {
-    const pluginMcp = readJson(path.join(p.installPath, '.mcp.json'), ctx.errors);
-    if (pluginMcp) add(`plugin (${p.id})`, pluginMcp.mcpServers || pluginMcp);
-    const manifest = readJson(path.join(p.installPath, '.claude-plugin', 'plugin.json'), ctx.errors);
-    if (manifest && typeof manifest.mcpServers === 'object') add(`plugin (${p.id})`, manifest.mcpServers);
+    const source = `plugin (${p.id})`;
+    const defaults = readJson(path.join(p.installPath, '.mcp.json'), ctx.errors);
+    if (defaults) add(source, unwrap(defaults));
+    // マニフェストの mcpServers は .mcp.json に加えて読み込まれる（同名は後勝ち）
+    for (const entry of toArray(p.manifest.mcpServers)) {
+      if (typeof entry === 'string') {
+        if (/\.(mcpb|dxt)$/i.test(entry) || /^https?:/i.test(entry)) {
+          // バンドルは展開しないと定義が読めないので、未確認として報告に残す
+          ctx.unchecked.push({ source, what: `MCP バンドル ${entry}` });
+        } else {
+          add(source, unwrap(readJson(pluginPath(p, entry), ctx.errors)));
+        }
+      } else if (entry && typeof entry === 'object') {
+        add(source, entry);
+      }
+    }
   }
   return servers;
 }
 
+function hasSkill(dir) {
+  return fs.existsSync(path.join(dir, 'SKILL.md'));
+}
+
+// SKILL.md を直接持つディレクトリはそれ自体が 1 スキル。そうでなければ配下の <name>/SKILL.md を探す
 function listSkillDirs(dir) {
-  if (!fs.existsSync(dir)) return [];
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [];
+  if (hasSkill(dir)) return [path.basename(dir)];
   return fs
     .readdirSync(dir, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && fs.existsSync(path.join(dir, d.name, 'SKILL.md')))
+    .filter((d) => d.isDirectory() && hasSkill(path.join(dir, d.name)))
     .map((d) => d.name);
 }
 
-function listCommandFiles(dir) {
-  if (!fs.existsSync(dir)) return [];
+function listCommandFiles(target) {
+  if (!fs.existsSync(target)) return [];
+  if (fs.statSync(target).isFile()) return target.endsWith('.md') ? [path.basename(target, '.md')] : [];
   return fs
-    .readdirSync(dir)
+    .readdirSync(target)
     .filter((f) => f.endsWith('.md'))
     .map((f) => f.replace(/\.md$/, ''));
+}
+
+function pluginSkillNames(p) {
+  const names = new Set(listSkillDirs(path.join(p.installPath, 'skills')));
+  // マニフェストの skills は既定の skills/ に加えて読み込まれる
+  for (const rel of toArray(p.manifest.skills)) {
+    if (typeof rel === 'string') listSkillDirs(pluginPath(p, rel)).forEach((n) => names.add(n));
+  }
+  // skills/ もマニフェスト指定も無く、ルートに SKILL.md がある場合はプラグイン自体が 1 スキル
+  if (names.size === 0 && p.manifest.skills === undefined && hasSkill(p.installPath)) names.add(p.name);
+  return [...names];
+}
+
+function pluginCommandNames(p) {
+  const spec = p.manifest.commands;
+  // マニフェストの commands は既定の commands/ を置き換える
+  if (spec === undefined) return listCommandFiles(path.join(p.installPath, 'commands'));
+  if (spec && typeof spec === 'object' && !Array.isArray(spec)) return Object.keys(spec);
+  const names = new Set();
+  for (const rel of toArray(spec)) {
+    if (typeof rel === 'string') listCommandFiles(pluginPath(p, rel)).forEach((n) => names.add(n));
+  }
+  return [...names];
 }
 
 function collectSkills(ctx, plugins) {
@@ -163,20 +221,65 @@ function collectSkills(ctx, plugins) {
   add('project (.claude/skills)', null, listSkillDirs(path.join(ctx.project, '.claude', 'skills')));
   add('project (.claude/commands)', null, listCommandFiles(path.join(ctx.project, '.claude', 'commands')));
   for (const p of plugins) {
-    add(`plugin (${p.id})`, p.name, listSkillDirs(path.join(p.installPath, 'skills')));
-    add(`plugin (${p.id})`, p.name, listCommandFiles(path.join(p.installPath, 'commands')));
+    add(`plugin (${p.id})`, p.name, pluginSkillNames(p));
+    add(`plugin (${p.id})`, p.name, pluginCommandNames(p));
   }
   return skills;
 }
 
 function collectPluginHooks(ctx, plugins) {
-  return plugins
-    .map((p) => {
-      const file = path.join(p.installPath, 'hooks', 'hooks.json');
-      const data = readJson(file, ctx.errors);
-      return data ? { scope: `plugin (${p.id})`, file, hooks: data.hooks || data } : null;
-    })
-    .filter(Boolean);
+  const sources = [];
+  for (const p of plugins) {
+    const scope = `plugin (${p.id})`;
+    const defaults = path.join(p.installPath, 'hooks', 'hooks.json');
+    const data = readJson(defaults, ctx.errors);
+    if (data) sources.push({ scope, file: defaults, hooks: data.hooks || {} });
+    // マニフェストの hooks は hooks/hooks.json と合わせて読み込まれる。ファイルは "hooks" で包む形、インラインは包まない形
+    for (const entry of toArray(p.manifest.hooks)) {
+      if (typeof entry === 'string') {
+        const file = pluginPath(p, entry);
+        const fileData = readJson(file, ctx.errors);
+        if (fileData) sources.push({ scope, file, hooks: fileData.hooks || {} });
+      } else if (entry && typeof entry === 'object') {
+        sources.push({ scope, file: `${p.id} の plugin.json（インライン）`, hooks: entry });
+      }
+    }
+  }
+  return sources;
+}
+
+function countHooks(hooks) {
+  let n = 0;
+  for (const groups of Object.values(hooks || {})) {
+    if (!Array.isArray(groups)) continue;
+    for (const g of groups) n += (g.hooks || []).length;
+  }
+  return n;
+}
+
+// 出どころごとに照合した件数。0 件や少なすぎる件数は、読めていない可能性の手がかりになる
+function buildCoverage(settings, pluginHooks, servers, skills) {
+  const countBy = (items, key) =>
+    items.reduce((acc, item) => {
+      acc[item[key]] = (acc[item[key]] || 0) + 1;
+      return acc;
+    }, {});
+  const permissionRules = {};
+  const hooks = {};
+  for (const s of settings) {
+    if (!s.data) continue;
+    const perms = s.data.permissions || {};
+    permissionRules[s.scope] = ['allow', 'ask', 'deny'].reduce((sum, k) => sum + (perms[k] || []).length, 0);
+    hooks[s.scope] = countHooks(s.data.hooks);
+  }
+  for (const h of pluginHooks) hooks[h.scope] = (hooks[h.scope] || 0) + countHooks(h.hooks);
+  return {
+    settingsFiles: settings.filter((s) => s.data).map((s) => s.scope),
+    permissionRules,
+    hooks,
+    mcpServers: countBy(servers, 'source'),
+    skills: countBy(skills, 'source'),
+  };
 }
 
 function listMarkdown(dir) {
@@ -429,17 +532,21 @@ function main() {
     project: path.resolve(opts.project || projectRoot()),
     managed: opts.managed ? path.resolve(opts.managed) : defaultManagedPath(),
     errors: [],
+    unchecked: [],
   };
   ctx.managedDir = opts.managed ? path.dirname(ctx.managed) : defaultManagedDir();
 
   const settings = collectSettings(ctx);
   const plugins = installedPlugins(ctx, enabledPlugins(settings));
+  const pluginHooks = collectPluginHooks(ctx, plugins);
+  const servers = collectMcpServers(ctx, plugins);
+  const skills = collectSkills(ctx, plugins);
   const findings = [];
   checkScalarOverrides(settings, findings);
   checkPermissions(settings, findings);
-  checkHooks(settings, collectPluginHooks(ctx, plugins), findings);
-  checkMcp(collectMcpServers(ctx, plugins), findings);
-  checkSkills(collectSkills(ctx, plugins), findings);
+  checkHooks(settings, pluginHooks, findings);
+  checkMcp(servers, findings);
+  checkSkills(skills, findings);
 
   const order = { warn: 0, info: 1 };
   findings.sort((a, b) => order[a.severity] - order[b.severity] || a.category.localeCompare(b.category));
@@ -449,8 +556,10 @@ function main() {
     project: ctx.project,
     settingsFiles: settings.map((s) => ({ scope: s.scope, file: s.file, exists: Boolean(s.data) })),
     enabledPlugins: plugins.map((p) => p.id),
+    coverage: buildCoverage(settings, pluginHooks, servers, skills),
     findings,
     memoryFiles: collectMemoryFiles(ctx),
+    unchecked: ctx.unchecked,
     errors: ctx.errors,
   };
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
