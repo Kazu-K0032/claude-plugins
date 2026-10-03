@@ -34,7 +34,7 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 | パス | 内容 | 導入後の調整 |
 | --- | --- | --- |
 | `files/src/constants.js` | 複数の機能が使う定数とスクリプトプロパティのキー名 | `TODO:` を埋める |
-| `files/src/main.js` | 中心となる業務フローの入口（`main`） | 業務フローの手順を書く。独立した機能が並ぶプロジェクトでは消す |
+| `files/src/main.js` | 中心となる業務フローの入口（`main`） | 業務フローの手順を書く。独立した機能が並ぶプロジェクトでは消し、`trigger.js` の `onDailySchedule` の呼び出し先も直す |
 | `files/src/utils.js` | 複数の機能が使う関数（日時の整形・スクリプトプロパティの取得） | そのまま使える |
 | `files/src/trigger.js` | トリガーの登録（`setupTriggers`）・削除（`deleteTriggers`）と、毎日決まった時刻に呼ばれる入口（`onDailySchedule`） | 実行間隔を変える。定期実行を使わないなら消す |
 | `files/src/appsscript.json` | マニフェスト（タイムゾーン `Asia/Tokyo`・V8 ランタイム） | 使うサービス・権限に応じて追記する |
@@ -53,7 +53,7 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 
 | 除外したもの | 理由 |
 | --- | --- |
-| `.claspignore` | `rootDir` を `src` にしているため、`src/` の外は push されない。指定しない場合の既定でも `appsscript.json` と JavaScript・HTML だけが対象になる |
+| `.claspignore` | `rootDir` を `src` にしているため、`src/` の外は push されない。指定しない場合の既定でも `appsscript.json` と JavaScript・HTML だけが対象になる。既存のコードを今の場所に残す場合で、`rootDir` 配下にツールの設定ファイルなど GAS ではない JavaScript があるときは、Skill が作成を提案する |
 | `package.json`・ESLint の設定 | clasp をグローバルに入れる運用では不要。Lint を使うかはプロジェクトごとに決める |
 | HTML（`HtmlService`）の雛形 | Web アプリ・サイドバーを作るかはプロジェクト次第のため |
 | TypeScript・バンドラーの設定 | 上記「前提と制約」のとおり対象外 |

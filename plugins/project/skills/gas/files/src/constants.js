@@ -6,6 +6,3 @@
 const PROPERTY_KEYS = Object.freeze({
   // TODO: 使うスクリプトプロパティのキーを追加する（例: SLACK_WEBHOOK_URL: 'SLACK_WEBHOOK_URL'）
 });
-
-// 定期実行の時刻。時刻は appsscript.json の timeZone（Asia/Tokyo）で解釈される。
-const TRIGGER_HOUR = 9;

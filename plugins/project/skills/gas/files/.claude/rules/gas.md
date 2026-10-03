@@ -8,7 +8,7 @@ docs-type: people-ai-doc
 
 # Google Apps Script（GAS）の実装ルール
 
-`src/` 配下を clasp で Apps Script のプロジェクトへ push する構成を前提にする。コードは JavaScript（V8 ランタイム）で書く。
+`.clasp.json` の `rootDir` 配下（テンプレートでは `src/`）を clasp で Apps Script のプロジェクトへ push する構成を前提にする。コードは JavaScript（V8 ランタイム）で書く。
 
 ## ファイルの書き分け
 
@@ -39,7 +39,7 @@ docs-type: people-ai-doc
 - 機能を足すときは、機能ファイルを 1 つ作り、トリガーから動かすなら入口を `trigger.js` に足す。ファイル名は機能を表す小文字の英単語をハイフンでつなぐ
 - 1 つの機能だけで使っていた定数・関数を別の機能でも使うようになったら、共通のファイル（`constants.js`・`utils.js`・サービスのファイル）へ移す
 - 機能ファイルが大きくなったら（目安 300 行）、機能の中で分ける
-- 機能ファイルが多くなったら（目安 10 個）、`src/` の下に機能の種類ごとのフォルダを作って分ける。clasp はサブフォルダも push し、エディタ上ではフォルダ名を含んだファイル名で表示される
+- 機能ファイルが多くなったら（目安 10 個）、`rootDir` の下に機能の種類ごとのフォルダを作って分ける。clasp はサブフォルダも push し、エディタ上ではフォルダ名を含んだファイル名で表示される
 - 全ファイルが同じグローバル空間を共有するため、機能ファイルの関数・定数の名前には機能名を入れる
 
 ## 関数の命名
@@ -54,6 +54,8 @@ docs-type: people-ai-doc
 | カスタムメニュー（`Menu.addItem`）から呼ぶ関数 | — | `_` を付けない | 機能ファイル |
 | HTML（`google.script.run`）から呼ぶ関数 | — | `_` を付けない | 機能ファイル |
 | 上記以外（内部の処理） | `formatDate_`・`getScriptProperty_` | `_` を付ける | 使う範囲に応じたファイル |
+
+トリガー・カスタムメニュー・`google.script.run` から呼ぶ関数は、トップレベルの関数宣言（グローバル関数）にする。オブジェクトのメソッドや名前空間の中に置くと、名前で呼び出せない。
 
 末尾が `_` の関数は private として扱われ、`google.script.run` から呼べず、名前もクライアントへ送られない。Ref: [HTML Service: Communicate with Server Functions](https://developers.google.com/apps-script/guides/html/communication)
 
@@ -84,6 +86,6 @@ API キー・Webhook URL・トークンはコードに書かず、スクリプ�
 
 ## clasp の運用
 
-- push の対象は `src/` 配下（`.clasp.json` の `rootDir`）。`.claude/` やドキュメントは push されない
+- push の対象は `.clasp.json` の `rootDir` 配下（`.claspignore` があれば、そこで除外したものを除く）。`rootDir` の外にある `.claude/` やドキュメントは push されない
 - スクリプトエディタで直接編集しない。`clasp push` でエディタ側の内容が上書きされる。エディタで直した場合は、push の前に `clasp pull` で取り込む
 - TypeScript は使わない。clasp は TypeScript を変換しないため、使うにはバンドラーの導入が要る

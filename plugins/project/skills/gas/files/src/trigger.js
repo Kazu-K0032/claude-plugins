@@ -2,6 +2,10 @@
 // 入口は機能ごとのファイル（または main.js）の関数を呼ぶ 1〜3 行だけにする。
 // トリガーに登録する関数はグローバル関数にし、名前の末尾に _ を付けない。
 
+// 定期実行の時刻。時刻は appsscript.json の timeZone（Asia/Tokyo）で解釈される。
+// このファイルだけが使う設定のため、constants.js ではなくここに置く。
+const TRIGGER_HOUR = 9;
+
 // 登録用の関数。エディタの実行メニューから手動で 1 回実行する。
 // 何度実行しても同じトリガーが重複しないよう、登録前に同じ関数のトリガーを消す。
 function setupTriggers() {
@@ -20,6 +24,7 @@ function deleteTriggers() {
 }
 
 // 時間主導型トリガーから呼ばれる入口。処理の本体は main.js に置く。
+// main.js を消した場合は、呼び出し先を機能のファイルの関数に替える。
 function onDailySchedule() {
   main();
 }

@@ -84,7 +84,15 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill gas --check
 
 `rootDir` からの相対パスが変わらないため、`clasp push` したときの Apps Script 側のファイル名は変わらない。
 
-方針 B の場合はこの手順を飛ばす。手順 4 では `.claude/rules/gas.md` だけをコピーし（`--only .claude/rules/gas.md`）、`paths` を今の場所に書き換える。`src/` 配下のテンプレートはコピーしない。テンプレートのコードの中身（スクリプトプロパティの取得・トリガーの登録など）は、手順 6 で既存ファイルへ足す案として出す。
+方針 B の場合はこの手順を飛ばす。手順 4 では `.claude/rules/gas.md` だけをコピーし（`--only .claude/rules/gas.md`）、frontmatter の `paths` を今の `rootDir` に合わせて書き換える（本文は `rootDir` を基準に書いてあるため直さない）。`src/` 配下のテンプレートはコピーしない。テンプレートのコードの中身（スクリプトプロパティの取得・トリガーの登録など）は、手順 6 で既存ファイルへ足す案として出す。
+
+方針 B で `rootDir` 配下に GAS のコードではない JavaScript（ツールの設定ファイル等）がある場合は、`.claspignore` の作成を提案する。`.claspignore` が無いと clasp は `rootDir` 配下の `.js` をすべて push する。GAS で動かないコード（`module.exports` 等）が混ざると読み込みでエラーになり、トリガーを含むすべての関数の実行が失敗するため。すべてを除外してから GAS のファイルだけを戻す形にし、パターンは `rootDir` からの相対パスで書く。既に `.claspignore` がある場合は、足りない除外だけを足す。
+
+```text
+**/**
+!appsscript.json
+!<GAS のコードのファイル・フォルダ>
+```
 
 ### 4. コピーする
 
@@ -143,7 +151,7 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/gas/files/<同じ相�
 承認を得てから移す。移した後は次を行う。
 
 - README・手順書に書かれたファイル名・関数名を、移動先・改名後の名前に直す
-- テンプレートの雛形（`main` の `TODO`・`onDailySchedule` 等）が既存の処理と重複する場合は、残すか消すかを確認する。中心となる業務フローが無いプロジェクト（独立した機能が並ぶもの）では、`main.js` を消すことを提案する
+- テンプレートの雛形（`main` の `TODO`・`onDailySchedule` 等）が既存の処理と重複する場合は、残すか消すかを確認する。中心となる業務フローが無いプロジェクト（独立した機能が並ぶもの）では、`main.js` を消すことを提案する。テンプレートの `trigger.js` の `onDailySchedule` は `main()` を呼んでいるため、呼び出し先を機能ファイルの関数に替えるか、`onDailySchedule` ごと消す（あわせて `setupTriggers`・`deleteTriggers` も見直す）ことを、同じ提案に含める
 
 ### 7. `.gitignore` を整える
 
