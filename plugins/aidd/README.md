@@ -41,7 +41,8 @@ aidd/
 ├── skills/              # Skill 本体（1 ディレクトリ 1 Skill）
 │   ├── adr/
 │   │   ├── SKILL.md
-│   │   └── _template.md
+│   │   ├── _template.md        # 詳細版の雛形
+│   │   └── _template-short.md  # 簡易版の雛形（本文 10 行未満の文章）
 │   ├── init-repo/
 │   │   ├── SKILL.md
 │   │   ├── scripts/     # テンプレートを導入先へコピーするインストーラ
