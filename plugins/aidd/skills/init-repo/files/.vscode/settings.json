@@ -1,0 +1,9 @@
+{
+  // 保存時に末尾の改行を補い、行末の空白を消す（markdownlint の MD047 / MD009 に合わせる）
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  // シェルスクリプト（.claude/hooks/*.sh）が CRLF で壊れないよう、新規ファイルの改行を LF にする
+  "files.eol": "\n",
+  // 固有名詞・技術用語を cSpell の誤検知から外す
+  "cSpell.words": []
+}

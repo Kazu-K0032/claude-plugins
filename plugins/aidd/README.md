@@ -15,7 +15,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
-| `/aidd:init-repo` | ハーネス設定（`.claude/`）・GitHub の定型ファイル・ドキュメントの骨組みをリポジトリへ導入 |
+| `/aidd:init-repo` | ハーネス設定（`.claude/`）・GitHub の定型ファイル・エディタ設定・`.gitignore`・ドキュメントの骨組みをリポジトリへ導入 |
 
 同梱エージェント。
 
@@ -45,7 +45,7 @@ aidd/
 │   ├── init-repo/
 │   │   ├── SKILL.md
 │   │   ├── scripts/     # テンプレートを導入先へコピーするインストーラ
-│   │   └── files/       # 導入先リポジトリのルートへ置く一式（.claude/ ・.github/ 等）
+│   │   └── files/       # 導入先リポジトリのルートへ置く一式
 │   └── ...              # 各 Skill が補助ファイル・scripts/ を持つ
 ├── agents/              # サブエージェント定義
 │   └── research.md

@@ -42,6 +42,7 @@ TODO: 手順の本体は `docs/runbook/environment-setup.md` に置き、ここ�
 TODO: MCP サーバー・エディタ設定など、開発を支える仕組みへのリンクを列挙する。
 
 - Claude Code のプラグイン: [claude-plugins](https://github.com/Kazu-K0032/claude-plugins)
+- VS Code の推奨拡張機能: [.vscode/extensions.json](.vscode/extensions.json)
 
 ## ドキュメント系
 
