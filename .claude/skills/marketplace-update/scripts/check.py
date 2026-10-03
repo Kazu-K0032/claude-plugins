@@ -6,7 +6,7 @@
   2. init-repo テンプレートの deny と、各スキルが使うコマンドの衝突
   3. allowed-tools の書き込み許可パスが tmp 配下に収まっているか
   4. ${CLAUDE_PLUGIN_ROOT} 参照先のファイルが実在するか
-  5. カタログの整合（スキル名・README の一覧・marketplace.json の source）
+  5. カタログの整合（スキル名・README の一覧・marketplace.json の source と登録漏れ）
   6. init-repo テンプレートの収録ファイルと README の収録物表の一致
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>]

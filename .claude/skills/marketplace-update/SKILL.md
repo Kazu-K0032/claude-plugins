@@ -38,7 +38,7 @@ python .claude/skills/marketplace-update/scripts/check.py
 | `rule-form` | `allowed-tools` に `Write()` / `NotebookEdit()` / `Glob()` のパス規則がある | 書き込みは `Edit(<パス>)`、検索は `Read(<パス>)` に置き換える。これらのパス規則は権限判定に使われない |
 | `deny-conflict` | スキルが事前許可するコマンドが、テンプレートの deny に一致する | スキル側のコマンドを読み取り系に変えるか、deny の見直しをユーザーに確認する（**deny を無断で緩めない**） |
 | `plugin-root-ref` | `${CLAUDE_PLUGIN_ROOT}/...` の参照先が無い | パスの誤り・ファイルの移動漏れを直す |
-| `catalog` | スキル名・README の一覧・`marketplace.json` の source がずれている | 実体に合わせて README か名前を直す |
+| `catalog` | スキル名・README の一覧・`marketplace.json` の source がずれている、または `plugins/` 配下のプラグインが `marketplace.json` に登録されていない | 実体に合わせて README か名前を直す。未登録なら `marketplace.json` の `plugins` にエントリを追加する |
 | `template-inventory` | `init-repo` の README にある `files/...` が存在しない | 収録物表か実ファイルのどちらが正かを判断して揃える |
 
 ### 4. WARN を判断する
