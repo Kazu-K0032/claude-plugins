@@ -35,6 +35,8 @@ docs-type: people-ai-doc
 | --- | --- | --- | --- |
 | エディタの実行メニューから実行する関数 | `main`・`setupTriggers` | `_` を付けない | `main.js`・`trigger.js` |
 | トリガーに登録する関数 | `onDailySchedule` | `_` を付けない | `trigger.js` |
+| シンプルトリガー（予約された名前） | `onOpen`・`onEdit` | 名前を変えられない | `trigger.js` |
+| カスタムメニュー（`Menu.addItem`）から呼ぶ関数 | — | `_` を付けない | 役割ごとのファイル |
 | HTML（`google.script.run`）から呼ぶ関数 | — | `_` を付けない | 役割ごとのファイル |
 | 上記以外（内部の処理） | `formatDate_`・`getScriptProperty_` | `_` を付ける | どこでもよい |
 
