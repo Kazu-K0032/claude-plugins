@@ -9,10 +9,12 @@
   5. カタログの整合（スキル名・README の一覧・marketplace.json の source と登録漏れ）
   6. テンプレート（skills/<スキル名>/files/）の収録ファイルと、そのスキルの README の収録物表の一致
   7. .claude/rules/duplicated-files.md に載っている重複ファイルの組の内容が一致しているか
+  8. 各スキル（plugins/ 配下と .claude/skills/）の argument-hint が .claude/rules/argument-hint.md の書き方に沿っているか
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>]
 終了コード: NG が 1 件でもあれば 1、それ以外は 0（WARN は 0 のまま）
 """
+import glob
 import json
 import os
 import re
@@ -103,6 +105,7 @@ def main():
             add("NG", "catalog", "plugins/%s が marketplace.json に登録されていない" % plugin_name)
 
     check_duplicated_files(repo)
+    check_argument_hints(repo)
 
     order = {"NG": 0, "WARN": 1}
     for level, category, message in sorted(results, key=lambda r: (order[r[0]], r[1])):
@@ -250,6 +253,38 @@ def check_duplicated_files(repo):
             add("WARN", "duplicated-files",
                 "%s と %s の内容が違う。片方の変更をもう片方に入れるか、"
                 "意図的な差分なら duplicated-files.md の表に書く" % (pair[0], pair[1]))
+
+
+HINT_GROUP = re.compile(r"\[[^\[\]]*\]|<[^<>]*>")
+
+
+def check_argument_hints(repo):
+    """8: 入力ヒント（argument-hint）が任意・必須の区別と省略時の動きを示しているか。"""
+    paths = glob.glob(os.path.join(repo, "plugins", "*", "skills", "*", "SKILL.md"))
+    paths += glob.glob(os.path.join(repo, ".claude", "skills", "*", "SKILL.md"))
+    for path in sorted(paths):
+        rel = os.path.relpath(path, repo).replace(os.sep, "/")
+        text = read(path)
+        hint = frontmatter(text).get("argument-hint")
+        if hint is None:
+            if "$ARGUMENTS" in text:
+                add("WARN", "argument-hint",
+                    "%s: 本文で $ARGUMENTS を使うが argument-hint が無い。"
+                    "引数を受け取るならヒントを書き、受け取らないなら $ARGUMENTS を消す" % rel)
+            continue
+        hint = hint.strip("\"'")
+        groups = HINT_GROUP.findall(hint)
+        if not groups or HINT_GROUP.sub("", hint).strip():
+            add("NG", "argument-hint", "%s: 引数を [] か <> で囲んでいない部分がある（%s）" % (rel, hint))
+            continue
+        for group in groups:
+            if group.startswith("["):
+                if "（任意。省略時は" not in group:
+                    add("NG", "argument-hint",
+                        "%s: 任意の引数 %s に「（任意。省略時は〜）」が無い" % (rel, group))
+            elif "任意" in group or "省略" in group:
+                add("NG", "argument-hint",
+                    "%s: 必須の引数 %s に「任意」「省略」がある。任意なら [] で書く" % (rel, group))
 
 
 if __name__ == "__main__":

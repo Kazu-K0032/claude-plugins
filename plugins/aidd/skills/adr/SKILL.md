@@ -3,7 +3,7 @@ name: adr
 description: ADR（アーキテクチャ決定記録）を新規作成・更新する。技術選定に限らず、設計・運用の方針、リリース後の問題などによる方針変更、やらないと決めたことなど、後から「なぜこうなっているのか」を問われる判断の理由を残す時、または ADR ディレクトリ配下のファイルを作成・編集する時に使用する
 disable-model-invocation: false
 allowed-tools: Read, Glob, Bash(ls:*), Bash(date:*)
-argument-hint: "[題材] [参考資料] [補足プロンプト]"
+argument-hint: "[題材・参考資料・補足プロンプト（任意。省略時は対話で補う。例: テスト戦略の採用判断、資料は tmp1.md）]"
 ---
 
 # ADR 作成・更新

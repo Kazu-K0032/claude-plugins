@@ -3,7 +3,7 @@ name: setup-global
 description: ユーザー全体の Claude Code 設定（~/.claude/settings.json）に、Powerline 風の 2 行ステータスライン（モデルと推論の強さ・コンテキスト使用率のバー・ブランチ・累計トークン・コスト・経過時間・利用上限の消費率）と日本語での応答を設定する。新しい PC で Claude Code を使い始める時、またはステータスラインのスクリプトを更新したい時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Bash(node --version:*), Bash(diff:*)
-argument-hint: "[statusline だけ / language だけ（省略時は両方）]"
+argument-hint: "[入れる設定（任意。省略時は statusline と language の両方。例: statusline だけ / language だけ）]"
 ---
 
 # グローバル設定の導入（setup-global）

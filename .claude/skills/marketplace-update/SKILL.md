@@ -1,14 +1,14 @@
 ---
 name: marketplace-update
-description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイルの整合をチェックして修正する。プラグインやテンプレートを編集した後、push する前に使用する
+description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイル・入力ヒントの書き方の整合をチェックして修正する。プラグインやテンプレートを編集した後、push する前に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git status:*), Bash(git diff:*), Bash(python .claude/skills/marketplace-update/scripts/check.py:*), Bash(python3 .claude/skills/marketplace-update/scripts/check.py:*), Bash(claude plugin validate:*)
-argument-hint: "[重点的に見たい範囲（任意）]"
+argument-hint: "[重点的に見たい範囲（任意。省略時はすべてのチェックを同じ重さで見る。例: init-repo のテンプレート / 重複ファイル）]"
 ---
 
 # マーケットプレイス更新チェック
 
-このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組。
+このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）。
 
 ## なぜ必要か
 
@@ -41,6 +41,7 @@ python .claude/skills/marketplace-update/scripts/check.py
 | `catalog` | スキル名・README の一覧・`marketplace.json` の source がずれている、または `plugins/` 配下のプラグインが `marketplace.json` に登録されていない | 実体に合わせて README か名前を直す。未登録なら `marketplace.json` の `plugins` にエントリを追加する |
 | `template-inventory` | テンプレートを持つスキル（`skills/<スキル名>/files/`）の README にある `files/...` が存在しない、または README が無い | 収録物表か実ファイルのどちらが正かを判断して揃える |
 | `duplicated-files` | 重複ファイルの組の片方が存在しない、または `duplicated-files.md` の `paths` に載っていない | 表と `paths` を実際のパスに合わせる |
+| `argument-hint` | 入力ヒントの引数が `[]` か `<>` で囲まれていない、`[]` に「（任意。省略時は」が無い、または `<>` に「任意」「省略」がある | `.claude/rules/argument-hint.md` の書き方に直す。省略時の動きは本文を読んで確かめてから書く |
 
 ### 4. WARN を判断する
 
@@ -50,6 +51,7 @@ WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直�
 - `output-path` — 書き込み許可のパスが `tmp/` の外にある。出力先を固定できているか、白紙委任になっていないかを確認する
 - `template-inventory` — テンプレートに増やしたファイルが、そのスキルの README の収録物表に載っていない。表に行を足す
 - `duplicated-files` — 重複ファイルの組の内容が違う。片方の変更をもう片方にも入れるか、意図的な差分なら `duplicated-files.md` の表の「意図的な差分」に理由を書く
+- `argument-hint` — 本文で `$ARGUMENTS` を使うのに入力ヒントが無い。引数を受け取るならヒントを書き、受け取らないなら `$ARGUMENTS` を消して本文に「引数は受け取らない」と書く
 
 ### 5. 機械チェックが見ない箇所を確認する
 
@@ -57,6 +59,7 @@ WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直�
 - ルート `README.md` の収録プラグイン表と案内文が実態と合っているか
 - テンプレートを持つスキル（`init-repo`・`gas` 等）の README の「除外したもの」「前提と制約」が、テンプレートの現状と合っているか
 - テンプレート（`files/`）に、導入先で書き換える箇所として `TODO:` が残っているか（プロジェクト固有の値を埋め込んでいないか）
+- 入力ヒントに書いた「省略時は〜」が、本文の実際の動きと合っているか（機械チェックは書き方だけを見る）
 
 ### 6. マニフェストを検証する
 
