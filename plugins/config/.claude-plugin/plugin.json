@@ -1,0 +1,8 @@
+{
+  "name": "config",
+  "description": "ユーザー全体（~/.claude/）の Claude Code 設定を整えるツールキット。ステータスライン・日本語化などの導入と、設定の衝突・重複の点検を含む",
+  "author": {
+    "name": "Kazu",
+    "url": "https://github.com/Kazu-K0032"
+  }
+}
