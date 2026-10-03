@@ -3,7 +3,7 @@ name: conflicts
 description: 現在の Claude Code の設定（managed / user / project / local の settings.json・権限ルール・フック・MCP サーバー・スキル・CLAUDE.md と rules）を横断して、衝突・重複・効いていない設定を点検し、修正案付きのレポートを出す。設定が思ったとおりに効かない時、プラグインや設定を追加した後に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(node --version:*)
-argument-hint: "[重点的に見たい観点（任意。例: 権限 / フック / CLAUDE.md）]"
+argument-hint: "[重点的に見たい観点（任意。省略時はすべての観点を同じ重さで点検する。例: 権限 / フック / CLAUDE.md）]"
 ---
 
 # 設定の衝突点検（conflicts）

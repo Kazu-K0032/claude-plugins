@@ -3,7 +3,7 @@ name: commit
 description: ステージング済みの差分を分析し、Conventional Commits 形式のコミットメッセージを提案する。コミットメッセージの作成やステージング済み変更のレビューを求められた時に使用する
 disable-model-invocation: true
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Read, Read(tmp.md), Edit(tmp.md)
-argument-hint: "[補足指示（省略可）]"
+argument-hint: "[補足指示（任意。省略時はステージ済みの差分だけで提案する。例: Issue#5 を参照に付ける / 1 コミットにまとめる）]"
 ---
 
 # コミット提案

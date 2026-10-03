@@ -4,7 +4,7 @@ description: このリポジトリの Claude Code セッションログを分析
 model: opus
 disable-model-invocation: true
 allowed-tools: Bash(date:*), Read, Agent, Edit(tmp/**/.ai-report-qualitative.md), AskUserQuestion
-argument-hint: "[開始日 YYYY-MM-DD] [終了日 YYYY-MM-DD]"
+argument-hint: "[開始日 終了日（任意。省略時は期間を質問する。例: 2026-09-01 2026-09-30）]"
 ---
 
 # Claude Code 利用分析レポート
