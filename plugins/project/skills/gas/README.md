@@ -33,13 +33,13 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 
 | パス | 内容 | 導入後の調整 |
 | --- | --- | --- |
-| `files/src/constants.js` | 定数とスクリプトプロパティのキー名 | `TODO:` を埋める |
-| `files/src/main.js` | ワークフローの入口（`main`） | ワークフローの手順を書く |
-| `files/src/utils.js` | 共通関数（日時の整形・スクリプトプロパティの取得） | そのまま使える |
+| `files/src/constants.js` | 複数の機能が使う定数とスクリプトプロパティのキー名 | `TODO:` を埋める |
+| `files/src/main.js` | 中心となる業務フローの入口（`main`） | 業務フローの手順を書く。独立した機能が並ぶプロジェクトでは消す |
+| `files/src/utils.js` | 複数の機能が使う関数（日時の整形・スクリプトプロパティの取得） | そのまま使える |
 | `files/src/trigger.js` | トリガーの登録（`setupTriggers`）・削除（`deleteTriggers`）と、毎日決まった時刻に呼ばれる入口（`onDailySchedule`） | 実行間隔を変える。定期実行を使わないなら消す |
 | `files/src/appsscript.json` | マニフェスト（タイムゾーン `Asia/Tokyo`・V8 ランタイム） | 使うサービス・権限に応じて追記する |
 | `files/.clasp.json` | clasp の設定（`rootDir` を `src` にする） | `scriptId` を書き込む |
-| `files/.claude/rules/gas.md` | ファイルの書き分け・関数の命名・GAS 特有の注意点・clasp の運用 | そのまま使える |
+| `files/.claude/rules/gas.md` | ファイルの書き分け（使う範囲で置き場所を決める）・関数の命名・GAS 特有の注意点・clasp の運用 | そのまま使える |
 
 ## 前提と制約
 
