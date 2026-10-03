@@ -3,7 +3,7 @@ name: init-repo
 description: リポジトリに Claude Code のハーネス設定（.claude/settings.json・hooks・rules）と GitHub の定型ファイル（.github/）、エディタ設定（.vscode/）・.gitignore、CLAUDE.md / README.md の骨組みを導入する。新しいリポジトリを立ち上げる時、または既存リポジトリへ規約一式を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(gh issue view:*), Bash(gh pr view:*)
-argument-hint: "[例: .github だけ / 必要なものだけ / 既存は置き換えない / docs/spec.md の要件を満たす最小限]"
+argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象。例: .github だけ / 必要なものだけ / 既存は置き換えない / docs/spec.md の要件を満たす最小限）]"
 ---
 
 # リポジトリ初期セットアップ（init-repo）
@@ -16,7 +16,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 | ファイル | 役割 |
 | --- | --- |
-| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh` | 状態判定（NEW / SAME / DIFF）とコピーの実行 |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/install.sh` | 状態判定（NEW / SAME / DIFF）とコピーの実行。project プラグインの全 Skill で共有するため、`--skill init-repo` で対象を指定する |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/` | コピー元のテンプレート一式 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/README.md` | 収録物の一覧・除外したものとその理由・導入後の調整項目 |
 
@@ -68,7 +68,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 | テンプレート | 満たす要件 | 入れる条件 | 同じ役割の既存物の例 |
 | --- | --- | --- | --- |
-| `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・git / gh 書き込みの deny）とフックの配線 | Claude Code を使う（常に該当） | `.claude/settings.json` |
+| `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・git の commit / push と gh の取り消しにくい操作の deny）とフックの配線 | Claude Code を使う（常に該当） | `.claude/settings.json` |
 | `.claude/hooks/guard-destructive.sh` | 破壊的コマンドの承認エスカレーション | `settings.json` を入れる | 既存の PreToolUse フック |
 | `.claude/hooks/post-edit-lint.sh` | 編集後の Lint | Lint ツールがある（`package.json` の `lint` スクリプト・`ruff`・`golangci-lint` 等） | 既存の PostToolUse フック・lint-staged |
 | `.claude/hooks/session-start.sh` | セッション開始時の運用ルール通知 | `settings.json` を入れる | 既存の SessionStart フック |
@@ -102,7 +102,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 ### 1. 現状を確認する
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --check
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --check
 ```
 
 出力は 1 行 1 ファイル。ラベルの意味は次のとおり。
@@ -132,13 +132,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --check
 承認を得たら、まだ存在しないファイルだけをコピーする。
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --apply
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --apply
 ```
 
 対象を絞る場合、または `DIFF` のファイルを上書きする場合は `--only` に相対パスを列挙する。`--only` は「差分を承知で上書きする」という明示指定として扱われる。
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --apply --only .github/labels.yml .claude/rules/comment.md
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --apply --only .github/labels.yml .claude/rules/comment.md
 ```
 
 ### 4. 衝突したファイルを片付ける

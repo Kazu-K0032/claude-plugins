@@ -9,7 +9,7 @@
 導入先のリポジトリのルートで Claude Code を開き、次を実行する。
 
 ```text
-/aidd:init-repo
+/project:init-repo
 ```
 
 衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定の調整、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
@@ -26,8 +26,8 @@
 Claude を介さず手で入れる場合は、スクリプトを直接叩いてもよい（リポジトリのルートで実行する）。
 
 ```bash
-bash <plugin>/skills/init-repo/scripts/install.sh --check   # 状態確認だけ
-bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファイルだけコピー
+bash <plugin>/scripts/install.sh --skill init-repo --check  # 状態確認だけ
+bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファイルだけコピー
 ```
 
 ## 収録物
@@ -64,7 +64,8 @@ bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファ
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
-- `gh` の書き込み系は deny で塞いでいるが、`gh pr edit` / `gh issue edit` は除外している。`/aidd:issue-pr-sync` が Issue / PR の本文・タイトル・サイドバーの更新に使うため。塞ぎたい場合は deny に戻す（その場合 issue-pr-sync は下書き出力までになる）
+- `gh` は、取り消しにくい操作（PR のマージ・クローズ・レビュー、Issue のクローズ、リリース、リポジトリの作成・変更・削除）だけを deny で塞いでいる。Issue・PR の作成（`gh issue create` / `gh pr create`）、Issue へのコメント（`gh issue comment`）、本文・タイトル・サイドバーの更新（`gh issue edit` / `gh pr edit`）は Claude に任せる前提で塞いでいない。`/aidd:issue-pr-sync` も更新に使う。塞ぎたい場合は deny に足す（その場合 issue-pr-sync は下書き出力までになる）
+- `guard-git-write.sh` を配線すると、上記の Issue・PR の作成と更新（`create` / `edit`）も止まる。配線するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
 - `.gitignore`・`.vscode/` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - `commitlint.config.js` は設定だけ。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る
@@ -80,7 +81,7 @@ bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファ
 | デプロイ系ワークフロー | 配信構成（ホスティング・CDN・静的化）専用 |
 | アプリ固有のログ監視フック | 対象プロダクト専用 |
 | Skill・エージェント・Workflow | プラグイン本体として配布済み。リポジトリへコピーしない |
-| 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。必要なリポジトリで `.claude/rules/` に追加する |
+| 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。技術スタック別の Skill（`/project:gas` 等）が配るか、必要なリポジトリで `.claude/rules/` に追加する |
 
 ## なぜ Skill として配るのか
 

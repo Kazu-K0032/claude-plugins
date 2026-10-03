@@ -2,7 +2,7 @@
 
 ユーザー全体（`~/.claude/`）の Claude Code 設定を整える Skill 集。どのリポジトリで作業していても共通の設定（ステータスライン・応答言語）を入れることと、スコープをまたいだ設定の衝突・重複を点検することを扱う。
 
-リポジトリ単位の設定（`.claude/`・`.github/` 等）は [aidd](../aidd/README.md) の `/aidd:init-repo` が扱う。
+リポジトリ単位の設定（`.claude/`・`.github/` 等）は [project](../project/README.md) の `/project:init-repo` が扱う。
 
 ## 収録スキル
 

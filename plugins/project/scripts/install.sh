@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# init-repo Skill のインストーラ。テンプレート一式（../files 配下）を導入先リポジトリへコピーする。
+# project プラグインの全 Skill が共有するインストーラ。
+# 指定した Skill のテンプレート一式（../skills/<Skill 名>/files 配下）を導入先リポジトリへコピーする。
 #
 # 使い方:
-#   bash <スクリプトのパス> --check                 衝突状況を一覧表示する（書き込みなし）
-#   bash <スクリプトのパス> --apply                 まだ存在しないファイルだけコピーする（既存は絶対に上書きしない）
-#   bash <スクリプトのパス> --apply --only <相対パス>...  指定したファイルだけコピーする（既存でも上書きする）
+#   bash <スクリプトのパス> --skill <Skill 名> --check                 衝突状況を一覧表示する（書き込みなし）
+#   bash <スクリプトのパス> --skill <Skill 名> --apply                 まだ存在しないファイルだけコピーする（既存は絶対に上書きしない）
+#   bash <スクリプトのパス> --skill <Skill 名> --apply --only <相対パス>...  指定したファイルだけコピーする（既存でも上書きする）
 #
 # 出力は 1 行 1 ファイルで、先頭のラベルが状態を表す。
 #   NEW  ... 導入先に存在しない（--apply でコピーされる）
@@ -12,9 +13,8 @@
 #   DIFF ... 既存ファイルと内容が異なる（--apply では触らない。--only で明示指定したときだけ上書き）
 set -euo pipefail
 
-src_dir="$(cd "$(dirname "$0")/../files" && pwd)"
-
 mode="check"
+skill=""
 only_list=()
 # bash 3.x では空配列への ${#arr[@]} が set -u に引っかかるため、件数は別変数で数える
 only_count=0
@@ -22,6 +22,14 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --check) mode="check" ;;
     --apply) mode="apply" ;;
+    --skill)
+      if [ $# -lt 2 ]; then
+        echo "ERROR: --skill の後に Skill 名を指定すること" >&2
+        exit 1
+      fi
+      skill="$2"
+      shift
+      ;;
     --only)
       shift
       while [ $# -gt 0 ] && [ "${1#--}" = "$1" ]; do
@@ -38,6 +46,20 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+# Skill 名にパス区切りを許すと skills/ の外のディレクトリをコピー元にできてしまうため、名前だけを受け付ける
+case "$skill" in
+  "" | */* | *\\* | . | ..)
+    echo "ERROR: --skill に Skill 名を指定すること（例: --skill init-repo）" >&2
+    exit 1
+    ;;
+esac
+skills_dir="$(cd "$(dirname "$0")/../skills" && pwd)"
+if [ ! -d "$skills_dir/$skill/files" ]; then
+  echo "ERROR: テンプレートを持つ Skill ではない: $skill" >&2
+  exit 1
+fi
+src_dir="$skills_dir/$skill/files"
 
 # 誤った場所へ展開しないよう、リポジトリのルートでの実行だけを許可する
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
