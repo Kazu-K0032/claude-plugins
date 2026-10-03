@@ -1,6 +1,6 @@
 # init-repo
 
-新しいリポジトリへ「Claude Code のハーネス設定（`.claude/`）＋ GitHub の定型ファイル（`.github/`）＋ ドキュメントの骨組み」を一括で持ち込む Skill。実案件リポジトリの構成から、プロジェクト固有の要素を取り除いて汎用化したもの。
+新しいリポジトリへ「Claude Code のハーネス設定（`.claude/`）＋ GitHub の定型ファイル（`.github/`）＋ エディタ設定（`.vscode/`）・`.gitignore` ＋ ドキュメントの骨組み」を一括で持ち込む Skill。実案件リポジトリの構成から、プロジェクト固有の要素を取り除いて汎用化したもの。
 
 `files/` の中身がそのまま導入先リポジトリのルートに置かれる。
 
@@ -12,7 +12,16 @@
 /aidd:init-repo
 ```
 
-衝突状況の確認 → 計画の提示 → 承認 → コピー、の順に進む。既存ファイルは承認なしに上書きされない。手順の詳細は [SKILL.md](SKILL.md) を参照。
+衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定の調整、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
+
+| 引数の例 | 動き |
+| --- | --- |
+| `.github だけ` / `.claude/hooks を除く` | 指定したパスで絞る |
+| `必要なものだけ` | プロジェクトの構成から、要るテンプレートだけを選ぶ |
+| `既存は置き換えない` | 既存ファイルに触らず、パスが違っても同じ役割のものがあればそのテンプレートは入れない |
+| `docs/spec.md の要件を満たす最小限` / `<URL> の要求を満たすものは最低限` | 参照先の要件を読み、満たすのに要るテンプレートだけを入れる |
+
+判定の基準（各テンプレートの役割・入れる条件・依存関係）は [SKILL.md](SKILL.md) の「引数の解釈」にある。既存ファイルは承認なしに上書きされない。手順の詳細は [SKILL.md](SKILL.md) を参照。
 
 Claude を介さず手で入れる場合は、スクリプトを直接叩いてもよい（リポジトリのルートで実行する）。
 
@@ -40,10 +49,13 @@ bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファ
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
 | `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks） | そのまま使える |
 | `files/.github/workflows/sync-labels.yml` | `labels.yml` を GitHub のラベルへ同期 | そのまま使える |
+| `files/.vscode/extensions.json` | VS Code の推奨拡張機能（markdownlint・スペルチェック・GitHub Actions・YAML） | 技術スタックに合わせて追加する（Skill が提案する） |
+| `files/.vscode/settings.json` | 保存時の整形（末尾改行・行末空白の削除・LF）とスペルチェックの除外語（`cSpell.words`） | プロジェクトの固有名詞を入れる（Skill が候補を出す） |
 | `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（リンク集約型の構成） | `TODO:` 行を実態に書き換える |
 | `files/commitlint.config.js` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |
+| `files/.gitignore` | Claude Code の作業ファイル（`tmp.md`・`tmp/`）・個人設定・秘匿ファイル・OS のファイルの除外 | 言語・ビルド成果物の除外を追記する |
 
 ## 前提と制約
 
@@ -52,7 +64,9 @@ bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファ
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
-- `gh` の書き込み系は deny で塞いでいるが、`gh pr edit` / `gh issue edit` は除外している。`/aidd:issue-pr-sync` が Issue / PR 本文の更新に使うため。塞ぎたい場合は deny に戻す（その場合 issue-pr-sync は下書き出力までになる）
+- `gh` の書き込み系は deny で塞いでいるが、`gh pr edit` / `gh issue edit` は除外している。`/aidd:issue-pr-sync` が Issue / PR の本文・タイトル・サイドバーの更新に使うため。塞ぎたい場合は deny に戻す（その場合 issue-pr-sync は下書き出力までになる）
+- 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
+- `.gitignore`・`.vscode/` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - `commitlint.config.js` は設定だけ。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る
 
 ## 除外したもの

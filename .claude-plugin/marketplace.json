@@ -12,6 +12,12 @@
       "source": "./plugins/aidd",
       "description": "AIDD × DocDD の定型作業（ADR・ナレッジ・コミット・PR 準備・技術調査）を Skill 化したツールキット",
       "category": "productivity"
+    },
+    {
+      "name": "config",
+      "source": "./plugins/config",
+      "description": "ユーザー全体（~/.claude/）の Claude Code 設定の導入と、設定の衝突・重複を点検する Skill 集",
+      "category": "productivity"
     }
   ]
 }

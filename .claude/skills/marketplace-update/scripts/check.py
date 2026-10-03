@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """マーケットプレイスの整合性チェック。
 
-チェック対象:
+チェック対象（1〜5 は plugins/ 配下の全プラグイン、2・6 の基準は aidd の init-repo テンプレート）:
   1. 権限規則の書式（allowed-tools に Write()/NotebookEdit()/Glob() のパス規則を使っていないか）
   2. init-repo テンプレートの deny と、各スキルが使うコマンドの衝突
   3. allowed-tools の書き込み許可パスが tmp 配下に収まっているか
   4. ${CLAUDE_PLUGIN_ROOT} 参照先のファイルが実在するか
-  5. カタログの整合（スキル名・README の一覧・marketplace.json の source）
+  5. カタログの整合（スキル名・README の一覧・marketplace.json の source と登録漏れ）
   6. init-repo テンプレートの収録ファイルと README の収録物表の一致
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>]
@@ -78,11 +78,55 @@ def main():
     repo = os.getcwd()
     if "--repo" in sys.argv:
         repo = sys.argv[sys.argv.index("--repo") + 1]
-    plugin = os.path.join(repo, "plugins", "aidd")
-    template = os.path.join(plugin, "skills", "init-repo", "files")
+    plugins_dir = os.path.join(repo, "plugins")
+    template = os.path.join(plugins_dir, "aidd", "skills", "init-repo", "files")
     settings = os.path.join(template, ".claude", "settings.json")
 
     prefixes = deny_prefixes(settings)
+    for plugin_name in sorted(os.listdir(plugins_dir)):
+        plugin = os.path.join(plugins_dir, plugin_name)
+        if os.path.isdir(os.path.join(plugin, "skills")):
+            check_plugin(repo, plugin_name, plugin, prefixes)
+
+    market = json.loads(read(os.path.join(repo, ".claude-plugin", "marketplace.json")))
+    for entry in market.get("plugins", []):
+        src = os.path.join(repo, entry["source"].lstrip("./"))
+        if not os.path.isdir(src):
+            add("NG", "catalog", "marketplace.json の source %s が存在しない" % entry["source"])
+    sources = {os.path.normpath(entry["source"].lstrip("./")) for entry in market.get("plugins", [])}
+    for plugin_name in sorted(os.listdir(plugins_dir)):
+        # .DS_Store などのファイルや隠しディレクトリはプラグインではない
+        if plugin_name.startswith(".") or not os.path.isdir(os.path.join(plugins_dir, plugin_name)):
+            continue
+        if os.path.normpath(os.path.join("plugins", plugin_name)) not in sources:
+            add("NG", "catalog", "plugins/%s が marketplace.json に登録されていない" % plugin_name)
+
+    # 6: テンプレートの収録ファイルと init-repo README の収録物表
+    init_readme = read(os.path.join(plugins_dir, "aidd", "skills", "init-repo", "README.md"))
+    documented = set(re.findall(r"`files/([^`]+)`", init_readme))
+    for root, dirs, files in os.walk(template):
+        for f in files:
+            rel = os.path.relpath(os.path.join(root, f), template).replace(os.sep, "/")
+            if not any(rel == d or d.endswith("/") and rel.startswith(d) for d in documented):
+                add("WARN", "template-inventory",
+                    "files/%s が init-repo の README の収録物表に無い" % rel)
+    for doc in sorted(documented):
+        if not os.path.exists(os.path.join(template, doc)):
+            add("NG", "template-inventory",
+                "init-repo の README にある files/%s が存在しない" % doc)
+
+    order = {"NG": 0, "WARN": 1}
+    for level, category, message in sorted(results, key=lambda r: (order[r[0]], r[1])):
+        print("[%s] %s: %s" % (level, category, message))
+    ng = sum(1 for r in results if r[0] == "NG")
+    warn = len(results) - ng
+    print("---")
+    print("NG: %d / WARN: %d" % (ng, warn))
+    return 1 if ng else 0
+
+
+def check_plugin(repo, plugin_name, plugin, prefixes):
+    """1〜5 のうちプラグイン単位のチェック。"""
     skills_dir = os.path.join(plugin, "skills")
     skill_names = sorted(
         d for d in os.listdir(skills_dir)
@@ -96,7 +140,8 @@ def main():
         fm = frontmatter(text)
         if fm.get("name") != name:
             add("NG", "catalog",
-                "%s: frontmatter の name (%s) がディレクトリ名と違う" % (name, fm.get("name")))
+                "%s:%s: frontmatter の name (%s) がディレクトリ名と違う"
+                % (plugin_name, name, fm.get("name")))
         for rule in split_rules(fm.get("allowed-tools", "")):
             m = re.match(r"^(Write|NotebookEdit|MultiEdit|Glob)\((.+)\)$", rule)
             if m:
@@ -147,43 +192,15 @@ def main():
                     "%s: ${CLAUDE_PLUGIN_ROOT}/%s が存在しない"
                     % (os.path.relpath(path, repo).replace(os.sep, "/"), ref))
 
-    # 5: README の一覧と marketplace.json
+    # 5: プラグインの README のスキル一覧
     plugin_readme = read(os.path.join(plugin, "README.md"))
-    listed = set(re.findall(r"/aidd:([a-z0-9-]+)", plugin_readme))
+    listed = set(re.findall(r"/%s:([a-z0-9-]+)" % re.escape(plugin_name), plugin_readme))
     for name in skill_names:
         if name not in listed:
-            add("NG", "catalog", "プラグインの README に /aidd:%s の記載がない" % name)
+            add("NG", "catalog", "%s の README に /%s:%s の記載がない" % (plugin_name, plugin_name, name))
     for name in sorted(listed - set(skill_names)):
-        add("NG", "catalog", "プラグインの README にある /aidd:%s に対応するスキルが無い" % name)
-
-    market = json.loads(read(os.path.join(repo, ".claude-plugin", "marketplace.json")))
-    for entry in market.get("plugins", []):
-        src = os.path.join(repo, entry["source"].lstrip("./"))
-        if not os.path.isdir(src):
-            add("NG", "catalog", "marketplace.json の source %s が存在しない" % entry["source"])
-
-    # 6: テンプレートの収録ファイルと init-repo README の収録物表
-    init_readme = read(os.path.join(plugin, "skills", "init-repo", "README.md"))
-    documented = set(re.findall(r"`files/([^`]+)`", init_readme))
-    for root, dirs, files in os.walk(template):
-        for f in files:
-            rel = os.path.relpath(os.path.join(root, f), template).replace(os.sep, "/")
-            if not any(rel == d or d.endswith("/") and rel.startswith(d) for d in documented):
-                add("WARN", "template-inventory",
-                    "files/%s が init-repo の README の収録物表に無い" % rel)
-    for doc in sorted(documented):
-        if not os.path.exists(os.path.join(template, doc)):
-            add("NG", "template-inventory",
-                "init-repo の README にある files/%s が存在しない" % doc)
-
-    order = {"NG": 0, "WARN": 1}
-    for level, category, message in sorted(results, key=lambda r: (order[r[0]], r[1])):
-        print("[%s] %s: %s" % (level, category, message))
-    ng = sum(1 for r in results if r[0] == "NG")
-    warn = len(results) - ng
-    print("---")
-    print("NG: %d / WARN: %d" % (ng, warn))
-    return 1 if ng else 0
+        add("NG", "catalog",
+            "%s の README にある /%s:%s に対応するスキルが無い" % (plugin_name, plugin_name, name))
 
 
 if __name__ == "__main__":

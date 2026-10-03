@@ -40,7 +40,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 6. 「PR テンプレートの解決」で確定したテンプレートのセクション構成に合わせてPR本文を作成する。本文は `## 概要` から始め、タイトルは本文に含めない
 7. `git diff main...HEAD` で差分本体を読み、「[チェック項目の洗い出し](#チェック項目の洗い出し)」の表を上から全て当てて条件分岐を列挙する
 8. `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` に従って検証コメントを作成する。既存 PR があれば `gh pr view --json number` で番号を埋める
-9. `tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md`（PR本文）と `tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md`（検証コメント）を**常に両方**出力し、2 つの出力パスと**別途 PR タイトル案（Conventional Commits 形式）**をユーザーに報告する
+9. `tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md`（PR本文）と `tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md`（検証コメント）を**常に両方**出力し、2 つの出力パスと**別途 PR タイトル案（Issue のタイトルと同じ文字列。`/aidd:issue-pr-sync` の基準と揃える）**をユーザーに報告する
 
 ## PR本文の作成方針
 
