@@ -47,6 +47,7 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 - `.clasp.json` はコミットする前提にしている。`scriptId` は秘匿値ではなく、clone してすぐ push できるようにするため。開発用と本番用で `scriptId` を切り替える運用の場合は、`.gitignore` に入れて手元で管理する
 - `.clasprc.json`（`clasp login --creds` で作業ディレクトリに保存される認証情報）は `.gitignore` に入れる。Skill が追記を提案する
 - 秘匿値はスクリプトプロパティに置く前提にしている。`constants.js` にはキー名だけを書く
+- 既存の Apps Script プロジェクトに使う場合は、手元のコードをスクリプトエディタ側と揃えてから実行する。エディタで直接直した内容が手元に無いまま構成を変えて push すると、エディタ側の変更が消えるため。分からなければ先に `clasp pull` で取り込む（Skill は clasp を実行しない）
 
 ## 除外したもの
 

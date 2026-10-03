@@ -27,6 +27,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 - `git` / `bash` が利用可能であること
 - 導入後の push には Node.js と [clasp](https://github.com/google/clasp) が要る（このスキル自体は clasp を使わない）
 - `.claude/settings.json`・`CLAUDE.md` などの土台も要るなら、先に `/project:init-repo` を実行しておく（必須ではない）
+- 既存の Apps Script プロジェクトにつながっている場合は、手元のコードがスクリプトエディタ側と揃っていること。エディタで直接直した内容が手元に無いまま構成を変えて `clasp push` すると、エディタ側の変更が消える。揃っているか分からなければ、始める前に `clasp pull` で取り込んでおく（このスキルは clasp を実行しないため、ユーザーが行う）
 
 ## 引数の解釈
 
@@ -70,6 +71,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill gas --check
 ### 2. 導入計画を提示して承認を得る（必須）
 
 `--check` の結果を、新規作成するファイル（`NEW`）・既存のまま残すファイル（`SAME`）・衝突していて判断が要るファイル（`DIFF`）に分けて提示する。既存の GAS コードがある場合は、手順 1 で選んでもらった方針と、手順 6 で振り分けを行うことも併せて示す。方針 A では、移すファイルの一覧も示す。
+
+`.clasp.json` に `scriptId` が入っている（既存の Apps Script プロジェクトにつながっている）場合は、承認を求める前に、手元のコードがスクリプトエディタ側と揃っているか（前提条件）をユーザーに確認する。揃っているか分からない場合は、`clasp pull` で取り込んでもらってから手順 1 をやり直す。
 
 ### 3. 既存コードを `src/` へ移す（方針 A の場合）
 
