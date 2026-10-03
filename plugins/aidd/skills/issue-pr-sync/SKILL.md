@@ -1,6 +1,6 @@
 ---
 name: issue-pr-sync
-description: 指定した Issue と PR を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・PR タイトル（Issue のタイトルに揃える）・ラベル等のサイドバーを、承認後に直接反映する。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
+description: 指定した Issue と PR を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える）・ラベル等のサイドバーを、承認後に直接反映する。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
 argument-hint: "<Issue番号|URL> <PR番号|URL>"
 disable-model-invocation: true
 allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/**/issue-pr-sync_*.md)
@@ -15,7 +15,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 | 対象 | 反映のしかた |
 | --- | --- |
 | Issue / PR の本文 | 更新案（PR 本文が空なら新規の本文）を提示し、承認を取ってから `gh` で直接反映する |
-| PR のタイトル | Issue のタイトルと違えば揃える案を提示し、承認を取ってから反映する |
+| Issue / PR のタイトル | 対応内容とずれていれば直す案を、PR が Issue と違えば揃える案を提示し、承認を取ってから反映する |
 | サイドバー（ラベル・担当者・レビュワー・マイルストーン） | 変更案を提示し、承認を取ってから反映する |
 
 `/aidd:pr-create` との使い分け：
@@ -23,7 +23,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 | スキル | 作るもの | GitHub への反映 |
 | --- | --- | --- |
 | `/aidd:pr-create` | PR 本文の提案と、レビュワー向けの動作検証ファイル（検証コメント） | しない（`tmp/` に下書きを出すだけ） |
-| `/aidd:issue-pr-sync` | Issue / PR の本文・PR タイトル・サイドバーの更新 | 承認後に直接反映する |
+| `/aidd:issue-pr-sync` | Issue / PR の本文・タイトル・サイドバーの更新 | 承認後に直接反映する |
 
 ## 参照ファイル
 
@@ -69,7 +69,7 @@ git diff <baseRefName>...HEAD
 
 1. Issue 本文の更新後の全文（「本文の更新方針」）
 1. PR 本文の更新後の全文。空なら新規の本文（「PR 本文」の「新規作成のとき」）
-1. PR タイトルの変更案（「PR タイトルの方針」）
+1. Issue / PR タイトルの変更案（「タイトルの方針」）
 1. サイドバーの変更案（「サイドバーの更新方針」）
 
 本文は `tmp/<ブランチ名>/issue-pr-sync_<ts>_issue.md` / `_pr.md` に書き出す。ブランチ名の `/` は置換せずサブディレクトリとして扱う（`commit` / `pr-create` と同じ規約）。
@@ -82,7 +82,7 @@ git diff <baseRefName>...HEAD
 
 1. Issue 本文の変更点（どのセクションに何を足した / 直したかを箇条書きで。全文は出さない）
 1. PR 本文の変更点（同上。新規作成のときはセクション構成と要点）
-1. PR タイトルの変更（変更前 → 変更後）
+1. Issue / PR タイトルの変更（それぞれ変更前 → 変更後）
 1. サイドバーの変更（Issue・PR それぞれについて、追加・削除する項目を列挙）
 
 既存の記述と差分が食い違っていて、どちらを正とするか決めきれない論点があれば、承認を求める前にユーザーへ提示して判断を仰ぐ。
@@ -94,6 +94,7 @@ git diff <baseRefName>...HEAD
 ```bash
 gh issue edit <Issue> --body-file tmp/<ブランチ名>/issue-pr-sync_<ts>_issue.md
 gh pr edit <PR> --body-file tmp/<ブランチ名>/issue-pr-sync_<ts>_pr.md
+gh issue edit <Issue> --title "<新しいタイトル>"
 gh pr edit <PR> --title "<Issue のタイトル>"
 ```
 
@@ -123,6 +124,8 @@ gh pr edit <PR> --add-label enhancement --add-assignee @me --add-reviewer <ユ�
 - **既存の見出し構成を保つ。** テンプレート由来のセクションを削らない。空でも残す
 - **背景・目的（Why）は原則そのまま残す。** 差分と明らかに矛盾する場合だけ、書き換えずにユーザーへ指摘する
 - 既存本文に無い情報を推測で足さない。差分・コミット・レビューで裏が取れたものだけ書く
+- **簡潔さと読みやすさを優先する。** 1 項目 1 行・1 文 1 事柄で書き、読み手が知らなくてよい経緯や実装の細部は書かない
+- 似た項目が増えたら、羅列せずに 1 行へまとめる
 - 書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` に従う
 
 ### Issue 本文
@@ -149,10 +152,12 @@ gh pr edit <PR> --add-label enhancement --add-assignee @me --add-reviewer <ユ�
 - 末尾に `Closes #<Issue番号>` を付けるかを Step 4 でユーザーに確認する（マージ時に Issue が自動で閉じるため）
 - レビュワー向けの検証手順は書かない（`/aidd:pr-create` の検証コメントの役割）
 
-## PR タイトルの方針
+## タイトルの方針
 
-- PR のタイトルは、Issue のタイトルと**同じ文字列**にする。既に同じなら「変更なし」
-- Issue のタイトルを書き換える提案はしない（Issue 側が基準）
+- Issue のタイトルが基準。PR のタイトルは Issue のタイトルと**同じ文字列**にする
+- Issue のタイトルは、対応内容が変わって**今のタイトルでは中身が伝わらない**ときだけ直す。言い回しを整えるだけの変更はしない
+- 直すときは、何をするかが一読で分かる短い名詞句にする。既存の書式（日付などの接頭辞）は残す
+- どちらも直す必要が無ければ「変更なし」
 
 ## サイドバーの更新方針
 
@@ -183,5 +188,6 @@ Development セクションの Issue 紐付けは `gh` の `edit` サブコマ�
 - ❌ 差分から確認できない項目にチェックを入れること
 - ❌ レビューコメントへ返信を投稿すること
 - ❌ 既存の本文を全面的に書き直すこと（本文がある場合は追従であり、作り直しではない）
+- ❌ 対応内容が変わっていないのに、タイトルを言い換えること
 
 $ARGUMENTS

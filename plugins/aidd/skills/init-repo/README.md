@@ -64,7 +64,7 @@ bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファ
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
-- `gh` の書き込み系は deny で塞いでいるが、`gh pr edit` / `gh issue edit` は除外している。`/aidd:issue-pr-sync` が Issue / PR の本文・PR タイトル・サイドバーの更新に使うため。塞ぎたい場合は deny に戻す（その場合 issue-pr-sync は下書き出力までになる）
+- `gh` の書き込み系は deny で塞いでいるが、`gh pr edit` / `gh issue edit` は除外している。`/aidd:issue-pr-sync` が Issue / PR の本文・タイトル・サイドバーの更新に使うため。塞ぎたい場合は deny に戻す（その場合 issue-pr-sync は下書き出力までになる）
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
 - `.gitignore`・`.vscode/` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - `commitlint.config.js` は設定だけ。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る
