@@ -1,6 +1,6 @@
 ---
 name: marketplace-update
-description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載の整合をチェックして修正する。プラグインやテンプレートを編集した後、push する前に使用する
+description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイルの整合をチェックして修正する。プラグインやテンプレートを編集した後、push する前に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git status:*), Bash(git diff:*), Bash(python .claude/skills/marketplace-update/scripts/check.py:*), Bash(python3 .claude/skills/marketplace-update/scripts/check.py:*), Bash(claude plugin validate:*)
 argument-hint: "[重点的に見たい範囲（任意）]"
@@ -8,7 +8,7 @@ argument-hint: "[重点的に見たい範囲（任意）]"
 
 # マーケットプレイス更新チェック
 
-このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`）と、`plugins/aidd/skills/init-repo/files/` が配る `.claude/settings.json`。
+このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組。
 
 ## なぜ必要か
 
@@ -39,7 +39,8 @@ python .claude/skills/marketplace-update/scripts/check.py
 | `deny-conflict` | スキルが事前許可するコマンドが、テンプレートの deny に一致する | スキル側のコマンドを読み取り系に変えるか、deny の見直しをユーザーに確認する（**deny を無断で緩めない**） |
 | `plugin-root-ref` | `${CLAUDE_PLUGIN_ROOT}/...` の参照先が無い | パスの誤り・ファイルの移動漏れを直す |
 | `catalog` | スキル名・README の一覧・`marketplace.json` の source がずれている、または `plugins/` 配下のプラグインが `marketplace.json` に登録されていない | 実体に合わせて README か名前を直す。未登録なら `marketplace.json` の `plugins` にエントリを追加する |
-| `template-inventory` | `init-repo` の README にある `files/...` が存在しない | 収録物表か実ファイルのどちらが正かを判断して揃える |
+| `template-inventory` | テンプレートを持つスキル（`skills/<スキル名>/files/`）の README にある `files/...` が存在しない、または README が無い | 収録物表か実ファイルのどちらが正かを判断して揃える |
+| `duplicated-files` | 重複ファイルの組の片方が存在しない、または `duplicated-files.md` の `paths` に載っていない | 表と `paths` を実際のパスに合わせる |
 
 ### 4. WARN を判断する
 
@@ -47,13 +48,14 @@ WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直�
 
 - `deny-conflict`（本文）— そのコマンドを **Claude に実行させる**のか、**人が手で実行する例示**なのかで判断する。実行させるなら deny との整合が要る。例示なら残してよい
 - `output-path` — 書き込み許可のパスが `tmp/` の外にある。出力先を固定できているか、白紙委任になっていないかを確認する
-- `template-inventory` — テンプレートに増やしたファイルが `init-repo` の README の収録物表に載っていない。表に行を足す
+- `template-inventory` — テンプレートに増やしたファイルが、そのスキルの README の収録物表に載っていない。表に行を足す
+- `duplicated-files` — 重複ファイルの組の内容が違う。片方の変更をもう片方にも入れるか、意図的な差分なら `duplicated-files.md` の表の「意図的な差分」に理由を書く
 
 ### 5. 機械チェックが見ない箇所を確認する
 
 - 各プラグインの `.claude-plugin/plugin.json` の `description` と、`marketplace.json` の `description` が、現在の収録スキルと合っているか
 - ルート `README.md` の収録プラグイン表と案内文が実態と合っているか
-- `init-repo` の README の「除外したもの」「前提と制約」が、テンプレートの現状と合っているか
+- テンプレートを持つスキル（`init-repo`・`gas` 等）の README の「除外したもの」「前提と制約」が、テンプレートの現状と合っているか
 - テンプレート（`files/`）に、導入先で書き換える箇所として `TODO:` が残っているか（プロジェクト固有の値を埋め込んでいないか）
 
 ### 6. マニフェストを検証する

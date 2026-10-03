@@ -18,6 +18,12 @@
       "source": "./plugins/config",
       "description": "ユーザー全体（~/.claude/）の Claude Code 設定の導入と、設定の衝突・重複を点検する Skill 集",
       "category": "productivity"
+    },
+    {
+      "name": "project",
+      "source": "./plugins/project",
+      "description": "リポジトリ単位の規約・足場（ハーネス設定・GitHub の定型ファイル・技術スタック別の構成と規約）を導入する Skill 集",
+      "category": "productivity"
     }
   ]
 }

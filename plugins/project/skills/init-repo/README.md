@@ -9,7 +9,7 @@
 導入先のリポジトリのルートで Claude Code を開き、次を実行する。
 
 ```text
-/aidd:init-repo
+/project:init-repo
 ```
 
 衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定の調整、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
@@ -26,8 +26,8 @@
 Claude を介さず手で入れる場合は、スクリプトを直接叩いてもよい（リポジトリのルートで実行する）。
 
 ```bash
-bash <plugin>/skills/init-repo/scripts/install.sh --check   # 状態確認だけ
-bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファイルだけコピー
+bash <plugin>/scripts/install.sh --skill init-repo --check  # 状態確認だけ
+bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファイルだけコピー
 ```
 
 ## 収録物
@@ -80,7 +80,7 @@ bash <plugin>/skills/init-repo/scripts/install.sh --apply   # 未存在のファ
 | デプロイ系ワークフロー | 配信構成（ホスティング・CDN・静的化）専用 |
 | アプリ固有のログ監視フック | 対象プロダクト専用 |
 | Skill・エージェント・Workflow | プラグイン本体として配布済み。リポジトリへコピーしない |
-| 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。必要なリポジトリで `.claude/rules/` に追加する |
+| 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。技術スタック別の Skill（`/project:gas` 等）が配るか、必要なリポジトリで `.claude/rules/` に追加する |
 
 ## なぜ Skill として配るのか
 

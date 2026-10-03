@@ -15,7 +15,6 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
-| `/aidd:init-repo` | ハーネス設定（`.claude/`）・GitHub の定型ファイル・エディタ設定・`.gitignore`・ドキュメントの骨組みをリポジトリへ導入 |
 
 同梱エージェント。
 
@@ -30,7 +29,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証してレポートを出力 |
 | `docs-consistency-audit` | ドキュメント間の値の矛盾・重複記述・参照方向違反を横断監査 |
 
-収録は上記 8 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。
+収録は上記 7 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
 
 ## ディレクトリ構成
 
@@ -43,10 +42,6 @@ aidd/
 │   │   ├── SKILL.md
 │   │   ├── _template.md        # 詳細版の雛形
 │   │   └── _template-short.md  # 簡易版の雛形（本文 10 行未満の文章）
-│   ├── init-repo/
-│   │   ├── SKILL.md
-│   │   ├── scripts/     # テンプレートを導入先へコピーするインストーラ
-│   │   └── files/       # 導入先リポジトリのルートへ置く一式
 │   └── ...              # 各 Skill が補助ファイル・scripts/ を持つ
 ├── agents/              # サブエージェント定義
 │   └── research.md
@@ -81,11 +76,13 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 自動適用の機能は移せないため、`references/` は「Skill が使う判断基準」に限定している。
 
-常時適用したい規約（`.claude/rules/*.md`）は、`init-repo` Skill が導入先リポジトリへコピーする形で配る。実体は `skills/init-repo/files/.claude/rules/` にあり、コピーされて初めて自動適用の対象になる。
+常時適用したい規約（`.claude/rules/*.md`）は、[project](../project/README.md) プラグインの `/project:init-repo` などが導入先リポジトリへコピーする形で配る。コピーされて初めて自動適用の対象になる。
 
 ### 保守上の注意
 
 `references/` の内容は、元になったプロジェクトの `.claude/rules/` と重複する。**汎用ルールはこのプラグイン側を正**とし、規約を直すときは両方を直す。
+
+`references/markdown.md` は [project](../project/README.md) プラグインにも同じ内容のコピーがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。
 
 ## 設計上の決めごと
 

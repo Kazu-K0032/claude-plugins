@@ -16,7 +16,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 | ファイル | 役割 |
 | --- | --- |
-| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh` | 状態判定（NEW / SAME / DIFF）とコピーの実行 |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/install.sh` | 状態判定（NEW / SAME / DIFF）とコピーの実行。project プラグインの全 Skill で共有するため、`--skill init-repo` で対象を指定する |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/` | コピー元のテンプレート一式 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/README.md` | 収録物の一覧・除外したものとその理由・導入後の調整項目 |
 
@@ -102,7 +102,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 ### 1. 現状を確認する
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --check
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --check
 ```
 
 出力は 1 行 1 ファイル。ラベルの意味は次のとおり。
@@ -132,13 +132,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --check
 承認を得たら、まだ存在しないファイルだけをコピーする。
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --apply
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --apply
 ```
 
 対象を絞る場合、または `DIFF` のファイルを上書きする場合は `--only` に相対パスを列挙する。`--only` は「差分を承知で上書きする」という明示指定として扱われる。
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --apply --only .github/labels.yml .claude/rules/comment.md
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --apply --only .github/labels.yml .claude/rules/comment.md
 ```
 
 ### 4. 衝突したファイルを片付ける

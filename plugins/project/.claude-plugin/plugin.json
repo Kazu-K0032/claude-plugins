@@ -1,0 +1,8 @@
+{
+  "name": "project",
+  "description": "リポジトリ単位の規約・足場を導入するツールキット。ハーネス設定・GitHub の定型ファイル・ドキュメントの骨組み（init-repo）と、技術スタック別の構成と規約（GAS）を含む",
+  "author": {
+    "name": "Kazu",
+    "url": "https://github.com/Kazu-K0032"
+  }
+}
