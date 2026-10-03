@@ -3,7 +3,7 @@ name: init-repo
 description: リポジトリに Claude Code のハーネス設定（.claude/settings.json・hooks・rules）と GitHub の定型ファイル（.github/）、エディタ設定（.vscode/）・.gitignore、CLAUDE.md / README.md の骨組みを導入する。新しいリポジトリを立ち上げる時、または既存リポジトリへ規約一式を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(gh issue view:*), Bash(gh pr view:*)
-argument-hint: "[例: .github だけ / 必要なものだけ / 既存は置き換えない / docs/spec.md の要件を満たす最小限]"
+argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象。例: .github だけ / 必要なものだけ / 既存は置き換えない / docs/spec.md の要件を満たす最小限）]"
 ---
 
 # リポジトリ初期セットアップ（init-repo）

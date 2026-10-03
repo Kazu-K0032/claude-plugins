@@ -1,9 +1,9 @@
 ---
 name: gas
-description: Google Apps Script（GAS）のリポジトリに、clasp で push する src/ 配下の構成（constants.js・main.js・utils.js・trigger.js・appsscript.json）と .clasp.json、ファイルの書き分けと GAS 特有の注意点をまとめた規約（.claude/rules/gas.md）を導入する。GAS のプロジェクトを立ち上げる時、または既存の GAS リポジトリへ構成と規約を後から入れる時に使用する
+description: Google Apps Script（GAS）のリポジトリに、clasp で push する src/ 配下の構成と .clasp.json、ファイルの書き分けと GAS 特有の注意点をまとめた規約（.claude/rules/gas.md）を導入する。GAS のプロジェクトを立ち上げる時、または既存の GAS リポジトリへ構成と規約を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*)
-argument-hint: "[例: 規約だけ / src だけ / 既存は置き換えない]"
+argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象。例: 規約だけ / src だけ / 既存は置き換えない）]"
 ---
 
 # GAS プロジェクトのセットアップ（gas）

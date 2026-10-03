@@ -22,7 +22,7 @@
     {
       "name": "project",
       "source": "./plugins/project",
-      "description": "リポジトリ単位の規約・足場（ハーネス設定・GitHub の定型ファイル・技術スタック別の構成と規約）を導入する Skill 集",
+      "description": "リポジトリ単位の規約・足場を導入する Skill 集",
       "category": "productivity"
     }
   ]
