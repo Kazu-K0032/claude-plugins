@@ -95,6 +95,9 @@ def main():
             add("NG", "catalog", "marketplace.json の source %s が存在しない" % entry["source"])
     sources = {os.path.normpath(entry["source"].lstrip("./")) for entry in market.get("plugins", [])}
     for plugin_name in sorted(os.listdir(plugins_dir)):
+        # .DS_Store などのファイルや隠しディレクトリはプラグインではない
+        if plugin_name.startswith(".") or not os.path.isdir(os.path.join(plugins_dir, plugin_name)):
+            continue
         if os.path.normpath(os.path.join("plugins", plugin_name)) not in sources:
             add("NG", "catalog", "plugins/%s が marketplace.json に登録されていない" % plugin_name)
 
