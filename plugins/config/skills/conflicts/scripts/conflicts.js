@@ -7,6 +7,7 @@
 //   --managed  管理者設定ファイルのパス（既定: OS ごとの標準パス）
 //
 // 秘匿情報を出さないため、MCP サーバーの env / headers や ~/.claude.json の他のキーは出力しない。
+// settings.json の env の値、MCP の引数・URL に含まれるトークンも伏せて出す（比較は伏せる前の値で行う）。
 
 'use strict';
 
@@ -22,6 +23,12 @@ const SCOPES = ['managed', 'local', 'project', 'user'];
 const MERGED_KEYS = new Set(['permissions', 'hooks']);
 // オブジェクトのキー単位で上書きされるもの
 const PER_KEY_OBJECTS = new Set(['env', 'enabledPlugins', 'extraKnownMarketplaces']);
+
+const REDACTED = '<redacted>';
+// 値そのものが秘匿情報になりうる設定キー
+const SECRET_KEYS = new Set(['apiKeyHelper', 'awsAuthRefresh', 'awsCredentialExport', 'otelHeadersHelper']);
+// 直後（または = の後）の値を伏せる引数名
+const SECRET_ARG = /(token|key|secret|password|passwd|auth|credential)/i;
 
 function parseArgs(argv) {
   const opts = {};
@@ -316,12 +323,25 @@ function collectMemoryFiles(ctx) {
   candidates.push(
     ...listMarkdown(path.join(ctx.project, '.claude', 'rules')).map((file) => ({ scope: 'project-rule', file })),
   );
+  // プロジェクトがホーム配下だと、遡った先のホームで ~/.claude/CLAUDE.md を再び拾う。先に登録したスコープを残す
+  const seen = new Set();
   return candidates
+    .filter((c) => {
+      const key = normalizePath(c.file);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .filter((c) => fs.existsSync(c.file))
     .map((c) => ({ ...c, bytes: fs.statSync(c.file).size }));
 }
 
 // ---- 検出 ----
+
+function redactSetting(key, entry) {
+  const secret = key.startsWith('env.') || SECRET_KEYS.has(key);
+  return secret ? { scope: entry.scope, value: REDACTED } : entry;
+}
 
 function checkScalarOverrides(settings, findings) {
   const values = {}; // key -> [{scope, value}]
@@ -354,8 +374,8 @@ function checkScalarOverrides(settings, findings) {
         severity: 'warn',
         key,
         message: `${key} は ${winner.scope} の値が使われ、${differing.map((d) => d.scope).join('・')} の値は効いていない`,
-        effective: winner,
-        shadowed: differing,
+        effective: redactSetting(key, winner),
+        shadowed: differing.map((d) => redactSetting(key, d)),
       });
     } else {
       findings.push({
@@ -363,7 +383,7 @@ function checkScalarOverrides(settings, findings) {
         severity: 'info',
         key,
         message: `${key} は ${list.map((l) => l.scope).join('・')} に同じ値で重複している`,
-        effective: winner,
+        effective: redactSetting(key, winner),
       });
     }
   }
@@ -478,6 +498,36 @@ function checkHooks(settings, pluginHooks, findings) {
   }
 }
 
+// URL は認証情報・クエリ文字列を落とす。解釈できない文字列はそのまま返す
+function redactUrl(value) {
+  if (typeof value !== 'string' || !/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    // URL オブジェクトに戻すと < > が符号化されるので、文字列で組み立てる
+    const auth = url.username || url.password ? `${REDACTED}@` : '';
+    const query = url.search ? `?${REDACTED}` : '';
+    return `${url.protocol}//${auth}${url.host}${url.pathname}${query}`;
+  } catch {
+    return value;
+  }
+}
+
+function redactArgs(args) {
+  if (!Array.isArray(args)) return args;
+  return args.map((arg, i) => {
+    if (typeof arg !== 'string') return arg;
+    const eq = /^(--?[^=]+)=(.*)$/.exec(arg);
+    if (eq && SECRET_ARG.test(eq[1])) return `${eq[1]}=${REDACTED}`;
+    const prev = args[i - 1];
+    if (typeof prev === 'string' && /^--?[^=]+$/.test(prev) && SECRET_ARG.test(prev) && !arg.startsWith('-')) return REDACTED;
+    return redactUrl(arg);
+  });
+}
+
+function redactServer(s) {
+  return { ...s, command: redactUrl(s.command), args: redactArgs(s.args) };
+}
+
 function checkMcp(servers, findings) {
   const byName = {};
   for (const s of servers) (byName[s.name] = byName[s.name] || []).push(s);
@@ -491,7 +541,7 @@ function checkMcp(servers, findings) {
         ? `MCP サーバー ${name} が ${list.map((s) => s.source).join('・')} に同じ起動方法で重複定義されている`
         : `MCP サーバー ${name} が ${list.map((s) => s.source).join('・')} に異なる起動方法で定義されている`,
       name,
-      definitions: list,
+      definitions: list.map(redactServer),
     });
   }
 }
@@ -516,6 +566,16 @@ function checkSkills(skills, findings) {
         category: 'skill-collision',
         severity: 'info',
         message: `/${name}（${bare[0].source}）と同名のスキルがプラグインにある（${namespaced
+          .map((s) => `/${s.namespace}:${name}`)
+          .join('・')}）。呼び出し名は区別されるが、モデルの自動選択では取り違えうる`,
+        name,
+        definitions: list,
+      });
+    } else if (new Set(namespaced.map((s) => s.namespace)).size > 1) {
+      findings.push({
+        category: 'skill-collision',
+        severity: 'info',
+        message: `同名のスキルが複数のプラグインにある（${namespaced
           .map((s) => `/${s.namespace}:${name}`)
           .join('・')}）。呼び出し名は区別されるが、モデルの自動選択では取り違えうる`,
         name,

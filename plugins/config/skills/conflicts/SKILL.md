@@ -29,7 +29,7 @@ Claude Code の設定はスコープ（managed / local / project / user）ごと
 | `permission-duplicate` | 同じルールが複数スコープに重複している | スクリプト |
 | `hook-duplicate` | 同じイベント・matcher・コマンドのフックが複数箇所にある（設定ファイル間の重複は 1 回にまとめられるが、プラグイン側の重複は別に実行される） | スクリプト |
 | `mcp-duplicate` | 同名の MCP サーバーが複数箇所（`~/.claude.json`・`.mcp.json`・プラグイン）で定義されている | スクリプト |
-| `skill-collision` | 同名のスキル・コマンドがユーザーとプロジェクト（またはプラグイン）にある | スクリプト |
+| `skill-collision` | 同名のスキル・コマンドがユーザーとプロジェクト（またはプラグイン）にある、または複数のプラグインにある | スクリプト |
 | `memory-conflict` | `CLAUDE.md`・`rules/*.md` の指示同士が矛盾している、または設定と食い違っている | Claude が読んで判定 |
 
 ## 手順
@@ -53,6 +53,8 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/conflicts/scripts/conflicts.js"
 | `memoryFiles` | 読み込まれる `CLAUDE.md`・`rules/*.md` の一覧 |
 | `unchecked` | 照合できなかったもの（MCP バンドル `.mcpb` など、展開しないと中身が読めないもの） |
 | `errors` | JSON として読めなかったファイルなど |
+
+`env` の値・`apiKeyHelper` 等の値、MCP サーバーの引数のうちトークンらしいもの（`--token` 等の直後の値）と URL の認証情報・クエリ文字列は、`<redacted>` に伏せて出力される。値が違うかどうかの判定は伏せる前の値で行っている。
 
 プラグインのスキル・コマンド・フック・MCP サーバーは、既定の場所（`skills/`・`commands/`・`hooks/hooks.json`・`.mcp.json`）に加えて、マニフェスト（`.claude-plugin/plugin.json`）でパスを指定したものも読む。
 
@@ -100,7 +102,7 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/conflicts/scripts/conflicts.js"
 
 （観点ごとに、検出が無かったものを照合した件数とともに 1 行で列挙する）
 
-- skill-collision：ユーザー 0 件・プロジェクト 1 件・プラグイン 33 件（aidd 8・mattpocock-skills 25）を照合し、重なりなし
+- mcp-duplicate：ユーザー 3 件・プロジェクト 1 件・プラグイン 2 件を照合し、重なりなし
 
 ### 照合できなかったもの
 
@@ -115,6 +117,6 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/conflicts/scripts/conflicts.js"
 
 - 設定ファイル・`CLAUDE.md`・rules を書き換えない（修正はユーザーが判断して行う）
 - `~/.claude.json` を直接 Read しない。認証情報などが含まれるため、MCP の定義はスクリプトの出力（起動方法だけを抜き出したもの）から読む
-- MCP サーバーの `env`・`headers` の値をレポートに書かない
+- MCP サーバーの `env`・`headers` の値をレポートに書かない。裏取りで設定ファイルを Read した場合も、`<redacted>` に伏せられた値をレポートに書き戻さない
 
 $ARGUMENTS
