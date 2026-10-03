@@ -111,11 +111,11 @@ argument-hint: "[statusline だけ / language だけ（省略時は両方）]"
 
 承認を得た項目だけを実行する。「同一」と「据え置き」の項目には触らない。
 
-1. スクリプトを配置する（`statusLine` を設定・置き換え・更新する場合のみ）。既存の `statusline.js` を置き換える場合は、先に `.bak` として残す
+1. スクリプトを配置する（`statusLine` を設定・置き換え・更新する場合のみ）。既存の `statusline.js` を置き換える場合は、先に日時付きの `.bak` として残す（再実行で前回のバックアップを上書きしないため）
 
     ```bash
     mkdir -p ~/.claude/statusline
-    [ -f ~/.claude/statusline/statusline.js ] && cp ~/.claude/statusline/statusline.js ~/.claude/statusline/statusline.js.bak
+    [ -f ~/.claude/statusline/statusline.js ] && cp ~/.claude/statusline/statusline.js ~/.claude/statusline/statusline.js.$(date +%Y%m%d%H%M%S).bak
     cp "${CLAUDE_PLUGIN_ROOT}/skills/setup-global/scripts/statusline.js" ~/.claude/statusline/statusline.js
     ```
 
