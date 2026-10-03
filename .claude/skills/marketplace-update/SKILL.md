@@ -8,7 +8,7 @@ argument-hint: "[重点的に見たい範囲（任意）]"
 
 # マーケットプレイス更新チェック
 
-このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/aidd/` 配下と、`plugins/aidd/skills/init-repo/files/` が配る `.claude/settings.json`。
+このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`）と、`plugins/aidd/skills/init-repo/files/` が配る `.claude/settings.json`。
 
 ## なぜ必要か
 
@@ -51,7 +51,7 @@ WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直�
 
 ### 5. 機械チェックが見ない箇所を確認する
 
-- `plugins/aidd/.claude-plugin/plugin.json` の `description` が、現在の収録スキルと合っているか
+- 各プラグインの `.claude-plugin/plugin.json` の `description` と、`marketplace.json` の `description` が、現在の収録スキルと合っているか
 - ルート `README.md` の収録プラグイン表と案内文が実態と合っているか
 - `init-repo` の README の「除外したもの」「前提と制約」が、テンプレートの現状と合っているか
 - テンプレート（`files/`）に、導入先で書き換える箇所として `TODO:` が残っているか（プロジェクト固有の値を埋め込んでいないか）
