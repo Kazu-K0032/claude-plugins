@@ -143,7 +143,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/scripts/install.sh" --apply --only 
 
 ### 4. 衝突したファイルを片付ける
 
-`DIFF` は 1 件ずつ差分を見せ、ユーザーに「上書き / 手でマージ / 据え置き」を選ばせる。`既存は置き換えない` の指定があるときはこの手順を飛ばし、`DIFF` をすべて据え置く（`.gitignore` の不足行の追記だけは提案してよい）。
+`DIFF` は 1 件ずつ差分を見せ、ユーザーに「上書き / 手でマージ / 据え置き」を選ばせる。`既存は置き換えない` の指定があるときはこの手順を飛ばし、`DIFF` をすべて据え置く（`.gitignore` の不足行の追記だけは提案する）。
 
 ```bash
 diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/<同じ相対パス>"
