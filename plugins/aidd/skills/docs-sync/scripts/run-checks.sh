@@ -211,6 +211,9 @@ if [[ -z "$SSOT_FILE" ]]; then
 else
   echo "$SSOT_FILE の SSOT 一覧テーブルが指すパスが実在するか検査する。"
   echo "SSOT 表のパスはインラインコードで書かれ ](path) リンクに出ないため、リンク切れチェックでは拾えない。"
+  echo "パスでない値（/<plugin>:<skill> 形式のスラッシュコマンド・URL）は検査しない。"
+  # プラグインのスラッシュコマンド（/<plugin>:<skill>）。[[ =~ ]] の右辺はクォートすると文字列一致になるため変数に置く。
+  SLASH_COMMAND_PATTERN='^/[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+$'
   # 「… | 唯一の情報源 |」ヘッダ以降のテーブル行から、各行末尾のインラインコード（＝唯一の情報源列）を取り出す。
   perl -ne '
     if (/\|\s*(?:唯一の情報源|SSOT)\s*\|/) { $in = 1; next; }
@@ -221,6 +224,12 @@ else
       print "$c[-1]\n" if @c;
     }
   ' "$SSOT_FILE" | while read -r p; do
+    # パスでない値は実在を確かめられないため飛ばす。URL の扱いは check_links に揃える。
+    case "$p" in
+      http://*|https://*|mailto:*) continue ;;
+    esac
+    # 名前空間の無い /xxx はリポジトリ直下からのパスと区別できないため、パスとして検査する。
+    [[ "$p" =~ $SLASH_COMMAND_PATTERN ]] && continue
     path="${p%%#*}"
     [[ -z "$path" ]] && continue
     if [[ "$path" = /* ]]; then resolved="$ROOT$path"; else resolved="$ROOT/$path"; fi
