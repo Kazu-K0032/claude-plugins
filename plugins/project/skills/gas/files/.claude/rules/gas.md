@@ -31,7 +31,7 @@ docs-type: people-ai-doc
 | `trigger.js` | トリガーの登録・削除、トリガーから呼ばれる入口関数 | 処理の本体（入口は機能ファイルの関数を呼ぶ 1〜3 行だけにする） |
 | `main.js` | 中心となる業務フローの入口（処理の流れだけ） | 細かい処理 |
 
-- `trigger.js` は「いつ何が動くか」の一覧として読めるようにする。入口の名前（トリガーに登録した名前）は `trigger.js` 側に置き、機能ファイル側の本体は別の名前（末尾 `_`）にする
+- `trigger.js` は「いつ何が動くか」の一覧として読めるようにする。入口の名前（トリガーに登録した名前）は `trigger.js` 側に置き、機能ファイル側の本体は入口と同じ名前の末尾に `_` を付けた名前にする（「入口と本体の名前」を参照）
 - `main.js` は、プロジェクトに中心となる業務フローが 1 つある場合だけ使う。独立した機能が並ぶプロジェクトでは使わない
 
 ### ファイルを増やす・分けるとき
@@ -59,6 +59,15 @@ docs-type: people-ai-doc
 
 末尾が `_` の関数は private として扱われ、`google.script.run` から呼べず、名前もクライアントへ送られない。Ref: [HTML Service: Communicate with Server Functions](https://developers.google.com/apps-script/guides/html/communication)
 
+末尾が `_` の関数は、エディタの「実行する関数」のプルダウンにも表示されず、エディタから選んで実行できない。手動で実行したい処理（動作確認・初期化など）は、本体を `_` 付きのままにして、`_` なしの入口（`trigger.js` の入口・初期化用の関数）から呼ぶ。Ref: [Google Apps Script: Hiding Helper Functions](http://googleappsscript.blogspot.com/2010/06/hiding-helper-functions.html)
+
+### 入口と本体の名前
+
+- `trigger.js` の入口から呼ぶ機能ファイルの本体は、入口と同じ名前の末尾に `_` を付ける（例：入口 `checkRSSFeeds` → 本体 `checkRSSFeeds_`）。名前から入口と本体の対応が分かるようにするため
+- `main.js` の `main` は機能ファイルの本体ではなく、中心となる業務フローの入口のため、`_` を付けずに入口から呼ぶ（テンプレートの `onDailySchedule` → `main`）
+- 手順書・README に関数名を書くときは、入口（`_` なし）の名前を、置いてあるファイル（`trigger.js` など）と一緒に書く。本体の名前を書くと、手動で実行するときにプルダウンで見つからず、どの関数を選べばよいか迷うため
+- 定期実行をやめて手動実行だけにする関数は、`trigger.js` の入口と `TRIGGERS` の項目を消し、機能ファイルの本体から `_` を外して置く。外した後は `setupTriggers` を実行し直し、登録済みのトリガーを消す
+
 ## GAS 特有の注意点
 
 ### 全ファイルが同じグローバル空間を共有する
@@ -81,7 +90,10 @@ API キー・Webhook URL・トークンはコードに書かず、スクリプ�
 
 ### トリガーは登録用の関数から作る
 
-- トリガーは `trigger.js` の `setupTriggers` で登録する。何度実行しても重複しないよう、登録前に同じ関数のトリガーを消す
+- トリガーは `trigger.js` の `setupTriggers` で登録する。登録するトリガーは `trigger.js` の 1 つの一覧（`TRIGGERS`）にまとめ、`setupTriggers` は今あるトリガーをすべて消してから一覧の分だけ作り直す。何度実行しても重複せず、一覧から外したトリガーも消えるため、廃止したトリガーを消すための仕組みを別に持たなくてよい
+- トリガーを足す・やめるときは、`TRIGGERS` と入口の関数を直して push した後、`setupTriggers` を実行し直す
+- `setupTriggers` で消えるのは、実行した人がこのプロジェクトで作ったインストール型トリガーだけ。ほかの人が作ったトリガーと、シンプルトリガー（`onOpen`・`onEdit`）は消えない。Ref: [Class ScriptApp](https://developers.google.com/apps-script/reference/script/script-app#getProjectTriggers())
+- エディタの「トリガー」画面で手作業でトリガーを作らない。`setupTriggers` を実行すると消える
 - 処理の中でトリガーを毎回作らない。1 つのスクリプトで 1 ユーザーが持てるトリガーは 20 個まで
 
 ## clasp の運用

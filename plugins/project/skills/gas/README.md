@@ -36,7 +36,7 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 | `files/src/constants.js` | 複数の機能が使う定数とスクリプトプロパティのキー名 | `TODO:` を埋める |
 | `files/src/main.js` | 中心となる業務フローの入口（`main`） | 業務フローの手順を書く。独立した機能が並ぶプロジェクトでは消し、`trigger.js` の `onDailySchedule` の呼び出し先も直す |
 | `files/src/utils.js` | 複数の機能が使う関数（日時の整形・スクリプトプロパティの取得） | そのまま使える |
-| `files/src/trigger.js` | トリガーの登録（`setupTriggers`）・削除（`deleteTriggers`）と、毎日決まった時刻に呼ばれる入口（`onDailySchedule`） | 実行間隔を変える。定期実行を使わないなら消す |
+| `files/src/trigger.js` | 登録するトリガーの一覧（`TRIGGERS`）、今あるトリガーをすべて消して一覧の分だけ作り直す登録（`setupTriggers`）・すべての削除（`deleteTriggers`）と、毎日決まった時刻に呼ばれる入口（`onDailySchedule`） | 一覧と入口を直して、動かす時刻・間隔を変える。定期実行を使わないなら消す |
 | `files/src/appsscript.json` | マニフェスト（タイムゾーン `Asia/Tokyo`・V8 ランタイム） | 使うサービス・権限に応じて追記する |
 | `files/.clasp.json` | clasp の設定（`rootDir` を `src` にする） | `scriptId` を書き込む |
 | `files/.claude/rules/gas.md` | ファイルの書き分け（使う範囲で置き場所を決める）・関数の命名・GAS 特有の注意点・clasp の運用 | そのまま使える |
@@ -47,6 +47,7 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 - `.clasp.json` はコミットする前提にしている。`scriptId` は秘匿値ではなく、clone してすぐ push できるようにするため。開発用と本番用で `scriptId` を切り替える運用の場合は、`.gitignore` に入れて手元で管理する
 - `.clasprc.json`（`clasp login --creds` で作業ディレクトリに保存される認証情報）は `.gitignore` に入れる。Skill が追記を提案する
 - 秘匿値はスクリプトプロパティに置く前提にしている。`constants.js` にはキー名だけを書く
+- トリガーは `trigger.js` の一覧（`TRIGGERS`）だけで管理する前提にしている。`setupTriggers` は今あるトリガーをすべて消してから作り直すため、エディタの「トリガー」画面で手作業で作ったトリガーは消える。既存のプロジェクトに入れる場合は、Skill が手作業のトリガーを一覧へ書き移す案を出す
 - 既存の Apps Script プロジェクトに使う場合は、手元のコードをスクリプトエディタ側と揃えてから実行する。エディタで直接直した内容が手元に無いまま構成を変えて push すると、エディタ側の変更が消えるため。分からなければ先に `clasp pull` で取り込む（Skill は clasp を実行しない）
 
 ## 除外したもの
