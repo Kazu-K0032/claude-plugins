@@ -7,6 +7,8 @@
 #   - docs-type フロントマター（.claude/ 配下の独自メタデータ規約）
 #   - SSOT 一覧テーブルのポインタ存在
 # 使っていない規約で FAIL を出さないための措置。
+#
+# リンク検査（変更 md・全走査）は、リポジトリ直下の .docs-sync-link-ignore に当たるファイルを対象から外す。
 
 set -uo pipefail
 
@@ -58,7 +60,7 @@ mapfile -t ALL_CHANGED < <(git diff --name-only "$MERGE_BASE")
 
 MD_CHANGED=()      # 変更された md 全部（一覧表示用）
 CODE_CHANGED=()    # 変更された非 md（docs 追従判定の入力）
-DOC_MD=()          # 散文 md（リンク・markdown 規約の対象）
+DOC_MD=()          # 散文 md（markdown 規約の対象。リンクの対象は除外指定を除いた DOC_MD_LINK）
 META_MD=()         # .claude/rules/*.md・.claude/skills/*/SKILL.md（docs-type の対象）
 for f in "${ALL_CHANGED[@]}"; do
   [[ -z "$f" ]] && continue
@@ -85,6 +87,28 @@ touch "$TMP/links.txt" "$TMP/md.txt" "$TMP/doctype.txt" "$TMP/links_all.txt" "$T
 # 全走査用: 差分に関係なく全散文 md を列挙する。
 # 既存ファイルの壊れリンク・壊れ SSOT ポインタは差分に現れないため、ここだけはリポジトリ全体を対象にする。
 mapfile -t ALL_DOC_MD < <(git ls-files | grep -E '\.md$' | grep -E "$DOC_PATTERN" | grep -vE "$EXCLUDE_PATTERN")
+
+# リンク検査だけから外すファイル。リポジトリ直下の .docs-sync-link-ignore（書式は .gitignore と同じ）で指定する。
+# 導入先のリポジトリを基準にリンクを書いたテンプレートなど、そのリポジトリの中では解決できないファイルのため。
+# markdown 規約からは外さない（テンプレートの書式の崩れは、導入先へそのまま配られるため）。
+LINK_IGNORE_FILE=".docs-sync-link-ignore"
+declare -A LINK_IGNORED=()
+if [[ -f "$LINK_IGNORE_FILE" ]]; then
+  while IFS= read -r f; do
+    [[ -n "$f" ]] && LINK_IGNORED["$f"]=1
+  done < <(git ls-files --cached --ignored --exclude-from="$LINK_IGNORE_FILE")
+fi
+
+# 引数のうち、リンク検査から外すファイルに当たらないものを 1 行ずつ出力する
+link_targets() {
+  for f in "$@"; do
+    [[ -n "${LINK_IGNORED[$f]:-}" ]] || printf '%s\n' "$f"
+  done
+}
+mapfile -t DOC_MD_LINK < <(link_targets "${DOC_MD[@]}")
+mapfile -t ALL_DOC_MD_LINK < <(link_targets "${ALL_DOC_MD[@]}")
+DOC_LINK_SKIPPED=$(( ${#DOC_MD[@]} - ${#DOC_MD_LINK[@]} ))
+ALL_LINK_SKIPPED=$(( ${#ALL_DOC_MD[@]} - ${#ALL_DOC_MD_LINK[@]} ))
 
 # --- 規約の使用有無を検出 ---------------------------------------------------
 # docs-type: .claude/ 配下のファイルが実際にこのフィールドを使っているかを見る。
@@ -148,7 +172,10 @@ if [[ ${#CODE_CHANGED[@]} -gt 0 ]]; then printf -- '- %s\n' "${CODE_CHANGED[@]}"
 # 1. 相対リンク切れ（変更された散文 md のみ）
 echo
 echo "## 相対リンク切れ"
-if [[ ${#DOC_MD[@]} -gt 0 ]]; then check_links "$TMP/links.txt" "${DOC_MD[@]}"; fi
+if [[ $DOC_LINK_SKIPPED -gt 0 ]]; then
+  echo "変更された散文 md のうち ${DOC_LINK_SKIPPED} 件を $LINK_IGNORE_FILE の指定で対象から外した。"
+fi
+if [[ ${#DOC_MD_LINK[@]} -gt 0 ]]; then check_links "$TMP/links.txt" "${DOC_MD_LINK[@]}"; fi
 if [[ -s "$TMP/links.txt" ]]; then cat "$TMP/links.txt"; else echo "PASS"; fi
 
 # 2. markdown 規約（散文 md のみ・コードブロック内除外）
@@ -199,8 +226,11 @@ fi
 # 4. 全 docs リンク切れ（全走査・差分非依存）
 echo
 echo "## 全 docs リンク切れ（全走査）"
-echo "差分に含まれない既存ファイルの壊れリンクも検出する。対象は全散文 md（${#ALL_DOC_MD[@]} 件）。"
-if [[ ${#ALL_DOC_MD[@]} -gt 0 ]]; then check_links "$TMP/links_all.txt" "${ALL_DOC_MD[@]}"; fi
+echo "差分に含まれない既存ファイルの壊れリンクも検出する。対象は全散文 md（${#ALL_DOC_MD_LINK[@]} 件）。"
+if [[ $ALL_LINK_SKIPPED -gt 0 ]]; then
+  echo "ほかに ${ALL_LINK_SKIPPED} 件を $LINK_IGNORE_FILE の指定で対象から外した。"
+fi
+if [[ ${#ALL_DOC_MD_LINK[@]} -gt 0 ]]; then check_links "$TMP/links_all.txt" "${ALL_DOC_MD_LINK[@]}"; fi
 if [[ -s "$TMP/links_all.txt" ]]; then cat "$TMP/links_all.txt"; else echo "PASS"; fi
 
 # 5. SSOT 一覧ポインタ存在（全走査・差分非依存）

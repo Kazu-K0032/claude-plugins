@@ -20,6 +20,7 @@
 
 - PASS | FAIL
   - `<file>:<line>` → `<target>`
+- 除外したファイル: <`.docs-sync-link-ignore` の指定で外した件数。外していなければこの行を書かない>
 
 ### markdown 規約
 
@@ -35,6 +36,7 @@
 
 - PASS | FAIL
   - `<file>:<line>` → `<target>`
+- 除外したファイル: <`.docs-sync-link-ignore` の指定で外した件数。外していなければこの行を書かない>
 
 ### SSOT 一覧ポインタ存在（全走査）
 

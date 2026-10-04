@@ -54,6 +54,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
 - 「## 変更された md」「## 変更された非 md（docs 追従判断の入力）」のファイル一覧
 - 変更 md に対する「相対リンク切れ」「markdown 規約」「docs-type フロントマター」の PASS/FAIL
 - 全走査（差分非依存）の「全 docs リンク切れ」「SSOT 一覧ポインタ存在」の PASS/FAIL
+- リンク検査から外したファイルの件数（外したときだけ。指定のしかたは `docdd-design.md` の「リンク検査から外すファイル」）
 - 「## サマリ」配下に各カテゴリの FAIL 件数
 
 終了コードは、機械チェック FAIL があれば `1`、基準ブランチでの停止なら `3`、すべて PASS なら `0`。
