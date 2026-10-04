@@ -10,7 +10,7 @@
     {
       "name": "aidd",
       "source": "./plugins/aidd",
-      "description": "AIDD × DocDD の定型作業（ADR・ナレッジ・コミット・PR 準備・技術調査）を Skill 化したツールキット",
+      "description": "AIDD × DocDD の定型作業（ADR・Issue 着手の準備・コミット・PR 準備・技術調査・ドキュメント追従チェック・利用分析レポート）を Skill 化したツールキット",
       "category": "productivity"
     },
     {
