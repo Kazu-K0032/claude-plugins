@@ -20,6 +20,8 @@
 
 config を入れると、セッションの開始時にフック（`hooks/hooks.json`）が短い文面を Claude の文脈に入れる。これにより、プラグインの不具合や改善案が分かったとき、Claude が作業の区切りで「Issue にしますか？」と 1 行で尋ねるようになる。スキルの結果にユーザーが違和感を示したとき（「何か違くない？」など）も、原因がスキル側にあるか、同じずれが繰り返していれば尋ねる。起票するのは、同意して `/config:plugin-feedback` の下書きを承認したときだけ。
 
+config を入れて最初のセッションだけ、報告の窓口（`/config:plugin-feedback` とこのリポジトリへのリンク）をユーザーにも画面で知らせる。表示済みの印は、プラグインのデータ用フォルダ（`~/.claude/plugins/data/` 配下。プラグインの更新後も残り、アンインストールで消える）に置く。
+
 提案が要らない場合は、環境変数 `CLAUDE_PLUGIN_FEEDBACK=off` を設定する（`~/.claude/settings.json` の `env` に入れればよい）。フックは Node.js で動く。Node.js が無い環境では何もせずに終わり、提案が出ないだけになる。
 
 作者（Kazu-K0032）以外が起票する場合の違いは次のとおり。
@@ -43,7 +45,7 @@ config/
 │   └── plugin.json          # プラグインのマニフェスト
 ├── hooks/
 │   ├── hooks.json           # SessionStart で plugin-feedback.js を実行する（Node.js が無ければ何もしない）
-│   ├── plugin-feedback.js   # 起票の提案の文面を出す（CLAUDE_PLUGIN_FEEDBACK=off なら出さない）
+│   ├── plugin-feedback.js   # 起票の提案の文面と、初回だけのお知らせを出す（CLAUDE_PLUGIN_FEEDBACK=off なら出さない）
 │   └── plugin-feedback.md   # 起票の提案の文面
 └── skills/
     ├── setup-global/
