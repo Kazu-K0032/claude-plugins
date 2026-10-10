@@ -321,7 +321,7 @@ def check_versions(repo, market, base):
     for path in sorted(glob.glob(os.path.join(repo, "plugins", "*", ".claude-plugin", "plugin.json"))):
         rel = os.path.relpath(path, repo).replace(os.sep, "/")
         version = json.loads(read(path)).get("version")
-        if version is None or not SEMVER.match(version):
+        if not isinstance(version, str) or not SEMVER.match(version):
             add("NG", "version", "%s の version が X.Y.Z の形ではない（%s）" % (rel, version))
             continue
         versions[rel] = version
@@ -342,7 +342,8 @@ def check_versions(repo, market, base):
     for rel in versions:
         shown = git(repo, "show", "%s:%s" % (base, rel))
         if shown.returncode == 0:
-            m = SEMVER.match(json.loads(shown.stdout).get("version") or "")
+            version = json.loads(shown.stdout).get("version")
+            m = SEMVER.match(version) if isinstance(version, str) else None
             if m:
                 base_versions.append(tuple(int(n) for n in m.groups()))
     before = max(base_versions, default=(0, 0, 0))
