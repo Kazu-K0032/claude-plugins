@@ -2,7 +2,7 @@
 name: plugin-feedback
 description: kazu マーケットプレイスのプラグイン（aidd・config・project）の不具合・改善案を、既存の Issue と照らし合わせて下書きし、承認後に（ユーザーが承認を省くよう求めた場合は省いて）Kazu-K0032/claude-plugins へ Issue として作成する（関連する Issue があればコメントで追記する）。ユーザーが起票に同意した時、または起票を頼まれた時に使用する
 disable-model-invocation: false
-allowed-tools: Read, AskUserQuestion, Bash(gh auth status:*), Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh label list:*), Bash(gh repo view:*), Bash(git rev-parse:*), Bash(printenv CLAUDE_PLUGIN_FEEDBACK_APPROVAL)
+allowed-tools: Read, AskUserQuestion, Bash(gh auth status:*), Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh label list:*), Bash(gh repo view:*), Bash(git rev-parse:*), Bash(printenv CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL)
 argument-hint: "[起票したい内容（任意。省略時はこのセッションの内容から候補を挙げる。例: gas スキルのトリガー登録で迷った）]"
 ---
 
@@ -45,7 +45,38 @@ gh auth status
 | `gh` が無い（`command not found` 等） | [GitHub CLI](https://cli.github.com/) のインストールと `gh auth login` を案内する。今すぐ起票したい場合は「`gh` で書き込めない場合」に進む |
 | ログインしていない | `gh auth login` を案内する。今すぐ起票したい場合は同上 |
 | `Token:` が `github_pat_` で始まり、アカウントが `Kazu-K0032` 以外 | fine-grained トークンは、メンバーでない公開リポジトリに書き込めない。`gh auth login`（ブラウザでのログイン）か classic トークンへの切り替えを案内する。切り替えない場合は「`gh` で書き込めない場合」に進む |
-| それ以外 | 手順 2 へ進む |
+| それ以外 | 下の「承認の設定」へ進む |
+
+#### 承認の設定
+
+下書きの承認（手順 7）を省くかは、環境変数 `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` で切り替える。値が `true` のときだけ省き、それ以外（`off`・未設定など）は承認を取る。実行のたびに次の順で値を確かめ、今の値と変え方をユーザーに伝えてから手順 2 へ進む。
+
+1. 作業ディレクトリ（Claude Code を起動したディレクトリ）の `.claude/settings.local.json` を `Read` し、`env` に `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` があるかを見る。セッションの途中で書き換えた値も拾えるよう、環境変数より先にファイルを見る
+1. ファイルに無ければ、ほかの場所（`~/.claude/settings.json`・起動したシェルなど）で設定されていないかを確かめる
+
+    ```bash
+    printenv CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL
+    ```
+
+1. 次の表で使う値を決める
+
+    | 状態 | 使う値 | 伝えるときの設定場所 |
+    | --- | --- | --- |
+    | `settings.local.json` にある | ファイルの値 | `.claude/settings.local.json` |
+    | ファイルに無く、`printenv` が値を返す | 環境変数の値。`settings.local.json` には書き込まない | 環境変数（`~/.claude/settings.json` など） |
+    | どちらにも無い（初めての実行） | `off`。`settings.local.json` の `env` に `"CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL": "off"` を書き込む | `.claude/settings.local.json` |
+
+1. 次の形でユーザーに伝える
+    - `true` 以外のとき：「<設定場所> で `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` が `<値>` になっているので、下書きの承認を取ってから起票します。承認が要らなければ `true` に変えてください」
+    - `true` のとき：「<設定場所> で `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` が `true` になっているので、下書きの承認を取らずに起票します。承認を取りたい場合は `off` に戻してください」
+    - 初めての実行で書き込んだときは、頭に「初めての実行なので、`.claude/settings.local.json` に `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` を `off` で書き込みました。」を付ける
+
+`settings.local.json` への書き込みは、次のとおりに行う。
+
+- 書き込むのは初めての実行のときだけ。ファイルが無ければ作り、あれば `env` にこのキーだけを足す。ほかのキーと書式は変えない
+- ファイルに無くても `printenv` が値を返すときは書き込まない。`settings.local.json` はほかの場所の設定より優先されるため、書き込むと `~/.claude/settings.json` などの設定を上書きしてしまう
+- `settings.local.json` が JSON として読めないときは書き込まず、値を `off` として扱い、読めなかったことを伝える
+- 書き込みを断られた・止められた（許可プロンプトで断られた・deny やフックで止められた）ときは、値を `off` として扱い、書き込めなかったことを伝えて続ける
 
 ### 2. 起票する件を決める
 
@@ -116,15 +147,11 @@ gh repo view --json nameWithOwner,isPrivate
     - `ADMIN`・`MAINTAIN`・`WRITE` なら、付けるラベルが実在することを `gh label list --repo Kazu-K0032/claude-plugins` で確かめる
     - それ以外（`TRIAGE`・`READ` 等）なら、ラベルは付けずに作者に任せる。書き込み権限が無いと、指定したラベルはエラーにならずに捨てられるため
 
-1. 承認を省くかを決める。環境変数を確かめる
-
-    ```bash
-    printenv CLAUDE_PLUGIN_FEEDBACK_APPROVAL
-    ```
+1. 承認を省くかを決める
 
     | 条件 | 扱い |
     | --- | --- |
-    | 出力が `off` | 承認を省いて手順 8 へ進む |
+    | 手順 1 の「承認の設定」で決めた値が `true` | 承認を省いて手順 8 へ進む |
     | ユーザーが承認を省くよう指示している（「下書きはいらない、そのまま起票して」など。会話・CLAUDE.md・記憶のどこにある指示でもよい） | 同上 |
     | それ以外（スキルを直接呼んだだけの場合を含む） | 承認を取る |
 
@@ -161,7 +188,7 @@ __ISSUE_BODY__
 
 - 作成した Issue・コメントの URL
 - ラベルを付けなかった場合は、その理由（書き込み権限が無いため、作者が付ける）
-- 承認を省いた場合は、その理由（`CLAUDE_PLUGIN_FEEDBACK_APPROVAL=off`・どこにあったどんな指示か）と、手順 6 で消した・言い換えた箇所
+- 承認を省いた場合は、その理由（`CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL=true` とその設定場所・どこにあったどんな指示か）と、手順 6 で消した・言い換えた箇所
 - 起票しなかった候補と、その理由（断られた・既存の Issue と同じ件だった等）
 
 ## `gh` で書き込めない場合
@@ -176,6 +203,7 @@ __ISSUE_BODY__
 
 - 承認を取る前に `gh issue create` / `gh issue comment` を実行しない（手順 7 で承認を省くと決めた場合を除く）
 - スキルを呼ばれたことだけを理由に、承認を省かない
+- 初めての実行のとき以外に、`settings.local.json` へ書き込まない。書き込むときも、ほかのキーを変えない
 - `--repo Kazu-K0032/claude-plugins` を省かない。利用先や他のリポジトリに起票しない
 - 既存の Issue の本文の編集・クローズ・ラベルの変更をしない（追記はコメントだけ）
 - 承認された本文（承認を省いた場合は、手順 5・6 で作った下書き）を書き換えて投稿しない
