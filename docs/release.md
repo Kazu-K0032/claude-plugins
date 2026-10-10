@@ -2,7 +2,7 @@
 
 プラグインの利用者に、リリースした内容だけを届けるための手順。版の上げ方・リリースの流れを決める。ブランチの役割・名前・マージの仕方は [CONTRIBUTING.md](../CONTRIBUTING.md) にある。
 
-通常のリリースは、`.github/workflows/release.yml` が release ブランチ・PR・タグ・Release を作る。人が行うのは、リリースの Issue の作成と、PR のマージだけ。マージ・push・Release の作成は人が行う（[P1](policies/p01-operation-boundary.md)）。Claude は、ブランチの作成・版の書き換え・PR の作成までを手伝う。
+通常のリリースは、`.github/workflows/release.yml` が release ブランチ・PR・タグ・Release を作る。人が行うのは、リリースの Issue の作成と、PR のマージだけ。Claude は、マージ・push・Release の作成をしない（[P1](policies/p01-operation-boundary.md)）。手伝うのは、ブランチの作成・版の書き換え・PR の作成まで。
 
 ## 版
 
@@ -26,7 +26,7 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
 
 1. `git log --oneline origin/main..origin/develop` で入る変更を見て、上の表で版を決める
 1. Issue を作り、`develop` から `issues/<Issue番号>-<説明>`（例：`issues/60-v1-1-0`）を作る。3 つの `plugin.json` の `version` を上げ、`develop` へ PR を出してマージする
-1. Issue フォームの「リリース」で、リリースの Issue を作る。`release` ラベルが付く
+1. Issue フォームの「リリース」で、リリースの Issue を作る。`release` ラベルが付く。書き込み権限のある人が作った Issue だけで動き、ほかの人の Issue では何も起きない
 1. `release.yml` が次を行う。終わると、Issue に PR の URL がコメントされる
    - `plugin-checks.yml` と同じ検査を `develop` で動かす
    - `develop` から `release/v<version>` を作る
