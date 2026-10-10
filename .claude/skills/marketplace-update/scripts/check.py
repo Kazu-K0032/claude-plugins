@@ -65,16 +65,28 @@ def split_rules(value):
 
 
 def deny_prefixes(settings_path):
-    """テンプレートの deny から Bash ルールのコマンド接頭辞を取り出す。"""
+    """テンプレートの deny の Bash ルールを、(ルール, 照合用の正規表現) の組で返す。"""
     deny = json.loads(read(settings_path))["permissions"]["deny"]
     prefixes = []
     for rule in deny:
         m = re.match(r"^Bash\((.+)\)$", rule)
         if not m:
             continue
-        pattern = m.group(1)
-        prefixes.append(re.sub(r"(:\*| \*)$", "", pattern).strip())
+        pattern = re.sub(r":\*$", " *", m.group(1))
+        # * はどの位置でも任意の文字列に当たる。末尾の「 *」だけが * のときは、引数なしのコマンドにも当たる
+        regex = "^" + re.escape(pattern).replace(r"\*", ".*") + "$"
+        if pattern.endswith(" *") and pattern.count("*") == 1:
+            regex = "^" + re.escape(pattern[:-2]) + "( .*)?$"
+        prefixes.append((pattern, re.compile(regex)))
     return prefixes
+
+
+def deny_hit(cmd, prefixes):
+    """コマンドが当たる deny のルールを返す。当たらなければ None。"""
+    for pattern, regex in prefixes:
+        if regex.match(cmd):
+            return pattern
+    return None
 
 
 def main():
@@ -144,30 +156,30 @@ def check_plugin(repo, plugin_name, plugin, prefixes):
             m = re.match(r"^Bash\((.+)\)$", rule)
             if m:
                 cmd = re.sub(r"(:\*| \*)$", "", m.group(1)).strip()
-                for pre in prefixes:
-                    if cmd == pre or cmd.startswith(pre + " "):
-                        add("NG", "deny-conflict",
-                            "%s: allowed-tools の Bash(%s) はテンプレートの deny (%s) に一致する"
-                            % (name, m.group(1), pre))
+                # 許可の範囲に入るコマンド（引数なし・引数あり）が deny に当たるかを見る
+                pre = deny_hit(cmd, prefixes) or deny_hit(cmd + " x", prefixes)
+                if pre:
+                    add("NG", "deny-conflict",
+                        "%s: allowed-tools の Bash(%s) はテンプレートの deny (%s) に一致する"
+                        % (name, m.group(1), pre))
             m = re.match(r"^Edit\((.+)\)$", rule)
             if m and not m.group(1).startswith(("tmp/", "tmp.md")):
                 add("WARN", "output-path",
                     "%s: 書き込み許可 %s が tmp 配下ではない。出力先を固定できているか確認する"
                     % (name, rule))
 
-        # 本文で実行を指示している gh / git コマンドを拾う（人が手で実行する例も含むため WARN）
+        # 本文で実行を指示している gh / git と削除のコマンドを拾う（人が手で実行する例も含むため WARN）
         for num, line in enumerate(text.splitlines(), 1):
             stripped = line.strip().lstrip("$ ").strip("`")
-            m = re.match(r"^(gh|git) [a-z][a-z-]*( [a-z][a-z-]*)?", stripped)
+            m = re.match(r"^((gh|git) [a-z][a-z-]*|(rm|rmdir|unlink|find)\b)", stripped)
             if not m:
                 continue
-            for pre in prefixes:
-                if stripped == pre or stripped.startswith(pre + " "):
-                    add("WARN", "deny-conflict",
-                        "%s:%d 本文の `%s` はテンプレートの deny (%s) に一致する。"
-                        "Claude に実行させるのか、人が実行する例示なのかを確認する"
-                        % (os.path.relpath(path, repo).replace(os.sep, "/"), num, stripped, pre))
-                    break
+            pre = deny_hit(stripped, prefixes)
+            if pre:
+                add("WARN", "deny-conflict",
+                    "%s:%d 本文の `%s` はテンプレートの deny (%s) に一致する。"
+                    "Claude に実行させるのか、人が実行する例示なのかを確認する"
+                    % (os.path.relpath(path, repo).replace(os.sep, "/"), num, stripped, pre))
 
     # 4: ${CLAUDE_PLUGIN_ROOT} の参照先が実在するか
     targets = []
