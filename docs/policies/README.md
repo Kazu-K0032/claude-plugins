@@ -26,7 +26,7 @@
 
 ## ファイルの書き方
 
-方針を足すときは、次の形で 1 方針 1 ファイルを作り、上の一覧と `.claude/rules/repo-consistency.md` の一覧に行を足す。
+方針を足すときは、次の形で 1 方針 1 ファイルを作り、上の一覧と `.claude/rules/plugin-changes.md` の一覧に行を足す。
 
 ```markdown
 # P<番号> <方針>
