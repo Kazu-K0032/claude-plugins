@@ -1,14 +1,14 @@
 ---
 name: plugin-feedback
-description: kazu マーケットプレイスのプラグイン（aidd・config・project）の不具合・改善案を、既存の Issue と照らし合わせて下書きし、承認後に Kazu-K0032/claude-plugins へ Issue として作成する（関連する Issue があればコメントで追記する）。ユーザーが起票に同意した時、または起票を頼まれた時に使用する
+description: kazu マーケットプレイスのプラグイン（aidd・config・project）の不具合・改善案を、既存の Issue と照らし合わせて下書きし、承認後に（ユーザーが承認を省くよう求めた場合は省いて）Kazu-K0032/claude-plugins へ Issue として作成する（関連する Issue があればコメントで追記する）。ユーザーが起票に同意した時、または起票を頼まれた時に使用する
 disable-model-invocation: false
-allowed-tools: Read, AskUserQuestion, Bash(gh auth status:*), Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh label list:*), Bash(gh repo view:*), Bash(git rev-parse:*)
+allowed-tools: Read, AskUserQuestion, Bash(gh auth status:*), Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh label list:*), Bash(gh repo view:*), Bash(git rev-parse:*), Bash(printenv CLAUDE_PLUGIN_FEEDBACK_APPROVAL)
 argument-hint: "[起票したい内容（任意。省略時はこのセッションの内容から候補を挙げる。例: gas スキルのトリガー登録で迷った）]"
 ---
 
 # プラグインの不具合・改善案の起票（plugin-feedback）
 
-セッション中に分かった kazu マーケットプレイスのプラグインの不具合・改善案を、`Kazu-K0032/claude-plugins` の Issue にする。既存の Issue と照らし合わせ、関連する Issue があればコメントで追記する。**GitHub への書き込みは、下書きの承認を取ってから行う**。
+セッション中に分かった kazu マーケットプレイスのプラグインの不具合・改善案を、`Kazu-K0032/claude-plugins` の Issue にする。既存の Issue と照らし合わせ、関連する Issue があればコメントで追記する。**GitHub への書き込みは、下書きの承認を取ってから行う**。承認を省くのは、ユーザーが省くよう求めたときだけ（手順 7）。
 
 | 種類 | 例 |
 | --- | --- |
@@ -17,7 +17,7 @@ argument-hint: "[起票したい内容（任意。省略時はこのセッショ
 
 対象外は 2 つ。Claude Code 本体の不具合（組み込みの `/feedback` で Anthropic へ送る）と、利用先のプロジェクト自身の不具合。
 
-起票の提案は、config の SessionStart フックが入れる文面（`${CLAUDE_PLUGIN_ROOT}/hooks/plugin-feedback.md`）に沿って行われる。このスキルは、ユーザーが同意した後の起票を受け持つ。
+起票の提案は、config の SessionStart フックが入れる文面（`${CLAUDE_PLUGIN_ROOT}/hooks/plugin-feedback.md`）に沿って行われる。このスキルは、ユーザーが同意した後の起票を受け持つ。ユーザーがこのスキルを直接呼んだときは、起票に同意したものとして扱う。ただし、呼んだことを下書きの承認（手順 7）の代わりにはしない。公開リポジトリに載る本文を、ユーザーはまだ見ていないため。
 
 ## 参照ファイル
 
@@ -116,6 +116,18 @@ gh repo view --json nameWithOwner,isPrivate
     - `ADMIN`・`MAINTAIN`・`WRITE` なら、付けるラベルが実在することを `gh label list --repo Kazu-K0032/claude-plugins` で確かめる
     - それ以外（`TRIAGE`・`READ` 等）なら、ラベルは付けずに作者に任せる。書き込み権限が無いと、指定したラベルはエラーにならずに捨てられるため
 
+1. 承認を省くかを決める。環境変数を確かめる
+
+    ```bash
+    printenv CLAUDE_PLUGIN_FEEDBACK_APPROVAL
+    ```
+
+    | 条件 | 扱い |
+    | --- | --- |
+    | 出力が `off` | 承認を省いて手順 8 へ進む |
+    | ユーザーが承認を省くよう指示している（「下書きはいらない、そのまま起票して」など。会話・CLAUDE.md・記憶のどこにある指示でもよい） | 同上 |
+    | それ以外（スキルを直接呼んだだけの場合を含む） | 承認を取る |
+
 1. 次を表示する
     - 起票先（新しい Issue か、`#<番号>` へのコメントか）と、そう判断した理由。関連する Issue があればその URL
     - タイトルとラベル（コメントなら無し。ラベルを付けられない場合は「作者が付ける」と書く）
@@ -149,6 +161,7 @@ __ISSUE_BODY__
 
 - 作成した Issue・コメントの URL
 - ラベルを付けなかった場合は、その理由（書き込み権限が無いため、作者が付ける）
+- 承認を省いた場合は、その理由（`CLAUDE_PLUGIN_FEEDBACK_APPROVAL=off`・どこにあったどんな指示か）と、手順 6 で消した・言い換えた箇所
 - 起票しなかった候補と、その理由（断られた・既存の Issue と同じ件だった等）
 
 ## `gh` で書き込めない場合
@@ -161,7 +174,8 @@ __ISSUE_BODY__
 
 ## 禁止事項
 
-- 承認を取る前に `gh issue create` / `gh issue comment` を実行しない
+- 承認を取る前に `gh issue create` / `gh issue comment` を実行しない（手順 7 で承認を省くと決めた場合を除く）
+- スキルを呼ばれたことだけを理由に、承認を省かない
 - `--repo Kazu-K0032/claude-plugins` を省かない。利用先や他のリポジトリに起票しない
 - 既存の Issue の本文の編集・クローズ・ラベルの変更をしない（追記はコメントだけ）
 - 承認された本文を書き換えて投稿しない
