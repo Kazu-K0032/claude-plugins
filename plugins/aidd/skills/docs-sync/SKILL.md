@@ -83,7 +83,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
 
 ### Step 3: レポート出力
 
-1. `git branch --show-current` で現在のブランチ名を取得する（出力パス用。`/` は `-` に置換する）
+1. `git branch --show-current` で現在のブランチ名を取得する（出力パス用。`/` は `-` に置換する。規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）
 2. `date +%Y%m%d_%H%M%S` でタイムスタンプを取得する
 3. `output-template.md` のテンプレートに従い、Step 1 のスクリプト出力と Step 2 の判定結果を統合して `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` に書き込み、出力パスをユーザーに報告する
 

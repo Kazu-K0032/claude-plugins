@@ -68,9 +68,9 @@
 
 ### P7 下書きとレポートは tmp に出す
 
-レポートや下書きは `tmp/<ブランチ名>/` と `tmp.md` に書き、`.gitignore` でコミットから外す。作業中のファイルを、コミットに混ぜないため。
+レポートや下書きは `tmp/<ブランチ名>/` と `tmp.md` に書き、`.gitignore` でコミットから外す。作業中のファイルを、コミットに混ぜないため。ブランチ名の `/` は `-` に置き換え、1 つのブランチの出力を 1 か所にまとめる。
 
-- 正典：`plugins/aidd/README.md` の「外部へ直接書き込まない」、`plugins/project/skills/init-repo/files/.gitignore`
+- 正典：`plugins/aidd/README.md` の「外部へ直接書き込まない」と「ブランチ名の `/` は `-` に置き換える」、`plugins/project/skills/init-repo/files/.gitignore`
 
 ### P8 allowed-tools に入れる操作をしぼる
 
@@ -163,8 +163,6 @@ P4 のとおり、どのスキルも `git commit` / `git push` を実行しな�
 ## 既知の食い違い
 
 見つけたが、まだ直していないもの。直したら消す。
-
-- `tmp/` の出力先の作り方が、スキルによって違う（P7）。ブランチ名に `/` が入るとき、`docs-sync`・`pr-review`・`docs-consistency-audit` は `-` に置き換え、`issue-pr-sync`・`ai-report` はフォルダを分ける。後の 2 つは「`commit`・`pr-create` と同じ」と書いているが、その 2 つにはどちらとも書いていない
 
 ## 変更するときの流れ
 

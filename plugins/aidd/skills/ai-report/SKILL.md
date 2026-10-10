@@ -3,7 +3,7 @@ name: ai-report
 description: このリポジトリの Claude Code セッションログを分析し、利用状況や改善点を図表付きレポートにする。AI 利用実績の振り返り・トークンコストの棚卸しを求められた時に使用する
 model: opus
 disable-model-invocation: true
-allowed-tools: Bash(date:*), Read, Agent, Edit(tmp/**/.ai-report-qualitative.md), AskUserQuestion
+allowed-tools: Bash(date:*), Read, Agent, Edit(tmp/*/.ai-report-qualitative.md), AskUserQuestion
 argument-hint: "[開始日 終了日（任意。省略時は期間を質問する。例: 2026-09-01 2026-09-30）]"
 ---
 
@@ -91,7 +91,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <STA
 
 ### Step 3: 定性パートの執筆
 
-typed プロンプト一覧・昇格候補エージェントの関連プロンプト・セッションテーマ一覧を読み、[output-template.md](output-template.md) の「定性パート」に従って `tmp/<ブランチ名>/.ai-report-qualitative.md` を `Write` する（出力先は commit / pr-create と同じ規約で、ブランチ名の `/` は置換せずサブディレクトリとして扱う。実パスは Step 2 の stdout 末尾「出力先」に出る）。
+typed プロンプト一覧・昇格候補エージェントの関連プロンプト・セッションテーマ一覧を読み、[output-template.md](output-template.md) の「定性パート」に従って `tmp/<ブランチ名>/.ai-report-qualitative.md` を `Write` する（ブランチ名の `/` は `-` に置換する。規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」。実パスは Step 2 の stdout 末尾「出力先」に出る）。
 
 改善策を出すブロック（`PROMPTS` / `TOKEN_EFFICIENCY` / `WORKFLOW_EFFICIENCY`）では、Claude Code の標準機能・設定で仕組み化できないかを必ず 1 軸として検討し、機能の現在仕様は `aidd:research` サブエージェント／公式ドキュメントで裏取りする（[output-template.md](output-template.md) の「改善提案の共通軸」）。
 

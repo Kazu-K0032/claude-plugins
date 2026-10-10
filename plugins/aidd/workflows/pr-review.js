@@ -376,6 +376,7 @@ log(`確定指摘: ${confirmed.length} / 候補 ${allVerified.length}（検証�
 // 4. Report: テンプレートへ整形して tmp へ保存する。PR へは投稿しない。
 //    workflow スクリプト内では時刻取得が禁止（Date.now/new Date は throw）のため、
 //    ブランチ名とタイムスタンプの算出・パス組み立てはエージェントに Bash で行わせる。
+//    ブランチ名の / を - に置換する規約は aidd の README.md の「ブランチ名の / は - に置き換える」。
 phase('Report')
 const report = await agent(
   [
