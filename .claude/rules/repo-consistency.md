@@ -58,6 +58,7 @@
 
 - 例外：`aidd:issue-pr-sync`・`aidd:issue-start`・`config:plugin-feedback` は GitHub に書き込む。GitHub 上の状態を変えること自体がスキルの目的で、下書きを出すだけでは、人が同じ操作をやり直すことになるため
 - 例外のスキルも、`gh` の書き込み系のコマンドは `allowed-tools` に入れず、許可プロンプトを通す
+- 反映前の承認の取り方は、スキルごとに決める。`issue-pr-sync` は、既存の記述を消す・意味を変える変更と、ほかの人に通知が届く変更だけ承認を取る
 - 正典：`plugins/aidd/README.md` の「外部へ直接書き込まない」、`plugins/config/README.md` の「設計上の決めごと」
 
 ### P6 取り消しにくい gh 操作だけを禁止する
