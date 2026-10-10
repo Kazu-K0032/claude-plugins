@@ -152,6 +152,6 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ワークフロー（`.js`）にはこの README を読ませにくい。そのため、各スキル・ワークフローにも同じ 1 文を書いている。規約を変えるときは、次の箇所もそろえて直す。
 
-- `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`pr-create` の `SKILL.md`
+- `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
 - `workflows/` の `pr-review.js`・`docs-consistency-audit.js`

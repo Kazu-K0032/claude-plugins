@@ -2,7 +2,7 @@
 
 | 区分 | 内容 |
 | --- | --- |
-| 対象 | `aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`pr-create`・`ai-report`・`pr-review`・`docs-consistency-audit` |
+| 対象 | `aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create`・`ai-report`・`pr-review`・`docs-consistency-audit` |
 
 レポートや下書きは `tmp/<ブランチ名>/` と `tmp.md` に書き、`.gitignore` でコミットから外す。
 
