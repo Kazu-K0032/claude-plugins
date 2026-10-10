@@ -86,7 +86,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `.vscode/extensions.json` / `.vscode/settings.json` | エディタの推奨拡張機能・保存時の整形 | VS Code を使う（`.vscode/` がある・チームで VS Code を使う） | `.vscode/` |
 | `cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有する） | `pr-checks.yml` か `.vscode/` を入れる | cspell の別名の設定ファイル（`.cspell.json`・`cspell.jsonc`・`cspell.yaml`・`cspell.config.*`・`.config/cspell.*`・`.vscode/cspell.json`）・`package.json` の `cspell` キー |
 | `.gitignore` | 作業ファイル・秘匿ファイルの除外 | git リポジトリ（常に該当） | `.gitignore`（据え置き時も不足行の追記は提案する） |
-| `commitlint.config.js` | Conventional Commits の検証 | Node.js のプロジェクトで、コミット規約を機械的に検証したい | `commitlint.config.*`・`.commitlintrc*`・`package.json` の `commitlint` キー |
+| `commitlint.config.mjs` | Conventional Commits の検証 | Node.js のプロジェクトで、コミット規約を機械的に検証したい | `commitlint.config.*`・`.commitlintrc*`・`package.json` の `commitlint` キー |
 | `docs/README.md` | ドキュメントの案内板 | `docs/` がある、または作る | `docs/` 以外の文書置き場（`doc/`・`documentation/`・Wiki） |
 | `docs/adr/README.md` | ADR の一覧（`CLAUDE.md` が読み込む） | `CLAUDE.md` を入れる | `doc/adr/`・`docs/decisions/`・`adr/` の一覧 |
 | `CLAUDE.md` | Claude Code 向けのガイド | Claude Code を使う（常に該当） | `CLAUDE.md`・`.claude/CLAUDE.md`・`AGENTS.md` |
@@ -129,6 +129,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --check
 引数で範囲を絞った場合（必要性の判定・要件からの逆算・同じ役割の既存物による除外）は、全テンプレートについて「入れる / 入れない」と**その理由**を表で示す。要件からの逆算では、要件とファイルの対応表と「テンプレートに無い」要件も併せて示す。
 
 `CLAUDE.md` / `README.md` が既にあるリポジトリでは、ほぼ確実に `DIFF` になる。**テンプレートで上書きすると既存の記述が失われる**ことを明示したうえで承認を求める。
+
+`commitlint.config.mjs` は `NEW` でも、ほかの commitlint の設定（`commitlint.config.*`・`.commitlintrc*`・`package.json` の `commitlint` キー）があれば入れない。前の版の `init-repo` が配った `commitlint.config.js` もこれに当たる。設定が 2 つあると、どちらが読まれるか分かりにくいため。手順 3 では `--only` でこのファイルを外してコピーする。
 
 ユーザーが一部だけを希望した場合は、`--only` で対象を絞る（手順 3）。
 
@@ -221,7 +223,7 @@ npx --yes cspell@9.8.0 lint --no-progress --words-only --unique --dot --gitignor
 2. `.claude/settings.json` の `permissions.deny` を、このリポジトリの秘匿ファイル配置に合わせる
 3. `.claude/hooks/post-edit-lint.sh` 冒頭の `LINT_DIR` / `TARGET_PREFIX` を、lint ツールの置き場所に合わせる
 4. `.claude/hooks/guard-destructive.sh` の `patterns` に、このプロジェクト固有の破壊的操作（クラウド CLI の削除系・本番ホストへの接続等）を追記する
-5. `commitlint.config.js` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`commit-msg` フックから呼ぶ
+5. `commitlint.config.mjs` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`commit-msg` フックから呼ぶ
 6. `.github/workflows/` には「シークレットスキャン」「スペルチェック」「ラベル同期」しか入っていない。ビルド・テストの CI はプロジェクト側で作る
 
 `guard-git-write.sh` は配線していない。`git commit` / `git push` をラッパースクリプト経由まで含めて塞ぎたい場合のみ、`settings.json` の `PreToolUse` に追加するよう案内する。

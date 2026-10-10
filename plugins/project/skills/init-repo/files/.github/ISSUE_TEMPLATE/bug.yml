@@ -1,0 +1,65 @@
+name: "不具合"
+description: "期待と違う動き・エラーの報告"
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      placeholder: 何が起きているかを一文で説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: 再現手順
+      description: 誰がやっても同じ結果になるよう、操作を順に書いてください
+      value: |
+        1.
+        1.
+        1.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: 期待する動き
+      description: 本来どうなるべきかを書いてください
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: 実際の動き
+      description: 実際にどうなったかを書いてください。エラーの文言・画面の状態・ログがあれば貼ってください（トークンやパスワードは伏せる）
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 発生した環境（任意）
+      description: 環境（ローカル / 検証 / 本番）・ブラウザ・OS・版など、分かる範囲で書いてください
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 受け入れ基準
+      description: 直ったとみなす条件。必要に応じて足し引きしてください
+      value: |
+        - [ ] 再現手順を行っても、期待する動きになる
+        - [ ] 再発を防ぐテストを足した
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足
+      description: 起き始めた時期・関連する Issue や PR・スクリーンショット等があれば書いてください

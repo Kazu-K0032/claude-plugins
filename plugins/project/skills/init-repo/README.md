@@ -44,7 +44,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/rules/github-actions.md` | ワークフローの実装ルール（最小権限・SHA 固定・インジェクション対策） | そのまま使える |
 | `files/.claude/rules/adr.md` | 判断の前に ADR の一覧を見て、新しい判断を ADR に残すか聞く規約 | ADR の置き場所が `docs/adr/` でなければパスを直す |
 | `files/.claude/rules/readme.md` | README を案内板として運用するための規約 | README の種別表 |
-| `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / リファクタ / リリース / AIDD 振り返り） | `config.yml` の検証環境リンク、`release.yml` の手順 |
+| `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / リファクタ / リリース / AIDD 振り返り） | `config.yml` の検証環境リンク、`release.yml` の手順 |
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト） | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
@@ -56,14 +56,14 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（リンク集約型の構成） | `TODO:` 行を実態に書き換える |
-| `files/commitlint.config.js` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |
+| `files/commitlint.config.mjs` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |
 | `files/cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と `pr-checks.yml` が共有する。テンプレート自身が使う語は登録済み） | プロジェクトの固有名詞を `words` に入れる（Skill が候補を出す） |
 | `files/.gitignore` | Claude Code の作業ファイル（`tmp.md`・`tmp/`）・個人設定・秘匿ファイル・OS のファイルの除外 | 言語・ビルド成果物の除外を追記する |
 
 ## 前提と制約
 
 - フックは `bash` と [`jq`](https://jqlang.org/) を使う。どちらも無い環境ではフックが失敗する
-- `settings.json` の `permissions.deny` は「コマンド先頭一致」でしか判定しない。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
+- `settings.json` の `permissions.deny` は、ルールの形に当たるコマンドしか止めない。`git -C`・`git -c` を付けたコミット・push と、`gh api` でのマージは個別に止めている。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
@@ -74,7 +74,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `.gitignore`・`.vscode/`・`cspell.json` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
 - `pr-checks.yml` のスペルチェックは、`npx` で版を固定した cspell を取得して動かす。版は `files/.github/workflows/pr-checks.yml` と、Skill の候補の洗い出しのコマンド（[SKILL.md](SKILL.md) の手順 5）の 2 か所に書いてある。版を上げるときは両方をそろえる
-- `commitlint.config.js` は設定だけ。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る
+- `commitlint.config.mjs` は設定だけ。ESM の形式（`.mjs`）のため、`package.json` の `type` に関係なく読み込める。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る
 
 ## 除外したもの
 
