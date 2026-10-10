@@ -85,11 +85,18 @@ PR の CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ち�
 
 ## 導入のとき（一度だけ）
 
-版と `develop` を入れる PR（#25）は、仕組みの導入と `v1.0.0` のリリースを兼ねる。
+版と `develop` を入れる PR #47 は、仕組みの導入と `v1.0.0` のリリースを兼ねる。
 
 1. この PR を `main` に直接マージする
 1. `main` に `v1.0.0` の Release を作る。前のタグが無く、自動生成では過去の PR がすべて並ぶため、説明は「版の管理を始めた最初のリリース」の 1 行にする
-1. `main` から `develop` を作る（`git push origin origin/main:refs/heads/develop`）
+1. マージした後の `main` から `develop` を作る。`git log` で、最新のコミットが PR #47 のマージであることを確かめてから push する
+
+   ```bash
+   git fetch origin
+   git log -1 --oneline origin/main
+   git push origin origin/main:refs/heads/develop
+   ```
+
 1. リポジトリの設定で、squash と rebase のマージを無効にする（**Settings** → **General** → **Pull Requests**）
 
 ## 理由

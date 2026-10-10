@@ -38,16 +38,20 @@ Claude Code のセッション内で次を実行する。カタログを 1 回�
 
 更新が届くのは、版を上げてリリースしたときだけ。変更点は [Releases](https://github.com/Kazu-K0032/claude-plugins/releases) で見られる。リリースの手順は [docs/release.md](docs/release.md) にある。
 
+`/aidd:init-repo` は `/project:init-repo` に移った。以前から `aidd` を使っている場合は、`project` プラグインを追加でインストールする。
+
 ### 前の版に戻す
 
-不具合のある版が届いたら、タグ（例：`v1.0.0`）を付けて登録し直す。登録を外すと、プラグインも外れて保存した設定も消えるため、入れ直す。
+不具合のある版が届いたら、タグ（例：`v1.0.0`）を付けて登録し直す。登録を外すと、このカタログから入れたプラグインがすべて外れ、保存した設定も消える。外す前に `/plugin` の **Installed** で入れていたプラグインとスコープを控え、同じスコープで入れ直す。
 
 ```bash
 /plugin marketplace remove kazu
 /plugin marketplace add Kazu-K0032/claude-plugins#v1.0.0
 /plugin install aidd@kazu
+/plugin install config@kazu
+/plugin install project@kazu
 ```
 
-最新に戻すときは、タグを付けずに同じ手順で登録し直す。
+project スコープで入れていた場合は、外したときにリポジトリの `.claude/settings.json` も書き換わる。入れ直した後に差分が残っていないかを確かめる。
 
-`/aidd:init-repo` は `/project:init-repo` に移った。以前から `aidd` を使っている場合は、`project` プラグインを追加でインストールする。
+最新に戻すときは、タグを付けずに同じ手順で登録し直す。
