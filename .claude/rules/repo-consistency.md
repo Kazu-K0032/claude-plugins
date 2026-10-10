@@ -50,7 +50,7 @@
 
 スキルは `git commit` / `git push` を実行しない。履歴に残す内容と、ほかの人へ共有するタイミングを、人が最後に確かめて決めるため。
 
-- 正典：`plugins/project/skills/init-repo/files/.claude/settings.json` の deny、各スキルの禁止事項（`aidd:commit`・`project:init-repo`・`project:gas`）
+- 正典：`plugins/project/skills/init-repo/files/.claude/settings.json` の deny、`aidd:commit` の「判断基準」、`project:init-repo`・`project:gas` の禁止事項
 
 ### P5 GitHub などの外部へは、原則書き込まない
 
@@ -186,8 +186,10 @@ P4 のとおり、どのスキルも `git commit` / `git push` を実行しな�
 
 ## 機械チェックで見ている範囲
 
-push 前の `/marketplace-update` は、`check.py` で次の 3 つだけを自動で確かめる。それ以外は、上の流れで確かめる。
+push 前の `/marketplace-update` は、`check.py` で次の検査を自動で行う。ここでは、このファイルの方針に関わるものだけを挙げる。検査の全体は `.claude/skills/marketplace-update/SKILL.md` の手順 3・4 の表を見る。ここに無い方針は、上の流れで確かめる。
 
-- スキルの `allowed-tools` や本文のコマンドが、`init-repo` の deny に当たっていないか（`deny-conflict`。P4・P6）
-- `allowed-tools` の書き込み先が、`tmp/` の外になっていないか（`output-path`。P7・P8）
-- 重複ファイルの組がそろっているか（`duplicated-files`。P11）
+- `rule-form`：`allowed-tools` に、権限の判定に使われない書き方が無いか（P8）
+- `deny-conflict`：スキルの `allowed-tools` や本文のコマンドが、`init-repo` の deny に当たっていないか（P4・P6）
+- `output-path`：`allowed-tools` の書き込み先が、`tmp/` の外になっていないか（P7・P8）
+- `plugin-root-ref`：`${CLAUDE_PLUGIN_ROOT}` で指したファイルが、そのプラグインの中にあるか（P11）
+- `duplicated-files`：重複ファイルの組がそろっているか（P11）
