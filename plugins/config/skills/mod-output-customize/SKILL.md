@@ -27,12 +27,13 @@ config に同梱した mod を、ユーザー全体で読み込まれるよう�
 
 | ボタン | キー | 動き |
 | --- | --- | --- |
-| チャットモード | `0` | `Edit`・`Write`・`NotebookEdit`、読み取り用以外の `Bash`、読み取り用と判断できない MCP ツールを拒否し、読み取り専用にする。セッションをまたいで持ち越さない |
-| 応答カスタム | `1` | 応答を `### 簡潔版`・`### 概要`・`## 次アクション` に分けて書かせる。`✅`・`❌`・`==語句==`・`{{仕様}}` を赤・緑で表示する。on / off は次のセッションへ持ち越す |
+| チャットモード | `0` | 読み取り用のツール（`Read`・`Glob`・`Grep`・`WebFetch` など）、読み取り用の `Bash`・`Monitor` のコマンド、名前から読み取り専用と判断できる MCP ツールだけを通し、ほかは拒否して読み取り専用にする。セッションをまたいで持ち越さない |
+| 応答カスタム | `1` | 応答を `### 簡潔版`・`### 概要`・`## 次アクション` に分け、`✅`・`❌`・`==語句==`・`{{仕様}}` の記法で書かせる。on / off は次のセッションへ持ち越す |
 | 文書を簡潔に | `2` | Issue・PR・README など外に書き出す文書を、短く平易に書かせる指示を足す。on / off は次のセッションへ持ち越す |
 
 - 既定は、応答カスタムと文書を簡潔にが ON、チャットモードが OFF
 - 指示はプロンプトを送るたびに添える。端末に描かない実行（`-p` など）では、指示を何も足さない
+- 記法を含む応答は、応答カスタムの on / off に関係なく赤・緑で表示する
 
 ## 引数の解釈
 
@@ -85,11 +86,12 @@ mod はすでに同梱版と同じものが入っているため、変更はあ�
 | 状態 | 示す内容 | 選択肢 |
 | --- | --- | --- |
 | mod のフォルダが未設定 | コピー先と、mod の機能（上の表） | 入れる / 入れない |
+| mod のフォルダが未設定なのに、`CLAUDE_CODE_PLUGIN_DIRS` にはパスがある | 無いフォルダを指すパスが残っていること | 入れる / パスを外す |
 | mod のフォルダが異なる | 差分の要点（ボタン・指示文のどこが変わるか）。手で書き換えた形跡があれば明示する | 同梱版に更新 / 据え置き |
 | `CLAUDE_CODE_PLUGIN_DIRS` が未設定 | 変更前後の値 | 足す / 足さない |
 | 同じ mod の別のパスがある | そのパスと、2 重に読み込まれること | 一覧から外す / 残す |
 
-- 「入れない」を選んだら、`CLAUDE_CODE_PLUGIN_DIRS` にも足さない。無いフォルダを読み込ませないため
+- 「入れない」を選んだら、`CLAUDE_CODE_PLUGIN_DIRS` にも足さない。無いフォルダを読み込ませないため。同じ理由で、無いフォルダを指すパスは残さない
 - 「同梱版に更新」を選んだら、手で書き換えた箇所は消える。前のフォルダは手順 4 で `.bak` として残す
 
 ### 4. 入れる
@@ -99,13 +101,13 @@ mod はすでに同梱版と同じものが入っているため、変更はあ�
 1. mod をコピーする（入れる・更新する場合のみ）。既存のフォルダを置き換える場合は、先に日時付きの `.bak` に移す。再実行で前回のバックアップを上書きしないため。`.bak` のフォルダは `CLAUDE_CODE_PLUGIN_DIRS` に無いため読み込まれない
 
     ```bash
-    mkdir -p ~/.claude/mods
-    [ -d ~/.claude/mods/mod-output-customize ] && mv ~/.claude/mods/mod-output-customize ~/.claude/mods/mod-output-customize.$(date +%Y%m%d%H%M%S).bak
-    cp -r "${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/files/mod-output-customize" ~/.claude/mods/mod-output-customize
+    mkdir -p ~/.claude/mods && { [ ! -d ~/.claude/mods/mod-output-customize ] || mv ~/.claude/mods/mod-output-customize ~/.claude/mods/mod-output-customize.$(date +%Y%m%d%H%M%S).bak; } && cp -r "${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/files/mod-output-customize" ~/.claude/mods/mod-output-customize
     ```
 
+    途中で失敗したら、そこで止まる。`mv` が失敗したまま `cp -r` を進めると、残ったフォルダの中に入れ子でコピーされるため。`mv` が失敗したら、フォルダの名前を変えられなかったことを報告して止まり、mod を読み込んでいる Claude Code をすべて終了してから、もう一度実行するよう伝える
+
 1. `~/.claude/settings.json` の `env.CLAUDE_CODE_PLUGIN_DIRS` を直す
-    - 値があれば、区切り文字を挟んで末尾に `~/.claude/mods/mod-output-customize` を足す。「一覧から外す」を選んだパスは、ここで取り除く
+    - 値があれば、区切り文字を挟んで末尾に `~/.claude/mods/mod-output-customize` を足す。「一覧から外す」「パスを外す」を選んだパスは、ここで取り除く
     - `env` はあってキーが無ければ、キーを足す。`env` も無ければ `env` ごと足す
     - 既存ファイルがある場合は Edit でこのキーだけを変える。他のキー・並び順・インデントは触らない
     - ファイルが無い場合は次の内容で作成する
@@ -136,13 +138,13 @@ claude plugin validate ~/.claude/mods/mod-output-customize
 
 引数で外すよう指示されたときの手順。
 
-1. `~/.claude/settings.json` を Read し、`env.CLAUDE_CODE_PLUGIN_DIRS` に mod のフォルダのパスがあるかを確かめる
+1. `~/.claude/settings.json` を Read し、`env.CLAUDE_CODE_PLUGIN_DIRS` に mod のフォルダのパスがあるかを確かめる。`~` は展開して比べる。あわせて `~/.claude/mods/mod-output-customize/` があるかを確かめる
+1. パスもフォルダも無ければ、入っていないことを報告して**終了する**。承認を求めず、書き込みもしない
 1. 外す内容（`CLAUDE_CODE_PLUGIN_DIRS` の変更前後の値と、消すフォルダ）を示し、`AskUserQuestion` で選んでもらう
-    - 外して、フォルダも消す
-    - 外して、フォルダは残す
-    - やめる
-1. `CLAUDE_CODE_PLUGIN_DIRS` からパスだけを取り除く。値が空になったらキーを消す。他のパスと他のキーは触らない
-1. 「フォルダも消す」を選んだ場合だけ、フォルダを消す
+    - パスがあるとき：外して、フォルダも消す / 外して、フォルダは残す / やめる
+    - パスは無く、フォルダだけ残っているとき：フォルダを消す / やめる
+1. パスがあれば、`CLAUDE_CODE_PLUGIN_DIRS` からパスだけを取り除く。値が空になったらキーを消す。他のパスと他のキーは触らない
+1. 「フォルダも消す」「フォルダを消す」を選んだ場合だけ、フォルダを消す
 
     ```bash
     rm -rf ~/.claude/mods/mod-output-customize
