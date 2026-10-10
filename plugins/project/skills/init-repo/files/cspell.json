@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "useGitignore": true,
+  "enableGlobDot": true,
+  "ignorePaths": [
+    ".git",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "*.lock",
+    "go.sum"
+  ],
+  "words": [
+    "aidd",
+    "davidanson",
+    "envrc",
+    "frontmatter",
+    "ghaction",
+    "segs",
+    "shellcheck",
+    "ssot",
+    "stoks",
+    "tfstate",
+    "tfvars",
+    "toks",
+    "toplevel"
+  ]
+}

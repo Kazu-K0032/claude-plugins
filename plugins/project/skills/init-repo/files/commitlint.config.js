@@ -11,6 +11,7 @@ module.exports = {
   // Ref: https://commitlint.js.org/reference/rules.html
   rules: {
     // 許可する type を明示列挙し、表記揺れ（chorxe 等のタイポ）を弾く。
+    // 例に挙げたタイポを、スペルチェック（cspell）の検出から外す。cspell:ignore chorxe
     // 値の意味はコミット規約（aidd プラグインの `/aidd:commit` が参照する commit-rule）が SSOT。
     'type-enum': [
       2,

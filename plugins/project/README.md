@@ -8,7 +8,7 @@
 
 | スキル | 用途 |
 | --- | --- |
-| [`/project:init-repo`](skills/init-repo/README.md) | ハーネス設定（`.claude/`）・GitHub の定型ファイル・エディタ設定・`.gitignore`・ドキュメントの骨組みをリポジトリへ導入 |
+| [`/project:init-repo`](skills/init-repo/README.md) | ハーネス設定（`.claude/`）・GitHub の定型ファイル・エディタ設定・スペルチェックの設定・`.gitignore`・ドキュメントの骨組みをリポジトリへ導入 |
 | [`/project:gas`](skills/gas/README.md) | Google Apps Script の `src/` 構成（`constants.js`・`main.js`・`utils.js`・`trigger.js`）と clasp の設定、GAS の実装規約を導入 |
 
 技術スタック別の Skill は、土台を入れた後に重ねて使う想定。たとえば GAS のリポジトリでは `/project:init-repo` → `/project:gas` の順に実行する。どの Skill も手動でのみ呼ぶ（`disable-model-invocation: true`）ため、使わない技術スタックの Skill が入っていてもコンテキストを消費しない。

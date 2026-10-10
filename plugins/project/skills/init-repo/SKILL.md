@@ -1,6 +1,6 @@
 ---
 name: init-repo
-description: リポジトリに Claude Code のハーネス設定（.claude/settings.json・hooks・rules）と GitHub の定型ファイル（.github/）、エディタ設定（.vscode/）・.gitignore、CLAUDE.md / README.md の骨組みを導入する。新しいリポジトリを立ち上げる時、または既存リポジトリへ規約一式を後から入れる時に使用する
+description: リポジトリに Claude Code のハーネス設定（.claude/settings.json・hooks・rules）と GitHub の定型ファイル（.github/）、エディタ設定（.vscode/）・スペルチェックの設定（cspell.json）・.gitignore、CLAUDE.md / README.md の骨組みを導入する。新しいリポジトリを立ち上げる時、または既存リポジトリへ規約一式を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(gh issue view:*), Bash(gh pr view:*)
 argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象。例: .github だけ / 必要なものだけ / 既存は置き換えない / docs/spec.md の要件を満たす最小限）]"
@@ -81,8 +81,9 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `.github/PULL_REQUEST_TEMPLATE.md` | PR 本文の形式 | GitHub で PR を使う | `.github/pull_request_template.md`・`docs/pull_request_template.md`・ルートの `PULL_REQUEST_TEMPLATE.md` |
 | `.github/dependabot.yml` | GitHub Actions の依存更新 | `.github/workflows/` がある、または入れる | `.github/dependabot.yml`・`renovate.json`・`.github/renovate.json` |
 | `.github/labels.yml` + `.github/workflows/sync-labels.yml` | ラベルのコード管理 | ラベルを運用する（Issue テンプレートを入れる場合は必須） | 既存のラベル同期ワークフロー |
-| `.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン | GitHub で PR を使う | gitleaks・trufflehog 等を使う既存ワークフロー・pre-commit フック |
-| `.vscode/extensions.json` / `.vscode/settings.json` | エディタの推奨拡張機能・スペルチェックの除外語 | VS Code を使う（`.vscode/` がある・チームで VS Code を使う） | `.vscode/` |
+| `.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン・リポジトリ全体のスペルチェック | GitHub で PR を使う | gitleaks・trufflehog・cspell 等を使う既存ワークフロー・pre-commit フック |
+| `.vscode/extensions.json` / `.vscode/settings.json` | エディタの推奨拡張機能・保存時の整形 | VS Code を使う（`.vscode/` がある・チームで VS Code を使う） | `.vscode/` |
+| `cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有する） | `pr-checks.yml` か `.vscode/` を入れる | cspell の別名の設定ファイル（`.cspell.json`・`cspell.jsonc`・`cspell.yaml`・`cspell.config.*`・`.config/cspell.*`・`.vscode/cspell.json`）・`package.json` の `cspell` キー |
 | `.gitignore` | 作業ファイル・秘匿ファイルの除外 | git リポジトリ（常に該当） | `.gitignore`（据え置き時も不足行の追記は提案する） |
 | `commitlint.config.js` | Conventional Commits の検証 | Node.js のプロジェクトで、コミット規約を機械的に検証したい | `commitlint.config.*`・`.commitlintrc*`・`package.json` の `commitlint` キー |
 | `docs/README.md` | ドキュメントの案内板 | `docs/` がある、または作る | `docs/` 以外の文書置き場（`doc/`・`documentation/`・Wiki） |
@@ -95,6 +96,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 - `.claude/settings.json` は `guard-destructive.sh`・`post-edit-lint.sh`・`session-start.sh` を呼ぶ。フックを外す場合は、`settings.json` の該当の `hooks` 定義も外す必要があるため、計画で明示する
 - `.github/workflows/sync-labels.yml` は `.github/labels.yml` を読む
+- `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`tfstate` 等）も誤字として出て、PR のチェックが落ちる
 - Issue テンプレートの `labels:` は `labels.yml` のラベルを前提にしている
 
 ## 手順
@@ -157,7 +159,8 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/<同�
 | --- | --- |
 | `README.md` | 案内板に作り替える（下記） |
 | `.gitignore` | 既存の行は残し、テンプレートにあって既存に無い行だけを末尾へ追記する |
-| `.vscode/settings.json` / `.vscode/extensions.json` | 既存のキー・配列要素は残し、無いものだけを足す。JSONC（コメント・末尾カンマ）を壊さない |
+| `.vscode/settings.json` / `.vscode/extensions.json` | 既存のキー・配列要素は残し、無いものだけを足す。JSONC（コメント・末尾カンマ）を壊さない。既存の `cSpell.words` は cspell の CLI が読まないため、`cspell.json` の `words` へ移すことを提案する |
+| `cspell.json` | 既存のキー・`words` の語は残し、無いものだけを足す |
 
 #### README.md を案内板にする
 
@@ -167,9 +170,9 @@ README は「どこに何があるか」を示す案内板として扱う（`.cl
 2. ユーザーの承認を得てから、本文を移動先へそのまま移す（要約・削除しない）。移動先のサブディレクトリを新しく作る場合は、同時にその `README.md`（案内板）も置く
 3. ルートの `README.md` はテンプレートの構成に合わせ、移した本文の代わりにリンクを置く。概要（1〜2 行）・各環境のリンク・外部リンクなど、リンク集として残せる情報はそのまま残す
 
-### 5. エディタ設定を調整する
+### 5. エディタ設定とスペルチェックの除外語を調整する
 
-`.vscode/` を導入した（または既にある）場合は、プロジェクトに合わせて中身を提案する。どちらも**一覧を見せて承認を得てから**書き込む。
+`.vscode/` や `cspell.json` を導入した（または既にある）場合は、プロジェクトに合わせて中身を提案する。どちらも**一覧を見せて承認を得てから**書き込む。
 
 #### 推奨拡張機能（`.vscode/extensions.json`）
 
@@ -186,7 +189,9 @@ README は「どこに何があるか」を示す案内板として扱う（`.cl
 
 表にない技術は、公式に推奨されている拡張機能を調べてから提案する。拡張機能 ID の推測で書かない。
 
-#### スペルチェックの除外語（`.vscode/settings.json` の `cSpell.words`）
+#### スペルチェックの除外語（`cspell.json` の `words`）
+
+除外語は `.vscode/settings.json` の `cSpell.words` ではなく `cspell.json` に置く。VS Code の拡張機能と cspell の CLI（`pr-checks.yml` のスペルチェック）の両方が読むのは `cspell.json` だけのため。テンプレート自身が使う語（`aidd`・`tfstate` 等）は登録済み。
 
 次から固有名詞・技術用語の候補を集め、重複を除いて小文字で並べる。
 
@@ -197,10 +202,13 @@ README は「どこに何があるか」を示す案内板として扱う（`.cl
 `npx` が使える環境では、次の結果も候補に加えてよい（初回はパッケージの取得が走る）。
 
 ```bash
-npx --yes cspell lint --no-progress --words-only --unique "**/*.{md,ts,tsx,js,jsx,py,go,rs,json,yml,yaml}"
+npx --yes cspell@9.8.0 lint --no-progress --words-only --unique --dot --gitignore --exclude ".git/**" "**/*.{md,ts,tsx,js,jsx,py,go,rs,json,yml,yaml}"
 ```
 
-一般的な英単語の誤字は候補から外す。除外語に入れるのは「正しい綴りだが辞書に無い語」だけ。
+- 版は `pr-checks.yml` のスペルチェックとそろえる。版を固定しないと最新版が使われ、最新版が要求する Node より手元の Node が古いと失敗する
+- `--dot` は `.claude/`・`.github/` などドット始まりのディレクトリも対象にする（既定では検査しない）。`--exclude ".git/**"` は、そのときに `.git/` の中まで検査しないためのもの
+
+一般的な英単語の誤字は候補から外す。除外語に入れるのは「正しい綴りだが辞書に無い語」だけ。`pr-checks.yml` を入れた場合、ここで登録しなかった語は PR のスペルチェックで誤字として出る。
 
 ### 6. 導入後にやることを伝える
 
@@ -211,7 +219,7 @@ npx --yes cspell lint --no-progress --words-only --unique "**/*.{md,ts,tsx,js,js
 3. `.claude/hooks/post-edit-lint.sh` 冒頭の `LINT_DIR` / `TARGET_PREFIX` を、lint ツールの置き場所に合わせる
 4. `.claude/hooks/guard-destructive.sh` の `patterns` に、このプロジェクト固有の破壊的操作（クラウド CLI の削除系・本番ホストへの接続等）を追記する
 5. `commitlint.config.js` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`commit-msg` フックから呼ぶ
-6. `.github/workflows/` には「シークレットスキャン」と「ラベル同期」しか入っていない。ビルド・テストの CI はプロジェクト側で作る
+6. `.github/workflows/` には「シークレットスキャン」「スペルチェック」「ラベル同期」しか入っていない。ビルド・テストの CI はプロジェクト側で作る
 
 `guard-git-write.sh` は配線していない。`git commit` / `git push` をラッパースクリプト経由まで含めて塞ぎたい場合のみ、`settings.json` の `PreToolUse` に追加するよう案内する。
 

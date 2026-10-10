@@ -119,7 +119,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 │   ├── hooks/                            # Claude Code のフック（ガード・Lint・セッション通知）
 │   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions）
 │   └── settings.json                     # 権限・フック・モデルの設定（コミット対象）
-├── .vscode/                              # エディタ設定（推奨拡張機能・スペルチェックの除外語）
+├── .vscode/                              # エディタ設定（推奨拡張機能・保存時の整形）
 ├── .github/
 │   ├── dependabot.yml                    # 依存パッケージ更新（GitHub Actions 限定・月次）
 │   ├── labels.yml                        # GitHub ラベル定義（sync-labels.yml が同期）
@@ -135,6 +135,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 │   ├── log/                              # 実作業の経緯（時系列の作業ログ）
 │   └── knowledge/                        # ツール・プラグインの入門知識
 ├── .gitignore
+├── cspell.json                           # スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有）
 └── README.md
 ```
 

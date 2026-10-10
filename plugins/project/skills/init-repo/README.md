@@ -1,6 +1,6 @@
 # init-repo
 
-新しいリポジトリへ「Claude Code のハーネス設定（`.claude/`）＋ GitHub の定型ファイル（`.github/`）＋ エディタ設定（`.vscode/`）・`.gitignore` ＋ ドキュメントの骨組み」を一括で持ち込む Skill。実案件リポジトリの構成から、プロジェクト固有の要素を取り除いて汎用化したもの。
+新しいリポジトリへ「Claude Code のハーネス設定（`.claude/`）＋ GitHub の定型ファイル（`.github/`）＋ エディタ設定（`.vscode/`）・スペルチェックの設定（`cspell.json`）・`.gitignore` ＋ ドキュメントの骨組み」を一括で持ち込む Skill。実案件リポジトリの構成から、プロジェクト固有の要素を取り除いて汎用化したもの。
 
 `files/` の中身がそのまま導入先リポジトリのルートに置かれる。
 
@@ -47,14 +47,15 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト） | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
-| `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks） | そのまま使える |
+| `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks）とリポジトリ全体のスペルチェック（cspell） | そのまま使える |
 | `files/.github/workflows/sync-labels.yml` | `labels.yml` を GitHub のラベルへ同期 | そのまま使える |
 | `files/.vscode/extensions.json` | VS Code の推奨拡張機能（markdownlint・スペルチェック・GitHub Actions・YAML） | 技術スタックに合わせて追加する（Skill が提案する） |
-| `files/.vscode/settings.json` | 保存時の整形（末尾改行・行末空白の削除・LF）とスペルチェックの除外語（`cSpell.words`） | プロジェクトの固有名詞を入れる（Skill が候補を出す） |
+| `files/.vscode/settings.json` | 保存時の整形（末尾改行・行末空白の削除・LF） | そのまま使える |
 | `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（リンク集約型の構成） | `TODO:` 行を実態に書き換える |
 | `files/commitlint.config.js` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |
+| `files/cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と `pr-checks.yml` が共有する。テンプレート自身が使う語は登録済み） | プロジェクトの固有名詞を `words` に入れる（Skill が候補を出す） |
 | `files/.gitignore` | Claude Code の作業ファイル（`tmp.md`・`tmp/`）・個人設定・秘匿ファイル・OS のファイルの除外 | 言語・ビルド成果物の除外を追記する |
 
 ## 前提と制約
@@ -67,7 +68,9 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `gh` は、取り消しにくい操作（PR のマージ・クローズ・レビュー、Issue のクローズ、リリース、リポジトリの作成・変更・削除）だけを deny で塞いでいる。Issue・PR の作成（`gh issue create` / `gh pr create`）、Issue へのコメント（`gh issue comment`）、本文・タイトル・サイドバーの更新（`gh issue edit` / `gh pr edit`）、Issue に紐づくブランチの作成（`gh issue develop`）は Claude に任せる前提で塞いでいない。`/aidd:issue-pr-sync` が更新に、`/aidd:issue-start` がブランチの作成と担当者の追加に使う。塞ぎたい場合は deny に足す（その場合 issue-pr-sync は下書き出力まで、issue-start は確認の報告までになる）
 - `guard-git-write.sh` を配線すると、上記の Issue・PR の作成と更新（`create` / `edit`）も止まる。`develop` は止まらないため、`/aidd:issue-start` はブランチを作れるが、担当者の追加（`edit`）だけが止まる。配線するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
-- `.gitignore`・`.vscode/` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
+- `.gitignore`・`.vscode/`・`cspell.json` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
+- スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
+- `pr-checks.yml` のスペルチェックは、`npx` で `cspell@9.8.0` を取得して動かす。版を上げるときは、Skill の候補の洗い出しのコマンド（[SKILL.md](SKILL.md) の手順 5）の版もそろえる
 - `commitlint.config.js` は設定だけ。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る
 
 ## 除外したもの

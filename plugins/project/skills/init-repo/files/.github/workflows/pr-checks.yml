@@ -49,3 +49,22 @@ jobs:
             --redact \
             --verbose \
             $config_arg
+
+  spell-check:
+    name: スペルチェック
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: リポジトリ全体をスペルチェック
+        # 除外語・検査対象は cspell.json を正とする（VS Code の拡張機能と共有）。
+        # 除外語を変えたときに既存ファイルへの影響も分かるよう、PR の差分ではなく全体を検査する。
+        # cspell は版を固定する。固定しないと npx が毎回最新版を取りに行き、新しい版の要件（Node の版など）や検出の変化で CI が急に落ちるため
+        run: npx --yes cspell@9.8.0 --no-progress "**"
