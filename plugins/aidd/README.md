@@ -27,7 +27,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 | Workflow | 用途 |
 | --- | --- |
-| `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証してレポートを出力 |
+| `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証して、直す箇所を high・medium・low に分けて出力 |
 | `docs-consistency-audit` | ドキュメント間の値の矛盾・重複記述・参照方向違反を横断監査 |
 
 収録は上記 8 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
