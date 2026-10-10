@@ -1,6 +1,6 @@
 ---
 name: marketplace-update
-description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイル・入力ヒントの書き方の整合をチェックして修正し、スキルが同梱する mod の検証とテストを流す。プラグインやテンプレートを編集した後、push する前に使用する
+description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイル・入力ヒントの書き方・版の整合をチェックして修正し、スキルが同梱する mod の検証とテストを流す。プラグインやテンプレートを編集した後、push する前に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git status:*), Bash(git diff:*), Bash(python .claude/skills/marketplace-update/scripts/check.py:*), Bash(python3 .claude/skills/marketplace-update/scripts/check.py:*), Bash(claude plugin validate:*), Bash(claude plugin test:*)
 argument-hint: "[重点的に見たい範囲（任意。省略時はすべてのチェックを同じ重さで見る。例: init-repo のテンプレート / 重複ファイル）]"
@@ -8,7 +8,7 @@ argument-hint: "[重点的に見たい範囲（任意。省略時はすべての
 
 # マーケットプレイス更新チェック
 
-このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）、スキルが同梱する mod（`claude plugin validate`・`claude plugin test`）。
+このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）、各プラグインの版（`version`）、スキルが同梱する mod（`claude plugin validate`・`claude plugin test`）。
 
 ## なぜ必要か
 
@@ -31,6 +31,12 @@ python .claude/skills/marketplace-update/scripts/check.py
 
 `python3` しか無い環境ではそちらで実行する。NG が 1 件でもあれば終了コードは 1。
 
+`release/`・`hotfix/` のブランチ（`main` へ出すもの）では、`--base origin/main` を付けて版の上げ忘れも見る。先に利用者に `git fetch origin` を頼み、`origin/main` を最新にしておく。
+
+```bash
+python .claude/skills/marketplace-update/scripts/check.py --base origin/main
+```
+
 ### 3. NG を直す
 
 | カテゴリ | 内容 | 直し方 |
@@ -42,6 +48,7 @@ python .claude/skills/marketplace-update/scripts/check.py
 | `template-inventory` | テンプレートを持つスキル（`skills/<スキル名>/files/`）の README にある `files/...` が存在しない、または README が無い | 収録物表か実ファイルのどちらが正かを判断して揃える |
 | `duplicated-files` | 重複ファイルの組の片方が存在しない、または `duplicated-files.md` の `paths` に載っていない | 表と `paths` を実際のパスに合わせる |
 | `argument-hint` | 入力ヒントの引数が `[]` か `<>` で囲まれていない、`[]` に「（任意。省略時は」が無い、または `<>` に「任意」「省略」がある | `.claude/rules/argument-hint.md` の書き方に直す。省略時の動きは本文を読んで確かめてから書く |
+| `version` | `plugin.json` の版が `X.Y.Z` でない・プラグインの間でそろっていない、`marketplace.json` に版がある。`--base` を付けたときは、`plugins/` を変えたのに版が上がっていない | 3 つの `plugin.json` を同じ版にし、`marketplace.json` から消す。版を上げるのはリリースのときだけ（`docs/release.md`） |
 
 ### 4. WARN を判断する
 
@@ -67,20 +74,20 @@ WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直�
 ### 6. マニフェストを検証し、テストを動かす
 
 ```bash
-claude plugin validate .
+claude plugin validate --strict .
 claude plugin validate plugins/config/skills/mod-output-customize/files/mod-output-customize
 claude plugin test plugins/config/skills/mod-output-customize/files/mod-output-customize
 ```
 
-スキルが導入する mod は、テンプレート（`skills/<スキル名>/files/`）として同梱している。マーケットプレイスのプラグインではないため `claude plugin validate .` では読まれず、mod のフォルダを直接渡す。`claude plugin test` は、mod のテスト（`*.test.ts`・`*.test.tsx`）を、mod が動くのと同じ環境で動かす。mod（`hooks/hooks.json` の `modules`）の無いフォルダを渡すと失敗するため、mod のフォルダだけを並べる。
+スキルが導入する mod は、テンプレート（`skills/<スキル名>/files/`）として同梱している。マーケットプレイスのプラグインではないため `claude plugin validate .` では読まれず、mod のフォルダを直接渡す。`--strict`（警告も失敗にする）はマーケットプレイスにだけ付ける。mod は情報の警告が出るため付けない。`claude plugin test` は、mod のテスト（`*.test.ts`・`*.test.tsx`）を、mod が動くのと同じ環境で動かす。mod（`hooks/hooks.json` の `modules`）の無いフォルダを渡すと失敗するため、mod のフォルダだけを並べる。
 
-手順 2 の機械チェックと、この手順のコマンドは、PR でも `.github/workflows/plugin-checks.yml` が動かす。mod を増やしたら、ここと `plugin-checks.yml` の両方に足す。
+手順 2 の機械チェックと、この手順のコマンドは、PR でも `.github/workflows/plugin-checks.yml` が動かす。CI は `main` へ向けた PR でだけ `--base` を付ける。mod を増やしたら、ここと `plugin-checks.yml` の両方に足す。
 
 ### 7. コミットする
 
 コミットメッセージは `/aidd:commit` に任せる。**このスキルはコミットも push もしない**。
 
-push 後、利用側は次で取得する。
+利用者に届くのは、版を上げて `main` にリリースした後（手順は `docs/release.md`）。利用側は次で取得する。
 
 ```bash
 /plugin marketplace update kazu

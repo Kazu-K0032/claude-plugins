@@ -2,7 +2,8 @@ name: プラグインの検査
 
 on:
   pull_request:
-    branches: [main]
+    # main はリリース、develop は普段の変更の PR を受ける（手順は docs/release.md）
+    branches: [main, develop]
 
 permissions: {}
 
@@ -20,10 +21,21 @@ jobs:
       MOD_DIR: plugins/config/skills/mod-output-customize/files/mod-output-customize
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 版の検査で、マージ先のブランチと比べるため
+          fetch-depth: 0
 
-      - name: 整合チェック（スキルと配る設定）
+      - name: 整合チェック（スキルと配る設定・版）
         # 手順は .claude/skills/marketplace-update/SKILL.md。NG があれば終了コード 1 で落ちる
-        run: python3 .claude/skills/marketplace-update/scripts/check.py
+        # main へのリリースの PR では、plugins/ を変えたのに版を上げていないものも落とす
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$BASE_REF" = "main" ]; then
+            python3 .claude/skills/marketplace-update/scripts/check.py --base "origin/$BASE_REF"
+          else
+            python3 .claude/skills/marketplace-update/scripts/check.py
+          fi
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -31,8 +43,9 @@ jobs:
 
       - name: マニフェストを検証
         # ログインは要らない。mod はマーケットプレイスのプラグインではないため、フォルダを直接渡す
+        # マーケットプレイスは --strict で、plugin.json の version 漏れも落とす。mod は情報の警告が出るため付けない
         run: |
-          npx --yes "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" plugin validate .
+          npx --yes "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" plugin validate --strict .
           npx --yes "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" plugin validate "$MOD_DIR"
 
       - name: mod のテスト

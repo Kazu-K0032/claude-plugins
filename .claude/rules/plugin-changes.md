@@ -58,9 +58,11 @@
 
 - 1 つの目的の変更を終え、検査が通ったら、その変更で直したファイルだけを `git add` でステージに置き、`plugins/aidd/skills/commit/SKILL.md` の手順でコミットメッセージを `tmp.md` に書く。コミット・push は利用者が行う
 - 利用者に、push する前に `/marketplace-update` を実行するよう勧める。このスキルは `disable-model-invocation: true` のため、Claude からは呼べない
-- PR では `.github/workflows/plugin-checks.yml` が、`check.py`・マニフェストの検証・mod のテストを動かす。`/marketplace-update` の手順 5（機械チェックが見ない箇所の確認）は CI では動かないため、CI があっても省かない
+- PR のマージ先は `develop` にし、`plugin.json` の版は上げない。版はリリースのときに上げる（`.claude/rules/release.md`）
+- PR では `.github/workflows/plugin-checks.yml` が、`check.py`（版の検査を含む）・マニフェストの検証・mod のテストを動かす。`/marketplace-update` の手順 5（機械チェックが見ない箇所の確認）は CI では動かないため、CI があっても省かない
 - `check.py` だけなら、Claude が `python .claude/skills/marketplace-update/scripts/check.py` で実行して、NG・WARN を確かめてよい
 
 ## 既知の食い違い
 
+- `aidd:docs-sync` の `run-checks.sh` が、差分の基準を `origin/HEAD`（既定ブランチ）から取る。このリポジトリでは作業ブランチを `develop` から作るため、`develop` に溜まった未リリースの変更まで対象に入る。`issue-start`・`pr-create` と同じく、規約のマージ先を基準にすると直る
 - `aidd:ai-report` の同梱スクリプトが、`tmp/` に自分で書いた途中のファイル（`.ai-report-data.json`・`.ai-report-qualitative.md`）を、レポートを作った後に消している。P1 の「削除は禁止」と食い違う。スクリプトの中で消すため、deny では止まらない
