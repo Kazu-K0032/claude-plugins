@@ -53,7 +53,7 @@ config に同梱した mod を、ユーザー全体で読み込まれるよう�
     diff -ru "${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/files/mod-output-customize" ~/.claude/mods/mod-output-customize
     ```
 
-    `.claude-plugin/types/` と、同梱版に無い `tsconfig.json` は差分から外して読む。Claude Code が mod を読み込むたびに書き出すもののため
+    `.claude-plugin/types/` は差分から外して読む。Claude Code が mod を読み込むたびに書き出すもののため
 
 1. 一覧のほかのパスに、同じ mod が無いかを確かめる。各パスの `.claude-plugin/plugin.json` を Read し、`name` が `mod-output-customize` か、以前の名前の `color-emphasis` なら同じ mod とみなす。残すと 2 重に読み込まれる
 
