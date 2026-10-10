@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Claude Code の設定の衝突・重複を機械的に検出し、JSON で標準出力へ出す。読み取り専用。
+// Claude Code の設定の衝突・重複・書き方の誤りを機械的に検出し、JSON で標準出力へ出す。読み取り専用。
 //
 // 使い方: node conflicts.js [--home <dir>] [--project <dir>] [--managed <managed-settings.json>]
 //   --home     ユーザーのホームディレクトリ（既定: OS のホーム）。~/.claude/ と ~/.claude.json を読む
@@ -394,11 +394,30 @@ function parseRule(rule) {
   return m ? { tool: m[1].trim(), spec: m[2] } : { tool: rule, spec: undefined };
 }
 
+// Bash の「:*」は末尾でだけ前方一致の印になる。途中の「:*」は「:」がそのままの文字として照合され、
+// 「*」と末尾の「:*」を混ぜると「*」が広がらない（Claude Code の起動時の警告による）
+function bashSyntaxProblem({ tool, spec }) {
+  if (tool !== 'Bash' || spec === undefined) return null;
+  const body = spec.replace(/:\*$/, '');
+  if (body.includes(':*')) return 'inner-prefix';
+  if (body !== spec && body.includes('*')) return 'mixed-wildcard';
+  return null;
+}
+
+// 「*」だけで書き直した形。末尾の「:*」は、直前が「*」で終わっていれば落とし、そうでなければ「 *」にする
+function fixBashSpec(spec) {
+  const body = spec.replace(/\s*:\*$/, '');
+  const fixed = body.replace(/\s*:\*/g, ' *');
+  return body !== spec && !fixed.endsWith('*') ? `${fixed} *` : fixed;
+}
+
 // deny / ask のルールが allow のルールを丸ごと覆うか。Bash の「:*」「 *」はどちらも前方一致として扱う
 function covers(broad, narrow) {
   const b = parseRule(broad);
   const n = parseRule(narrow);
   if (b.tool !== n.tool) return false;
+  // 書き方の誤りで意図どおりに一致しないルールは permission-syntax で報告し、覆い合いの判定からは外す
+  if (bashSyntaxProblem(b) || bashSyntaxProblem(n)) return false;
   if (b.spec === undefined || b.spec === '*' || b.spec === '**') return true;
   if (n.spec === undefined) return false;
   const pattern = b.spec
@@ -418,6 +437,28 @@ function checkPermissions(settings, findings) {
     const perms = (s.data && s.data.permissions) || {};
     for (const kind of Object.keys(rules)) {
       for (const rule of perms[kind] || []) rules[kind].push({ rule, scope: s.scope });
+    }
+  }
+
+  // 書き方の誤りで、意図したコマンドに一致しないルール
+  for (const kind of Object.keys(rules)) {
+    for (const r of rules[kind]) {
+      const parsed = parseRule(r.rule);
+      const problem = bashSyntaxProblem(parsed);
+      if (!problem) continue;
+      const suggestion = `Bash(${fixBashSpec(parsed.spec)})`;
+      findings.push({
+        category: 'permission-syntax',
+        severity: 'warn',
+        message:
+          problem === 'mixed-wildcard'
+            ? `${kind} の ${r.rule}（${r.scope}）は「*」と末尾の「:*」が混ざっていて「*」が広がらず、「*」をそのまま含むコマンドにしか一致しない。${suggestion} のように「*」だけで書く`
+            : `${kind} の ${r.rule}（${r.scope}）は途中に「:*」があり、「:」がそのままの文字として照合されるため、意図したコマンドに一致しない。${suggestion} のように「*」で書く`,
+        rule: r.rule,
+        kind,
+        scope: r.scope,
+        suggestion,
+      });
     }
   }
 
