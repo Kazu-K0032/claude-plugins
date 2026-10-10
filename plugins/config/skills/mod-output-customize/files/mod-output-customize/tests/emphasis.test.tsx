@@ -2,15 +2,8 @@ import { expect, test } from 'claude-code/testing'
 
 import { parse, unwrapMarks } from '../hooks/emphasis'
 
-/** 並ぶボタンの key。on/off の 4 つと、コピーの 2 つ */
-const BUTTON_KEYS = [
-  'toggle-chat-mode',
-  'toggle-customized',
-  'toggle-doc-concise',
-  'toggle-summary-only',
-  'copy-summary',
-  'copy-next-actions',
-]
+/** 並ぶボタンの key */
+const BUTTON_KEYS = ['toggle-chat-mode', 'toggle-customized', 'toggle-doc-concise']
 
 const SURFACES = ['terminal', 'desktop'] as const
 

@@ -1,4 +1,4 @@
-/** 節の見出し（# から ### まで）。概要・簡潔版・次アクションの始まりと終わりを決める */
+/** 節の見出し（# から ### まで）。次アクションの始まりと終わりを決める */
 const HEADING = /^(#{1,3})\s+(.*?)\s*$/
 
 /** コードブロックの開始と終了（``` または ~~~ の並び）。中の見出しは数えない */
@@ -12,10 +12,6 @@ const MARKS = /`[^`]+`|==([^\s=](?:[^=]*?[^\s=])?)==|\{\{([^\s{}](?:[^{}]*?[^\s{
 
 /** 次アクションの項目のうち、Claude ができる作業の行 */
 const CLAUDE_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+Claude\s*[：:]\s*(.+?)\s*$/
-
-/** 概要を畳んだときに、本文の代わりに置く 1 行 */
-export const FOLDED_OVERVIEW =
-  '（概要を畳んでいます。サイドバーの「概要を畳む」を OFF にすると表示します）'
 
 /** 節の見出しの行と、次の見出しの行（無ければ末尾） */
 type SectionRange = { heading: number; end: number }
@@ -58,27 +54,6 @@ function findSection(lines: readonly string[], title: string): SectionRange | nu
 }
 
 /**
- * 概要の本文を 1 行の案内に置き換える
- * @param text - 応答の 1 ブロック分の markdown
- * @returns 畳んだ markdown。概要の節が無ければ null
- */
-export function foldOverview(text: string): string | null {
-  const lines = text.split('\n')
-  const section = findSection(lines, '概要')
-  if (section === null) {
-    return null
-  }
-
-  return [
-    ...lines.slice(0, section.heading + 1),
-    '',
-    FOLDED_OVERVIEW,
-    '',
-    ...lines.slice(section.end),
-  ].join('\n')
-}
-
-/**
  * 節の本文を取り出す
  * @param text - 応答の markdown
  * @param title - 取り出す見出しの題（「簡潔版」「次アクション」など）
@@ -96,8 +71,8 @@ export function extractSection(text: string, title: string): string | null {
 }
 
 /**
- * 外に貼る文から、チャット用の記法を外す。【警告】などの分類のラベルは意味があるので残す
- * @param text - 節の本文
+ * 入力欄の候補に出す文から、チャット用の記法を外す。【警告】などの分類のラベルは意味があるので残す
+ * @param text - 外す前の文
  * @returns ✅ / ❌ の印と ==語句== / {{仕様}} の囲みを外した文
  */
 export function toPlainText(text: string): string {
@@ -129,31 +104,4 @@ export function nextClaudeRequest(text: string): string | null {
   }
 
   return null
-}
-
-/** 会話の 1 件。session.messages の要素のうち、ここで使う部分 */
-type Message = { role: 'user' | 'assistant'; text: string }
-
-/**
- * 最新の応答を取り出す。最後に人が書いた発言より後の、assistant の本文をつなげる
- * （ツールを挟むと 1 つの応答が複数の発言に分かれるため）
- * @param messages - 会話の発言の一覧（古い順）
- * @returns 最新の応答の本文。応答が無ければ null
- */
-export function latestAnswer(messages: readonly Message[]): string | null {
-  const texts: string[] = []
-  for (const message of [...messages].reverse()) {
-    if (message.role === 'user') {
-      // ツールの結果だけの発言（本文が空）は人の発言ではないので、さかのぼり続ける
-      if (message.text.trim() !== '') {
-        break
-      }
-      continue
-    }
-    if (message.text.trim() !== '') {
-      texts.unshift(message.text)
-    }
-  }
-
-  return texts.length === 0 ? null : texts.join('\n\n')
 }

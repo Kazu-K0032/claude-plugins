@@ -1,14 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
-/** 並ぶボタンの key。on/off の 4 つと、コピーの 2 つ */
-const BUTTON_KEYS = [
-  'toggle-chat-mode',
-  'toggle-customized',
-  'toggle-doc-concise',
-  'toggle-summary-only',
-  'copy-summary',
-  'copy-next-actions',
-]
+/** 並ぶボタンの key */
+const BUTTON_KEYS = ['toggle-chat-mode', 'toggle-customized', 'toggle-doc-concise']
 
 const SURFACES = ['terminal', 'desktop'] as const
 
@@ -128,61 +121,6 @@ const ANSWER = [
   '',
   '- Claude：README の説明を直して',
 ].join('\n')
-
-test('「簡潔版をコピー」で、最新の応答の簡潔版を記法を外してクリップボードに入れる', async ($, on) => {
-  const copied: string[] = []
-  on('session.messages', () => ({
-    value: [
-      { role: 'user', text: '質問', toolUses: [] },
-      { role: 'assistant', text: ANSWER, toolUses: [] },
-    ],
-  }))
-  on('ui.copy', (_$, e) => {
-    copied.push(e.text)
-    return { value: { isCopied: true } }
-  })
-  on('ui.toast', () => ({ value: undefined }))
-
-  const pane = await $.ui.mount({
-    plugin: 'mod-output-customize',
-    surface: 'terminal',
-    component: 'Pane',
-    requestId: PANE_ID,
-    props: DOCKED_PANE_PROPS,
-  })
-  await pane.press({ key: 'copy-summary' })
-  await pane.press({ key: 'copy-next-actions' })
-
-  expect(copied).toEqual(['結論の文。なぜなら、大事な点 があるからだ。', '- Claude：README の説明を直して'])
-  await pane.unmount()
-})
-
-test('「概要を畳む」を ON にすると、応答の概要の本文を描かない', async ($, on) => {
-  on('store.set', () => ({ value: undefined }))
-
-  const pane = await $.ui.mount({
-    plugin: 'mod-output-customize',
-    surface: 'terminal',
-    component: 'Pane',
-    requestId: PANE_ID,
-    props: DOCKED_PANE_PROPS,
-  })
-  await pane.press({ key: 'toggle-summary-only' })
-
-  const message = await $.ui.mount({
-    plugin: 'mod-output-customize',
-    surface: 'terminal',
-    component: 'AssistantMessage',
-    props: { text: ANSWER, isFirstOfReply: true },
-  })
-  const drawn = JSON.stringify(await message.drawn())
-  expect(drawn).toContain('概要を畳んでいます')
-  expect(drawn).not.toContain('詳しい説明。')
-  expect(drawn).toContain('README の説明を直して')
-
-  await message.unmount()
-  await pane.unmount()
-})
 
 test('チャットモード中は、画面下のモード表示に「チャット」を足す', async ($, on) => {
   let modes: readonly string[] = []
