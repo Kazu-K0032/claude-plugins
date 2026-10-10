@@ -1,7 +1,7 @@
 ---
 name: issue-pr-sync
-description: 指定した Issue と PR を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える）・ラベル等のサイドバーを直接反映する（既存の記述を消すなどの重要な変更だけ、反映前に承認を取る）。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
-argument-hint: "<Issue番号|URL> <PR番号|URL>"
+description: 指定した Issue と PR（省くと今のブランチの PR）を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える）・ラベル等のサイドバーを直接反映する（既存の記述を消すなどの重要な変更だけ、反映前に承認を取る）。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
+argument-hint: "<Issue番号|URL> [PR番号|URL（任意。省略時は今のブランチの PR）]"
 disable-model-invocation: true
 allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync_*.md)
 ---
@@ -32,10 +32,12 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 | ファイル | 役割 |
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 本文を書くときの markdown 書式規約 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/SKILL.md` の「AI を使った確認の書き方」 | PR 本文の「AI を使った確認」のコマンドに入れる番号 |
 
 ## バリデーション
 
-- `$ARGUMENTS` から Issue と PR の識別子を 2 つ取れない場合は、どちらが不足しているかを示して追加質問する
+- `$ARGUMENTS` の 1 つ目を Issue、2 つ目を PR の識別子とする。Issue が無い場合は追加質問する
+- PR を省いた場合は、今のブランチの PR を使う（`gh pr view` に識別子を渡さない）。今のブランチに PR が無ければ中断し、PR を作ってから実行するか、PR の識別子を渡すよう伝える
 - 識別子は番号でも URL でもよい。`gh` は両方を受け付けるため、パースせずそのまま渡す
 - `gh issue view` / `gh pr view` が失敗したら、その時点で中断して原因を報告する（存在しない・権限が無い・リポジトリが違う）
 
@@ -47,9 +49,11 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 git branch --show-current
 date +%Y%m%d_%H%M%S
 gh issue view <Issue> --json number,title,body,labels,assignees,milestone,state,url
-gh pr view <PR> --json number,title,body,labels,assignees,milestone,reviewRequests,reviews,comments,baseRefName,state,isDraft,url
+gh pr view [<PR>] --json number,title,body,labels,assignees,milestone,reviewRequests,reviews,comments,baseRefName,state,isDraft,url
 gh label list
 ```
+
+PR を省いたときは `gh pr view` に識別子を渡さず、今のブランチの PR を取る。以降の `<PR>` には、ここで取った `number` を使う。
 
 インラインのレビュースレッドは `gh pr view --json reviews` に本文が含まれないことがある。未解決の指摘を取りこぼしそうなときだけ `gh api repos/{owner}/{repo}/pulls/<PR>/comments` で補う。
 
@@ -116,7 +120,7 @@ gh pr edit <PR> --add-label enhancement --add-assignee @me --add-reviewer <ユ�
 
 ### Step 6: 報告する
 
-- 反映した対象と、その URL。承認を取らずに反映した変更は、そのことを添える
+- 反映した対象と、その URL。承認を取らずに反映した変更は、そのことを添える。PR を省いたときは、使った PR の番号も書く
 - 変更前の値（タイトル・サイドバー）と、反映前の本文（`_before.md`）の出力パス
 - 反映しなかった対象と、その理由
 - 判断を保留した論点があればその内容
@@ -130,7 +134,7 @@ gh pr edit <PR> --add-label enhancement --add-assignee @me --add-reviewer <ユ�
 
 | 承認を取る | 承認を取らない |
 | --- | --- |
-| 既存の記述を消す・意味を変える（追記・チェック以外の書き換え） | PR 本文の新規作成、「変更点」への追記 |
+| 既存の記述を消す・意味を変える（追記・チェック以外の書き換え） | PR 本文の新規作成、「変更点」への追記、「AI を使った確認」のコマンドに番号を入れる・今の番号に直す |
 | 既存の記述と差分が食い違い、どちらを正とするか決めきれない | Issue のタスクのチェック、着手後に増えた対応の追記 |
 | Issue のタイトルを変える | PR のタイトルを Issue に揃える |
 | ラベル・担当者を外す。ほかの人を担当者・レビュワーに足す | ラベル・自分（または Issue の担当者）・マイルストーンを、Issue に揃えて足す |
@@ -154,6 +158,8 @@ gh pr edit <PR> --add-label enhancement --add-assignee @me --add-reviewer <ユ�
 - 対応しないと決まった項目は消さず、そのまま残す（判断の経緯が読めなくなるため）
 
 ### PR 本文
+
+「AI を使った確認」の欄があれば、追従・新規作成のどちらでも、`pr-create` の「AI を使った確認の書き方」に従って各コマンドに Issue と PR の番号を入れる。欄が無ければ足さない。
 
 #### 追従のとき（本文がある）
 
