@@ -10,14 +10,17 @@
   6. テンプレート（skills/<スキル名>/files/）の収録ファイルと、そのスキルの README の収録物表の一致
   7. .claude/rules/duplicated-files.md に載っている重複ファイルの組の内容が一致しているか
   8. 各スキル（plugins/ 配下と .claude/skills/）の argument-hint が .claude/rules/argument-hint.md の書き方に沿っているか
+  9. 版（version）の書き方。全プラグインの plugin.json に同じ版があり、marketplace.json には書いていないか。
+     --base を渡したときは、基準から plugins/ が変わっているのに版が上がっていないものも NG にする（main へのリリースの PR 用）
 
-使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>]
+使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>] [--base <比べる ref>]
 終了コード: NG が 1 件でもあれば 1、それ以外は 0（WARN は 0 のまま）
 """
 import glob
 import json
 import os
 import re
+import subprocess
 import sys
 
 results = []
@@ -118,6 +121,8 @@ def main():
 
     check_duplicated_files(repo)
     check_argument_hints(repo)
+    base = sys.argv[sys.argv.index("--base") + 1] if "--base" in sys.argv else None
+    check_versions(repo, market, base)
 
     order = {"NG": 0, "WARN": 1}
     for level, category, message in sorted(results, key=lambda r: (order[r[0]], r[1])):
@@ -297,6 +302,55 @@ def check_argument_hints(repo):
             elif "任意" in group or "省略" in group:
                 add("NG", "argument-hint",
                     "%s: 必須の引数 %s に「任意」「省略」がある。任意なら [] で書く" % (rel, group))
+
+
+SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+
+
+def git(repo, *args):
+    return subprocess.run(["git", "-C", repo] + list(args), capture_output=True, text=True, encoding="utf-8")
+
+
+def check_versions(repo, market, base):
+    """9: 版はリリースの単位。全プラグインで 1 つの版を使い、plugin.json だけに書く（手順は docs/release.md）。"""
+    for entry in market.get("plugins", []):
+        if "version" in entry:
+            add("NG", "version",
+                "marketplace.json の %s に version がある。版は plugin.json だけに書く" % entry["name"])
+    versions = {}
+    for path in sorted(glob.glob(os.path.join(repo, "plugins", "*", ".claude-plugin", "plugin.json"))):
+        rel = os.path.relpath(path, repo).replace(os.sep, "/")
+        version = json.loads(read(path)).get("version")
+        if version is None or not SEMVER.match(version):
+            add("NG", "version", "%s の version が X.Y.Z の形ではない（%s）" % (rel, version))
+            continue
+        versions[rel] = version
+    if len(set(versions.values())) > 1:
+        add("NG", "version", "plugin.json の version がそろっていない（%s）"
+            % "、".join("%s: %s" % kv for kv in versions.items()))
+    if base is None or len(set(versions.values())) != 1:
+        return
+
+    changed = git(repo, "diff", "--name-only", "%s...HEAD" % base, "--", "plugins/")
+    if changed.returncode != 0:
+        add("NG", "version", "基準 %s と比べられない（%s）" % (base, changed.stderr.strip()))
+        return
+    if not changed.stdout.strip():
+        return
+    # 基準に版が無いとき（版を入れる前のコミット）は 0.0.0 として比べる
+    base_versions = []
+    for rel in versions:
+        shown = git(repo, "show", "%s:%s" % (base, rel))
+        if shown.returncode == 0:
+            m = SEMVER.match(json.loads(shown.stdout).get("version") or "")
+            if m:
+                base_versions.append(tuple(int(n) for n in m.groups()))
+    before = max(base_versions, default=(0, 0, 0))
+    now = tuple(int(n) for n in SEMVER.match(next(iter(versions.values()))).groups())
+    if now <= before:
+        add("NG", "version",
+            "%s から plugins/ が変わっているのに、version が上がっていない（%s → %s）"
+            % (base, ".".join(map(str, before)), ".".join(map(str, now))))
 
 
 if __name__ == "__main__":
