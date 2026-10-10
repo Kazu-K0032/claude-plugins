@@ -3,7 +3,7 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
   // シェルスクリプト（.claude/hooks/*.sh）が CRLF で壊れないよう、新規ファイルの改行を LF にする
-  "files.eol": "\n",
-  // 固有名詞・技術用語を cSpell の誤検知から外す
-  "cSpell.words": []
+  "files.eol": "\n"
+  // スペルチェックの除外語は、ここ（cSpell.words）ではなくリポジトリ直下の cspell.json に置く。
+  // cspell の CLI（CI のスペルチェック）は cSpell.words を読まないため、拡張機能と CLI の両方が読む cspell.json にまとめる
 }
