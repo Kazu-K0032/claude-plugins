@@ -2,6 +2,16 @@ import { expect, test } from 'claude-code/testing'
 
 import { parse, unwrapMarks } from '../hooks/emphasis'
 
+/** 並ぶボタンの key。on/off の 4 つと、コピーの 2 つ */
+const BUTTON_KEYS = [
+  'toggle-chat-mode',
+  'toggle-customized',
+  'toggle-doc-concise',
+  'toggle-summary-only',
+  'copy-summary',
+  'copy-next-actions',
+]
+
 const SURFACES = ['terminal', 'desktop'] as const
 
 test('✅ / ❌ の行と ==語句== を含む行だけを色付きの行に分ける', () => {
@@ -175,8 +185,8 @@ test('ボタンには数字キーを割り当てず、クリックでだけ切�
   })
   const buttons = await band.findAll({ type: 'Button' })
 
-  expect(buttons.map(button => button.key)).toEqual(['toggle-chat-mode', 'toggle-customized', 'toggle-doc-concise'])
-  expect(buttons.map(button => button.props.hotkey)).toEqual([undefined, undefined, undefined])
+  expect(buttons.map(button => button.key)).toEqual(BUTTON_KEYS)
+  expect(buttons.map(button => button.props.hotkey)).toEqual(BUTTON_KEYS.map(() => undefined))
 
   await band.unmount()
 })

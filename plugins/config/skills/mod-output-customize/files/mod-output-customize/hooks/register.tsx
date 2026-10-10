@@ -1,9 +1,10 @@
 import { atom, read, update } from 'claude-code'
-import type { CoreEngineInterface, Register, ToolCallInput } from 'claude-code'
+import type { CoreEngineInterface, Register, ToolCallInput, UiPressArgument } from 'claude-code'
 
 import { hasEmphasis, parse } from './emphasis'
 import type { Block, Span, Tone } from './emphasis'
 import { isReadOnlyCommand, isReadOnlyMcpTool, isReadOnlyTool } from './readonly'
+import { extractSection, foldOverview, latestAnswer, nextClaudeRequest, toPlainText } from './sections'
 
 /** 強調に使う色。テーマのキーか生の色名 */
 const EMPHASIS_COLOR = 'red'
@@ -29,6 +30,12 @@ const CUSTOMIZED_STORE_KEY = 'isCustomized'
 /** 文書の書き方の指定の on/off を次のセッションへ持ち越すための $.store のキー */
 const DOC_CONCISE_STORE_KEY = 'isDocConcise'
 
+/** 概要を畳むかの on/off を次のセッションへ持ち越すための $.store のキー */
+const SUMMARY_ONLY_STORE_KEY = 'isSummaryOnly'
+
+/** チャットモード中に、画面下のモード表示へ足す文字 */
+const CHAT_MODE_LABEL = 'チャット'
+
 /**
  * チャットモード（読み取り専用）か。セッションをまたいで持ち越さない
  * （気づかないまま次のセッションや -p の実行で書き込みが拒否されないように）
@@ -40,6 +47,15 @@ const isCustomized = atom({ plugin: 'mod-output-customize', key: 'isCustomized' 
 
 /** Issue・PR の本文やコメントなど、外に書き出す文書を簡潔に書かせるか */
 const isDocConcise = atom({ plugin: 'mod-output-customize', key: 'isDocConcise' } as const, true)
+
+/** 応答の概要を畳み、簡潔版と次アクションだけを見せるか */
+const isSummaryOnly = atom({ plugin: 'mod-output-customize', key: 'isSummaryOnly' } as const, false)
+
+/**
+ * 最新の応答の次アクションにあった、Claude ができる作業の依頼文。無ければ空文字。
+ * エンジン自身の入力欄の候補が後から来たときに、この文に差し替えるために持っておく
+ */
+const nextSuggestion = atom({ plugin: 'mod-output-customize', key: 'nextSuggestion' } as const, '')
 
 /**
  * ボタン 1 つ分。サイドバーか入力欄の上に出し、クリックでだけ押す
@@ -56,6 +72,13 @@ type ToggleState = {
   toggle: Toggle
   isOn: boolean
   onPress: () => Promise<void>
+}
+
+/** on/off を持たない、押すたびに 1 回動くボタン（コピーなど） */
+type Action = {
+  key: string
+  label: string
+  onPress: (press: UiPressArgument) => Promise<void>
 }
 
 /** ボタンを並べるサイドバー（Pane）の id。コマンドで開き直すときも同じ id を使う */
@@ -91,6 +114,13 @@ const DOC_CONCISE_TOGGLE: Toggle = {
   onColor: 'suggestion',
 }
 
+/** 概要を畳むかを切り替えるボタン */
+const SUMMARY_ONLY_TOGGLE: Toggle = {
+  key: 'toggle-summary-only',
+  label: '概要を畳む',
+  onColor: 'cyan',
+}
+
 /** チャットモードで、読み取り用でないツール（ファイルの編集・PowerShell など）を止めたとき、モデルに返す理由 */
 const TOOL_DENY_REASON = [
   'チャットモード（読み取り専用）のため、このツールは使えません。',
@@ -120,24 +150,28 @@ const MCP_DENY_REASON = [
  * @param $ - フックが受け取った engine のインターフェース
  */
 async function loadSavedToggles($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<void> {
-  const [savedCustomized, savedDocConcise] = await Promise.all([
+  const [savedCustomized, savedDocConcise, savedSummaryOnly] = await Promise.all([
     $.store.get(CUSTOMIZED_STORE_KEY),
     $.store.get(DOC_CONCISE_STORE_KEY),
+    $.store.get(SUMMARY_ONLY_STORE_KEY),
   ])
   await update($, isCustomized, () => savedCustomized !== false)
   await update($, isDocConcise, () => savedDocConcise !== false)
+  // 既定は OFF。畳むのは利用者が選んだときだけ
+  await update($, isSummaryOnly, () => savedSummaryOnly === true)
 }
 
 /**
- * 3 つのボタンの今の状態と、押したときの処理を読む。サイドバーと入力欄の上の帯で同じものを使う
+ * on/off のボタンの今の状態と、押したときの処理を読む。サイドバーと入力欄の上の帯で同じものを使う
  * @param $ - フックが受け取った engine のインターフェース
- * @returns チャットモード・応答カスタム・文書を簡潔にの順の状態
+ * @returns チャットモード・応答カスタム・文書を簡潔に・概要を畳むの順の状態
  */
 async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<ToggleState[]> {
-  const [chatMode, customized, docConcise] = await Promise.all([
+  const [chatMode, customized, docConcise, summaryOnly] = await Promise.all([
     read($, isChatMode),
     read($, isCustomized),
     read($, isDocConcise),
+    read($, isSummaryOnly),
   ])
 
   return [
@@ -163,6 +197,56 @@ async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>)
         const value = await update($, isDocConcise, isOnNow => !isOnNow)
         await $.store.set(DOC_CONCISE_STORE_KEY, value)
       },
+    },
+    {
+      toggle: SUMMARY_ONLY_TOGGLE,
+      isOn: summaryOnly,
+      onPress: async () => {
+        const value = await update($, isSummaryOnly, isOnNow => !isOnNow)
+        await $.store.set(SUMMARY_ONLY_STORE_KEY, value)
+      },
+    },
+  ]
+}
+
+/**
+ * 最新の応答から 1 つの節を取り出し、記法を外してクリップボードに入れる。結果は toast で伝える
+ * @param $ - フックが受け取った engine のインターフェース
+ * @param title - 取り出す見出しの題（「簡潔版」「次アクション」）
+ * @param press - 押されたボタンの情報。押した画面のクリップボードに入れるために使う
+ */
+async function copyLatestSection(
+  $: Pick<CoreEngineInterface, 'session' | 'ui'>,
+  title: string,
+  press: UiPressArgument,
+): Promise<void> {
+  const answer = latestAnswer(await $.session.messages())
+  const section = answer === null ? null : extractSection(answer, title)
+  if (section === null) {
+    $.ui.toast(`最新の応答に「${title}」がありません`)
+    return
+  }
+
+  const copied = await $.ui.copy({ text: toPlainText(section), surface: press.surface })
+  $.ui.toast(copied.isCopied ? `「${title}」をコピーしました` : `「${title}」をコピーできませんでした（${copied.reason}）`)
+}
+
+/**
+ * on/off を持たないボタンを並べる。サイドバーと入力欄の上の帯で同じものを使う
+ * @param $ - フックが受け取った engine のインターフェース
+ * @returns 簡潔版をコピー・次アクションをコピーの順のボタン
+ */
+function readActions($: Pick<CoreEngineInterface, 'session' | 'ui'>): Action[] {
+  return [
+    {
+      key: 'copy-summary',
+      label: '簡潔版をコピー',
+      onPress: press => copyLatestSection($, '簡潔版', press),
+    },
+    {
+      key: 'copy-next-actions',
+      label: '次アクションをコピー',
+      onPress: press => copyLatestSection($, '次アクション', press),
     },
   ]
 }
@@ -198,7 +282,7 @@ const GUIDE_TEXT = [
   '説明・調査結果・作業報告など内容のある応答は、次の見出しをこの順で置いて書く。',
   '1. `### 簡潔版`: 200〜300 文字。非エンジニアでも伝わるよう、専門用語やコードの名前を避け、何が起きたか・何をしたか・どうなったかを平易な言葉で書く',
   '2. `### 概要`: ここからはエンジニア向け。ファイル・コード・設計判断などの具体的な説明を書く',
-  '3. `## 次アクション`: 必要なときだけ、応答の最後に置く。ユーザーがすること（コマンドの実行・判断・確認）や、続けて Claude ができる作業があるときに、誰が何をするかを 1 行ずつ、1〜3 項目の箇条書きで書く。選んでもらう選択肢もここに置く。することが無ければ置かない。ほかの部分と同じ内容を繰り返さない',
+  '3. `## 次アクション`: 必要なときだけ、応答の最後に置く。ユーザーがすること（コマンドの実行・判断・確認）や、続けて Claude ができる作業があるときに、誰が何をするかを 1 行ずつ、1〜3 項目の箇条書きで書く。各項目は「あなた：」か「Claude：」で始め、Claude の項目は「〜して」の形で、そのまま依頼として送れる文にする。選んでもらう選択肢もここに置く。することが無ければ置かない。ほかの部分と同じ内容を繰り返さない',
   '応答全体が 300 文字に満たない短い返答（一言で済む回答、確認の問いかけなど）では、`### 簡潔版` と `### 概要` を付けない。`## 次アクション` は短い返答でも、必要なら置く。',
   '文と文のつながりは、接続詞で読み手に示す。理由は「なぜなら、〜からだ」、言い換えやまとめは「つまり、〜」で書き、「〇〇が〇〇するのは、〜だから」のように、何が何をするのかをはっきりさせる。簡潔版でも同じにする。',
   'この形式は、出力スタイルが定める行数や見出しの目安より優先する。',
@@ -336,7 +420,7 @@ export const register: Register = on => {
     if (surfaces.length > 0) {
       await $.command.register({
         name: PANE_COMMAND,
-        description: '出力の設定（チャットモード・応答カスタム・文書を簡潔に）のボタンをサイドバーに開く',
+        description: '出力の設定（チャットモードなどの切り替えと、応答の要点のコピー）のボタンをサイドバーに開く',
       })
       // 頼まれずに開くサイドバーは、端末の幅が足りるまで描かれない。その間は帯にボタンを出す
       void openPane($)
@@ -376,8 +460,9 @@ export const register: Register = on => {
     const states = await readToggleStates($)
     const { Box, Button, Text } = $.ui.resolve(e)
 
+    // ボタンが 6 つあり 1 行に収まらない幅もあるので、折り返す
     return (
-      <Box flexDirection="row" columnGap={3}>
+      <Box flexDirection="row" flexWrap="wrap" columnGap={3}>
         {states.map(({ toggle, isOn, onPress }) => (
           <Box flexDirection="row">
             <Button key={toggle.key} label={toggle.label} plain onPress={onPress} />
@@ -385,6 +470,9 @@ export const register: Register = on => {
               {isOn ? ' ON' : ' OFF'}
             </Text>
           </Box>
+        ))}
+        {readActions($).map(action => (
+          <Button key={action.key} label={action.label} plain onPress={action.onPress} />
         ))}
       </Box>
     )
@@ -397,7 +485,7 @@ export const register: Register = on => {
     const isDocked = e.props.placement === 'dock'
 
     return (
-      <Box flexDirection={isDocked ? 'column' : 'row'} columnGap={3} rowGap={1}>
+      <Box flexDirection={isDocked ? 'column' : 'row'} flexWrap="wrap" columnGap={3} rowGap={1}>
         {states.map(({ toggle, isOn, onPress }) => (
           <Box flexDirection="row">
             <Button key={toggle.key} label={toggle.label} plain onPress={onPress} />
@@ -406,16 +494,58 @@ export const register: Register = on => {
             </Text>
           </Box>
         ))}
+        {readActions($).map(action => (
+          <Button key={action.key} label={action.label} plain onPress={action.onPress} />
+        ))}
       </Box>
     )
   })
 
+  // チャットモード中は、画面下のモード表示にも出し、読み取り専用であることを常に見せる
+  on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
+    if (!(await read($, isChatMode))) {
+      return next(e)
+    }
+    return next({ ...e, props: { ...e.props, modes: [...e.props.modes, CHAT_MODE_LABEL] } })
+  })
+
+  // 次アクションの「Claude：〜して」を、入力欄の薄い候補（Tab で取り込む）に出す
+  on('turn.complete', async ($, e, next) => {
+    const completed = await next(e)
+    // サブエージェントのターンは、利用者が次に送るプロンプトとは関係しない
+    if (e.agentId !== undefined) {
+      return completed
+    }
+
+    const request = !e.isAborted && (await read($, isCustomized)) ? nextClaudeRequest(e.answer) : null
+    await update($, nextSuggestion, () => request ?? '')
+    if (request !== null) {
+      try {
+        await $.prompt.suggest({ text: request })
+      } catch {
+        // 入力欄が無い実行（-p など）では出せない。候補は補助なので、出せなくても続ける
+      }
+    }
+    return completed
+  })
+
+  // エンジン自身の候補が後から来ても、次アクションの依頼文があればそちらを出す
+  on('prompt.suggest', async ($, e, next) => {
+    if (e.origin.kind !== 'suggestion') {
+      return next(e)
+    }
+    const request = await read($, nextSuggestion)
+    return next(request === '' ? e : { ...e, text: request })
+  })
+
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
-    const blocks = parse(e.props.text)
+    // 概要を畳むときは、概要の本文を 1 行の案内に置き換えてから描く
+    const folded = (await read($, isSummaryOnly)) ? foldOverview(e.props.text) : null
+    const blocks = parse(folded ?? e.props.text)
     const isTooLong = blocks.some(
       block => block.kind === 'markdown' && block.text.length > MARKDOWN_MAX_LENGTH,
     )
-    if (isTooLong || !hasEmphasis(blocks)) {
+    if (isTooLong || (folded === null && !hasEmphasis(blocks))) {
       return next(e)
     }
 

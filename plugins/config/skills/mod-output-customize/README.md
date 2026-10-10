@@ -1,6 +1,6 @@
 # mod-output-customize
 
-サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を、ユーザー全体に入れる Skill。
+サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替え、応答の要点の折りたたみ・コピーができる mod を、ユーザー全体に入れる Skill。
 
 `files/mod-output-customize/` が mod の本体。スキルがこれを `~/.claude/mods/mod-output-customize/` にコピーし、`~/.claude/settings.json` の `env.CLAUDE_CODE_PLUGIN_DIRS` に足して読み込ませる。
 
