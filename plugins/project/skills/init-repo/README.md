@@ -68,9 +68,9 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
-- deny は、コミット・push・削除・権限の変更と、間違えたときに深刻な外部操作（マージ・承認・リリース・ワークフローの実行など）を塞いでいる。線引きは [P1](../../../../docs/policies/p01-operation-boundary.md)。Issue・PR の作成（`gh issue create` / `gh pr create`）、コメント（`gh issue comment`）、本文・タイトル・サイドバーの更新（`gh issue edit` / `gh pr edit`）、クローズ（`gh issue close` / `gh pr close`）、Issue に紐づくブランチの作成（`gh issue develop`）は Claude に任せる前提で塞いでいない。`/aidd:issue-pr-sync` が更新に、`/aidd:issue-start` がブランチの作成・担当者の追加・確認結果のコメントに、`/config:plugin-feedback` がプラグインの不具合・改善案の起票（`Kazu-K0032/claude-plugins` への `create` / `comment`）に使う。塞ぎたい場合は deny に足す（その場合 issue-pr-sync は下書き出力まで、issue-start は確認の報告まで、plugin-feedback は Web の画面に貼る下書きを示すところまでになる）
+- deny は、コミット・push・削除・権限の変更と、間違えたときに深刻な外部操作（マージ・承認・リリース・ワークフローの実行など）を塞いでいる。線引きは [P1](../../../../docs/policies/p01-operation-boundary.md)。Issue・PR の作成・コメント・更新・クローズと、Issue に紐づくブランチの作成は Claude に任せる前提で塞いでいない。塞ぎたい場合は deny に足す。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る
 - ファイル・ブランチ・タグ・stash の削除（`rm`・`git branch -d`・PowerShell の `Remove-Item` など）も deny で塞いでいる。作業用の一時ファイルは `tmp/<ブランチ名>/` に置き、消さずに済むようにする。消すときは人が行う
-- `guard-git-write.sh` を配線すると、上記の Issue・PR の作成・更新・クローズ（`create` / `edit` / `close`）も止まる。`develop` と `comment` は止まらないため、`/aidd:issue-start` はブランチの作成と確認結果のコメントはでき、担当者の追加（`edit`）だけが止まる。`/config:plugin-feedback` は新しい Issue の作成（`create`）が止まり、下書きを Web の画面に手で貼り付ける手順に進む。配線するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
+- `guard-git-write.sh` を配線すると、上記の Issue・PR の作成・更新・クローズ（`create` / `edit` / `close`）も止まる。`develop` と `comment` は止まらない。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る。配線するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
 - `.gitignore`・`.vscode/`・`cspell.json` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
