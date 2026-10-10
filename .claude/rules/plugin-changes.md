@@ -2,7 +2,7 @@
 
 このリポジトリの 3 つのプラグイン（`aidd`・`config`・`project`）は、すべてを同じ環境に入れて使う前提で作っている。そのため、変更が `docs/policies/` の方針や、ほかのプラグインの動きとぶつからないようにする。ここには、変更の種類ごとに守ることを書く。
 
-方針の中身と理由は、`docs/policies/` の各ファイルが正典（理由を書く唯一の場所）。用語（deny・`allowed-tools`・許可プロンプト・`guard-git-write.sh`）は [docs/policies/README.md](../../docs/policies/README.md) の「用語」を見る。
+方針の中身と理由は、`docs/policies/` の各ファイルが正典（理由を書く唯一の場所）。方針の土台になる考え方は、[docs/values/](../../docs/values/README.md)（AI駆動開発の価値）にある。用語（deny・`allowed-tools`・許可プロンプト・`guard-git-write.sh`）は [docs/policies/README.md](../../docs/policies/README.md) の「用語」を見る。
 
 ## スキルやテンプレートを変更する場合
 
@@ -45,6 +45,8 @@
 ## 方針を足す・変える場合
 
 - 新しい方針を決めたとき（会話で「〜はしない」「〜は人が行う」と決めたなど）は、`docs/policies/` に方針のファイルを足し、このファイルと `docs/policies/README.md` の一覧にも足す。書き方は `docs/policies/README.md` の「ファイルの書き方」に従う
+- 方針を足す・変えるときは、`docs/values/` のどの価値に基づくか、どの価値にも反しないかを確かめ、方針の冒頭の表の「価値」に番号を書く。価値に反する方針になるときは、実装する前に利用者に伝える
+- 価値（`docs/values/`）を足す・変えるのは、利用者が決める。Claude からは提案にとどめる。書き方は `docs/values/README.md` の「ファイルの書き方」に従う
 - 方針を変えるときは、方針のファイルを直し、その方針に沿って書いた場所（README・`SKILL.md`・テンプレート・`check.py`）もすべて直す
 - ある方針が 1 つのプラグインにしか書かれていないのに、ほかのプラグインで同じ場面が出てきたら、その方針をほかのプラグインにも広げるかを利用者に聞く
 

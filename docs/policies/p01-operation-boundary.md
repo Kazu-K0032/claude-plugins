@@ -3,6 +3,7 @@
 | 区分 | 内容 |
 | --- | --- |
 | 対象 | すべてのプラグイン |
+| 価値 | [V3](../values/v03-human-judgment.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
 Claude が実行してよい操作と、人が行う操作の線引きを決める。新しい操作が出てきたら、下の「判断の順番」に当てて決める。
 

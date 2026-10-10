@@ -3,6 +3,7 @@
 | 区分 | 内容 |
 | --- | --- |
 | 対象 | `aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create`・`ai-report`・`pr-review`・`docs-consistency-audit` |
+| 価値 | [V2](../values/v02-understand-before-accept.md)・[V3](../values/v03-human-judgment.md) |
 
 レポートや下書きは `tmp/<ブランチ名>/` と `tmp.md` に書き、`.gitignore` でコミットから外す。
 
