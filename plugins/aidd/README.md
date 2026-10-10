@@ -156,3 +156,13 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
 - `workflows/` の `pr-review.js`・`docs-consistency-audit.js`
+
+### Issue 番号を省いたら、ブランチ名から取る
+
+`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名から番号を取る。
+
+ブランチ名の形を変えるときは、次の箇所もそろえて直す。
+
+- `skills/` の `issue-start`・`pr-create`・`issue-pr-sync` の `SKILL.md`
+- `workflows/` の `pr-review.js`
+- `project` の `init-repo` が配る `.claude/rules/branch.md`（このリポジトリの `.claude/rules/branch.md` と組）
