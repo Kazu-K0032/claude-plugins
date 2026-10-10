@@ -121,6 +121,10 @@ Step 1 の `git status --porcelain` に出力があれば、ブランチを作�
 
 ### Step 5: ブランチを用意する
 
+先に、ブランチの規約を探す。`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/` を「ブランチ」「branch」で `Grep` する。
+
+起点のブランチ（作業ブランチの作成元で、PR のマージ先）は、規約にあればそれ、無ければ Step 1 の `defaultBranchRef`（既定のブランチ）にする。`develop` に溜めてから `main` へリリースするリポジトリでは、既定のブランチと起点が違うため。Step 15 の差分と報告でも、この起点を使う。
+
 Step 1 の `gh issue develop --list` に紐づいたブランチがあれば、新しく作らずにそのブランチへ移動する。複数あれば、どれに移動するかを `AskUserQuestion` で聞く。
 
 ```bash
@@ -128,11 +132,7 @@ git fetch
 git switch <ブランチ名>
 ```
 
-紐づいたブランチが無ければ、ブランチ名と起点のブランチを決めてから作る。
-
-1. リポジトリの規約に、ブランチ名の付け方と作業ブランチの起点（PR のマージ先）があれば従う。`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/` を「ブランチ」「branch」で `Grep` して探す
-1. 名前の規約が無ければ `issues/<番号>-<説明>` にする。説明は Issue の要点を英語 2〜4 語の小文字・ハイフン区切りで書く（例: `issues/5-argument-hint`）
-1. 起点の規約が無ければ、Step 1 の `defaultBranchRef`（既定のブランチ）を起点にする。`develop` に溜めてから `main` へリリースするリポジトリでは、既定のブランチと起点が違うため
+紐づいたブランチが無ければ、ブランチ名を決めてから作る。名前は規約に従い、規約が無ければ `issues/<番号>-<説明>` にする。説明は Issue の要点を英語 2〜4 語の小文字・ハイフン区切りで書く（例: `issues/5-argument-hint`）。
 
 ```bash
 gh issue develop <番号> --name <ブランチ名> --base <起点のブランチ> --checkout

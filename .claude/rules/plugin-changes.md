@@ -64,4 +64,5 @@
 
 ## 既知の食い違い
 
+- `aidd:docs-sync` の `run-checks.sh` が、差分の基準を `origin/HEAD`（既定ブランチ）から取る。このリポジトリでは作業ブランチを `develop` から作るため、`develop` に溜まった未リリースの変更まで対象に入る。`issue-start`・`pr-create` と同じく、規約のマージ先を基準にすると直る
 - `aidd:ai-report` の同梱スクリプトが、`tmp/` に自分で書いた途中のファイル（`.ai-report-data.json`・`.ai-report-qualitative.md`）を、レポートを作った後に消している。P1 の「削除は禁止」と食い違う。スクリプトの中で消すため、deny では止まらない
