@@ -9,9 +9,10 @@ const TRIGGERS = [
   { handler: 'onDailySchedule', atHour: 9 }
 ];
 
-// 登録用の関数。エディタの実行メニューから手動で実行する。
-// 今あるトリガーをすべて消してから TRIGGERS の分だけ作り直すため、何度実行しても重複せず、
-// 一覧から外したトリガーも消える。エディタの「トリガー」画面で手作業で作ったトリガーも消える。
+// 登録用の関数。エディタの実行メニューから、毎回同じ Google アカウントで手動で実行する。
+// 実行したアカウントのトリガーをすべて消してから TRIGGERS の分だけ作り直すため、何度実行しても重複せず、
+// 一覧から外したトリガーや、エディタの「トリガー」画面で手作業で作ったトリガーも消える。
+// 別のアカウントで作ったトリガーは消えずに残り、同じ処理が 2 回動くことがある。
 function setupTriggers() {
   deleteTriggers();
   TRIGGERS.forEach((trigger) => {
@@ -24,7 +25,7 @@ function setupTriggers() {
 }
 
 // 定期実行をすべてやめるときに実行する。
-// 消えるのは、実行した人がこのプロジェクトで作ったインストール型トリガーだけ（onOpen・onEdit は消えない）。
+// 消えるのは、実行したアカウントがこのプロジェクトで作ったインストール型トリガーだけ（onOpen・onEdit は消えない）。
 function deleteTriggers() {
   ScriptApp.getProjectTriggers().forEach((trigger) => ScriptApp.deleteTrigger(trigger));
 }

@@ -66,7 +66,7 @@ docs-type: people-ai-doc
 - `trigger.js` の入口から呼ぶ機能ファイルの本体は、入口と同じ名前の末尾に `_` を付ける（例：入口 `checkRSSFeeds` → 本体 `checkRSSFeeds_`）。名前から入口と本体の対応が分かるようにするため
 - `main.js` の `main` は機能ファイルの本体ではなく、中心となる業務フローの入口のため、`_` を付けずに入口から呼ぶ（テンプレートの `onDailySchedule` → `main`）
 - 手順書・README に関数名を書くときは、入口（`_` なし）の名前を、置いてあるファイル（`trigger.js` など）と一緒に書く。本体の名前を書くと、手動で実行するときにプルダウンで見つからず、どの関数を選べばよいか迷うため
-- 定期実行をやめて手動実行だけにする関数は、`trigger.js` の入口と `TRIGGERS` の項目を消し、機能ファイルの本体から `_` を外して置く。外した後は `setupTriggers` を実行し直し、登録済みのトリガーを消す
+- 定期実行をやめて手動実行だけにする関数は、`trigger.js` の入口と `TRIGGERS` の項目を消し、機能ファイルの本体から `_` を外して置く。外した後は、いつもと同じアカウントで `setupTriggers` を実行し直し、登録済みのトリガーを消す
 
 ## GAS 特有の注意点
 
@@ -90,10 +90,11 @@ API キー・Webhook URL・トークンはコードに書かず、スクリプ�
 
 ### トリガーは登録用の関数から作る
 
-- トリガーは `trigger.js` の `setupTriggers` で登録する。登録するトリガーは `trigger.js` の 1 つの一覧（`TRIGGERS`）にまとめ、`setupTriggers` は今あるトリガーをすべて消してから一覧の分だけ作り直す。何度実行しても重複せず、一覧から外したトリガーも消えるため、廃止したトリガーを消すための仕組みを別に持たなくてよい
+- トリガーは `trigger.js` の `setupTriggers` で登録する。登録するトリガーは `trigger.js` の 1 つの一覧（`TRIGGERS`）にまとめ、`setupTriggers` は実行したアカウントのトリガーをすべて消してから一覧の分だけ作り直す。何度実行しても重複せず、一覧から外したトリガーも消えるため、廃止したトリガーを消すための仕組みを別に持たなくてよい
 - トリガーを足す・やめるときは、`TRIGGERS` と入口の関数を直して push した後、`setupTriggers` を実行し直す
-- `setupTriggers` で消えるのは、実行した人がこのプロジェクトで作ったインストール型トリガーだけ。ほかの人が作ったトリガーと、シンプルトリガー（`onOpen`・`onEdit`）は消えない。Ref: [Class ScriptApp](https://developers.google.com/apps-script/reference/script/script-app#getProjectTriggers())
-- エディタの「トリガー」画面で手作業でトリガーを作らない。`setupTriggers` を実行すると消える
+- `setupTriggers` は毎回同じ Google アカウントで実行する。消えるのは、実行したアカウントがこのプロジェクトで作ったインストール型トリガーだけのため。別のアカウント（ほかの人・同じ人の別のアカウント）で作ったトリガーは残り、一覧から外しても動き続けたり、同じ処理が 2 回動いたりする。シンプルトリガー（`onOpen`・`onEdit`）も消えない。Ref: [Class ScriptApp](https://developers.google.com/apps-script/reference/script/script-app#getProjectTriggers())
+- `setupTriggers` を実行した後は、エディタの「トリガー」画面の件数が `TRIGGERS` の件数と合うかを確かめる。多い分は、オーナーが「他のユーザー」と表示される、別のアカウントのトリガー。要らなければ、作ったアカウントで画面を開いて消す。どのアカウントかは画面に出ない
+- エディタの「トリガー」画面で手作業でトリガーを作らない。同じアカウントで作ったものは `setupTriggers` で消え、別のアカウントで作ったものは残り続ける
 - 処理の中でトリガーを毎回作らない。1 つのスクリプトで 1 ユーザーが持てるトリガーは 20 個まで
 
 ## clasp の運用
