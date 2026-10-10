@@ -41,11 +41,13 @@ const isCustomized = atom({ plugin: 'mod-output-customize', key: 'isCustomized' 
 /** Issue・PR の本文やコメントなど、外に書き出す文書を簡潔に書かせるか */
 const isDocConcise = atom({ plugin: 'mod-output-customize', key: 'isDocConcise' } as const, true)
 
-/** 入力欄の上のボタン 1 つ分。空の入力欄でキーを押しても効く */
+/**
+ * 入力欄の上のボタン 1 つ分。クリックでだけ押す
+ * 数字キー（hotkey）を割り当てると、空の入力欄で数字を打っただけで on/off が切り替わってしまうため、割り当てない
+ */
 type Toggle = {
   key: string
   label: string
-  hotkey: string
   onColor: string
 }
 
@@ -53,7 +55,6 @@ type Toggle = {
 const CHAT_MODE_TOGGLE: Toggle = {
   key: 'toggle-chat-mode',
   label: 'チャットモード',
-  hotkey: '0',
   onColor: 'warning',
 }
 
@@ -61,7 +62,6 @@ const CHAT_MODE_TOGGLE: Toggle = {
 const CUSTOMIZED_TOGGLE: Toggle = {
   key: 'toggle-customized',
   label: '応答カスタム',
-  hotkey: '1',
   onColor: EMPHASIS_COLOR,
 }
 
@@ -69,7 +69,6 @@ const CUSTOMIZED_TOGGLE: Toggle = {
 const DOC_CONCISE_TOGGLE: Toggle = {
   key: 'toggle-doc-concise',
   label: '文書を簡潔に',
-  hotkey: '2',
   onColor: 'suggestion',
 }
 
@@ -281,7 +280,7 @@ export const register: Register = on => {
      */
     const renderToggle = (toggle: Toggle, isOn: boolean, onPress: () => Promise<void>) => (
       <Box flexDirection="row">
-        <Button key={toggle.key} label={toggle.label} hotkey={toggle.hotkey} plain onPress={onPress} />
+        <Button key={toggle.key} label={toggle.label} plain onPress={onPress} />
         <Text color={isOn ? toggle.onColor : undefined} dimColor={!isOn}>
           {isOn ? ' ON' : ' OFF'}
         </Text>
