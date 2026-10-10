@@ -33,7 +33,9 @@ Claude が実行してよい操作と、人が行う操作の線引きを決め�
 | GitHub のそのほか | 読み取り | リリース、ワークフローの実行、リポジトリの作成・設定変更・削除、secrets・variables・鍵・ログインの変更 |
 | 外部ツール | 読み取り | リモートとの反映・取り込み（`clasp push`・`clasp pull` など）、ログイン |
 
-`init-repo` は、この表の禁止を deny で配る。スキルの操作との対応は [permissions.md](permissions.md)。deny は、ルールの形に当たるコマンドしか止められない。`bash -c 'rm …'` や、`gh api` での権限の変更は止まらない。抜けやすい形のうち、`gh api` でのマージと、`git -C`・`git -c` を付けたコミット・push は個別に止めている。deny で止まらない操作も、この線引きに従う。
+`init-repo` は、この表の禁止のうち、外部ツール以外を deny で配る。外部ツールの禁止は、技術スタック別のスキル（`gas` など）の禁止事項で止める。スキルの操作との対応は [permissions.md](permissions.md)。deny は、ルールの形に当たるコマンドしか止められない。`bash -c 'rm …'` や、`gh api` での権限の変更は止まらない。抜けやすい形のうち、`gh api` でのマージと DELETE、`git -C`・`git -c` を付けたコミット・push は個別に止めている。deny で止まらない操作も、この線引きに従う。
+
+`git remote` は、変更だけでなく読み取り（`git remote -v` など）も deny で止める。変更系のサブコマンドを並べると、抜けが出やすいため。リモートの URL は `gh repo view` で確かめる。
 
 あわせて、`settings.json` の `attribution` の `commit`・`pr` を空文字にし、コミットに共同作成者の行を、PR の本文に生成元の行を付けない。コミットの禁止が外れても、Claude の名前が履歴に残らないようにするため。
 

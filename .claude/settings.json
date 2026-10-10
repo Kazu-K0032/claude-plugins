@@ -67,10 +67,15 @@
       "Bash(gh api *DELETE*)",
       "Bash(gh release *)",
       "Bash(gh workflow run *)",
+      "Bash(gh run rerun*)",
       "Bash(gh repo create *)",
       "Bash(gh repo edit *)",
       "Bash(gh repo delete *)",
       "Bash(gh repo deploy-key *)",
+      "Bash(gh repo rename*)",
+      "Bash(gh repo archive*)",
+      "Bash(gh repo unarchive*)",
+      "Bash(gh repo fork*)",
       "Bash(gh secret set *)",
       "Bash(gh secret delete *)",
       "Bash(gh secret remove *)",
@@ -80,7 +85,9 @@
       "Bash(gh gpg-key *)",
       "Bash(gh auth login *)",
       "Bash(gh auth logout *)",
-      "Bash(gh auth refresh *)"
+      "Bash(gh auth refresh *)",
+      "Bash(gh auth switch*)",
+      "Bash(gh auth setup-git*)"
     ]
   },
   "attribution": {
