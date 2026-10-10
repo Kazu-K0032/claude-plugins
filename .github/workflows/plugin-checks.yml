@@ -1,0 +1,39 @@
+name: プラグインの検査
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  check:
+    name: 整合チェックとマニフェストの検証
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      # Claude Code の版を固定する。固定しないと、新しい版の検査の変化で CI が急に落ちるため
+      # Ref: https://www.npmjs.com/package/@anthropic-ai/claude-code
+      CLAUDE_CODE_VERSION: "2.1.296"
+      MOD_DIR: plugins/config/skills/mod-output-customize/files/mod-output-customize
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 整合チェック（スキルと配る設定）
+        # 手順は .claude/skills/marketplace-update/SKILL.md。NG があれば終了コード 1 で落ちる
+        run: python3 .claude/skills/marketplace-update/scripts/check.py
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: マニフェストを検証
+        # ログインは要らない。mod はマーケットプレイスのプラグインではないため、フォルダを直接渡す
+        run: |
+          npx --yes "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" plugin validate .
+          npx --yes "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" plugin validate "$MOD_DIR"
+
+      - name: mod のテスト
+        run: npx --yes "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" plugin test "$MOD_DIR"

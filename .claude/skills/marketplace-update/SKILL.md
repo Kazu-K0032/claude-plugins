@@ -72,7 +72,9 @@ claude plugin validate plugins/config/skills/mod-output-customize/files/mod-outp
 claude plugin test plugins/config/skills/mod-output-customize/files/mod-output-customize
 ```
 
-スキルが導入する mod は、テンプレート（`skills/<スキル名>/files/`）として同梱している。マーケットプレイスのプラグインではないため `claude plugin validate .` では読まれず、mod のフォルダを直接渡す。`claude plugin test` は、mod のテスト（`*.test.ts`・`*.test.tsx`）を、mod が動くのと同じ環境で動かす。mod（`hooks/hooks.json` の `modules`）の無いフォルダを渡すと失敗するため、mod のフォルダだけを並べる。mod を増やしたら、ここに足す。
+スキルが導入する mod は、テンプレート（`skills/<スキル名>/files/`）として同梱している。マーケットプレイスのプラグインではないため `claude plugin validate .` では読まれず、mod のフォルダを直接渡す。`claude plugin test` は、mod のテスト（`*.test.ts`・`*.test.tsx`）を、mod が動くのと同じ環境で動かす。mod（`hooks/hooks.json` の `modules`）の無いフォルダを渡すと失敗するため、mod のフォルダだけを並べる。
+
+手順 2 の機械チェックと、この手順のコマンドは、PR でも `.github/workflows/plugin-checks.yml` が動かす。mod を増やしたら、ここと `plugin-checks.yml` の両方に足す。
 
 ### 7. コミットする
 
