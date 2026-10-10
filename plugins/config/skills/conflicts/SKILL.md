@@ -18,14 +18,14 @@ Claude Code の設定はスコープ（managed / local / project / user）ごと
 
 | ファイル | 役割 |
 | --- | --- |
-| `${CLAUDE_PLUGIN_ROOT}/skills/conflicts/scripts/conflicts.js` | 機械的に判定できる衝突・重複を JSON で出力する |
+| `${CLAUDE_PLUGIN_ROOT}/skills/conflicts/scripts/conflicts.js` | 機械的に判定できる衝突・重複・書き方の誤りを JSON で出力する |
 
 ## 点検する観点
 
 | カテゴリ | 内容 | 判定 |
 | --- | --- | --- |
 | `scalar-override` | 同じキーが複数スコープにあり、上位の値で上書きされている（`model`・`language`・`statusLine`・`env.*`・`permissions.defaultMode` 等） | スクリプト |
-| `permission-conflict` | `allow` のルールが `deny` / `ask` のルールに覆われて効かない（評価順は deny → ask → allow） | スクリプト |
+| `permission-conflict` | `allow` のルールが `deny` / `ask` のルールに、`ask` のルールが `deny` のルールに覆われて効かない（評価順は deny → ask → allow） | スクリプト |
 | `permission-duplicate` | 同じルールが複数スコープに重複している | スクリプト |
 | `permission-syntax` | Bash の権限ルールが書き方の誤りで意図したコマンドに一致しない（`*` と末尾の `:*` の混在、末尾以外の `:*`） | スクリプト |
 | `hook-duplicate` | 同じイベント・matcher・コマンドのフックが複数箇所にある（設定ファイル間の重複は 1 回にまとめられるが、プラグイン側の重複は別に実行される） | スクリプト |

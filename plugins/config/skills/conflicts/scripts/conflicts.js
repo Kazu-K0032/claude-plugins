@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Claude Code の設定の衝突・重複を機械的に検出し、JSON で標準出力へ出す。読み取り専用。
+// Claude Code の設定の衝突・重複・書き方の誤りを機械的に検出し、JSON で標準出力へ出す。読み取り専用。
 //
 // 使い方: node conflicts.js [--home <dir>] [--project <dir>] [--managed <managed-settings.json>]
 //   --home     ユーザーのホームディレクトリ（既定: OS のホーム）。~/.claude/ と ~/.claude.json を読む

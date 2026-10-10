@@ -55,7 +55,7 @@ config/
     ├── conflicts/
     │   ├── SKILL.md
     │   └── scripts/
-    │       └── conflicts.js   # 衝突・重複を JSON で出力する点検スクリプト
+    │       └── conflicts.js   # 衝突・重複・書き方の誤りを JSON で出力する点検スクリプト
     └── plugin-feedback/
         ├── SKILL.md
         └── references/
