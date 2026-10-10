@@ -1,14 +1,14 @@
 ---
 name: marketplace-update
-description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイル・入力ヒントの書き方の整合をチェックして修正する。プラグインやテンプレートを編集した後、push する前に使用する
+description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイル・入力ヒントの書き方の整合をチェックして修正し、スキルが同梱する mod の検証とテストを流す。プラグインやテンプレートを編集した後、push する前に使用する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git status:*), Bash(git diff:*), Bash(python .claude/skills/marketplace-update/scripts/check.py:*), Bash(python3 .claude/skills/marketplace-update/scripts/check.py:*), Bash(claude plugin validate:*)
+allowed-tools: Read, Glob, Grep, Bash(git status:*), Bash(git diff:*), Bash(python .claude/skills/marketplace-update/scripts/check.py:*), Bash(python3 .claude/skills/marketplace-update/scripts/check.py:*), Bash(claude plugin validate:*), Bash(claude plugin test:*)
 argument-hint: "[重点的に見たい範囲（任意。省略時はすべてのチェックを同じ重さで見る。例: init-repo のテンプレート / 重複ファイル）]"
 ---
 
 # マーケットプレイス更新チェック
 
-このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）。
+このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）、スキルが同梱する mod（`claude plugin validate`・`claude plugin test`）。
 
 ## なぜ必要か
 
@@ -64,11 +64,15 @@ WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直�
 - 変更が `.claude/rules/repo-consistency.md` の「方針の一覧」に反していないか。新しく決めた方針・認めた例外を、正典と一覧の両方に書いたか
 - スキル・フックが利用先で触れるもの（`tmp/` 以外への書き込み・設定ファイル・`gh` / `git` の書き込み系・環境変数）か、`init-repo` の権限・フック・`.gitignore` を変えた場合、`repo-consistency.md` の「権限と操作の照合」を直し、ほかのプラグインの操作を止めていないかを確かめたか（機械チェックは `allowed-tools` と本文のコマンドだけを見る）
 
-### 6. マニフェストを検証する
+### 6. マニフェストを検証し、テストを動かす
 
 ```bash
 claude plugin validate .
+claude plugin validate plugins/config/skills/mod-output-customize/files/mod-output-customize
+claude plugin test plugins/config/skills/mod-output-customize/files/mod-output-customize
 ```
+
+スキルが導入する mod は、テンプレート（`skills/<スキル名>/files/`）として同梱している。マーケットプレイスのプラグインではないため `claude plugin validate .` では読まれず、mod のフォルダを直接渡す。`claude plugin test` は、mod のテスト（`*.test.ts`・`*.test.tsx`）を、mod が動くのと同じ環境で動かす。mod（`hooks/hooks.json` の `modules`）の無いフォルダを渡すと失敗するため、mod のフォルダだけを並べる。mod を増やしたら、ここに足す。
 
 ### 7. コミットする
 
