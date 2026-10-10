@@ -16,7 +16,7 @@
     {
       "name": "config",
       "source": "./plugins/config",
-      "description": "ユーザー全体（~/.claude/）の Claude Code 設定の導入、設定の衝突・重複の点検、このマーケットプレイスのプラグインの不具合・改善案の起票、入力欄の上のボタンで応答・文書の書き方とチャットモードを切り替える mod の導入を行う Skill 集",
+      "description": "ユーザー全体（~/.claude/）の Claude Code 設定の導入、設定の衝突・重複の点検、このマーケットプレイスのプラグインの不具合・改善案の起票、サイドバーのボタンで応答・文書の書き方とチャットモードを切り替える mod の導入を行う Skill 集",
       "category": "productivity"
     },
     {

@@ -42,7 +42,7 @@ const isCustomized = atom({ plugin: 'mod-output-customize', key: 'isCustomized' 
 const isDocConcise = atom({ plugin: 'mod-output-customize', key: 'isDocConcise' } as const, true)
 
 /**
- * 入力欄の上のボタン 1 つ分。クリックでだけ押す
+ * ボタン 1 つ分。サイドバーか入力欄の上に出し、クリックでだけ押す
  * 数字キー（hotkey）を割り当てると、空の入力欄で数字を打っただけで on/off が切り替わってしまうため、割り当てない
  */
 type Toggle = {
@@ -50,6 +50,25 @@ type Toggle = {
   label: string
   onColor: string
 }
+
+/** ボタン 1 つ分の今の状態と、押したときに on/off を入れ替える処理 */
+type ToggleState = {
+  toggle: Toggle
+  isOn: boolean
+  onPress: () => Promise<void>
+}
+
+/** ボタンを並べるサイドバー（Pane）の id。コマンドで開き直すときも同じ id を使う */
+const PANE_ID = 'output-customize'
+
+/** サイドバーの題。ほかの mod のサイドバーと並んだときのタブに出る */
+const PANE_TITLE = '出力の設定'
+
+/** サイドバーの幅（本文の桁数）。いちばん長い「チャットモード OFF」が 1 行に収まる幅 */
+const PANE_COLUMNS = 22
+
+/** 閉じたサイドバーを開き直すコマンドの名前 */
+const PANE_COMMAND = 'output-customize'
 
 /** チャットモードを切り替えるボタン */
 const CHAT_MODE_TOGGLE: Toggle = {
@@ -110,6 +129,68 @@ async function loadSavedToggles($: Pick<CoreEngineInterface, 'state' | 'store'>)
 }
 
 /**
+ * 3 つのボタンの今の状態と、押したときの処理を読む。サイドバーと入力欄の上の帯で同じものを使う
+ * @param $ - フックが受け取った engine のインターフェース
+ * @returns チャットモード・応答カスタム・文書を簡潔にの順の状態
+ */
+async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<ToggleState[]> {
+  const [chatMode, customized, docConcise] = await Promise.all([
+    read($, isChatMode),
+    read($, isCustomized),
+    read($, isDocConcise),
+  ])
+
+  return [
+    {
+      toggle: CHAT_MODE_TOGGLE,
+      isOn: chatMode,
+      onPress: async () => {
+        await update($, isChatMode, isOnNow => !isOnNow)
+      },
+    },
+    {
+      toggle: CUSTOMIZED_TOGGLE,
+      isOn: customized,
+      onPress: async () => {
+        const value = await update($, isCustomized, isOnNow => !isOnNow)
+        await $.store.set(CUSTOMIZED_STORE_KEY, value)
+      },
+    },
+    {
+      toggle: DOC_CONCISE_TOGGLE,
+      isOn: docConcise,
+      onPress: async () => {
+        const value = await update($, isDocConcise, isOnNow => !isOnNow)
+        await $.store.set(DOC_CONCISE_STORE_KEY, value)
+      },
+    },
+  ]
+}
+
+/**
+ * ボタンのサイドバーを開き、入力欄の上の帯を描き直す（サイドバーに置けたら帯を消すため）
+ * @param $ - フックが受け取った engine のインターフェース
+ */
+async function openPane($: Pick<CoreEngineInterface, 'ui'>): Promise<void> {
+  await $.ui.open({ id: PANE_ID, title: PANE_TITLE, columns: PANE_COLUMNS })
+  $.ui.invalidate('ui.render')
+}
+
+/**
+ * ボタンのサイドバーが今描かれているか。調べられなければ描かれていないとみなし、帯にボタンを出す
+ * @param $ - フックが受け取った engine のインターフェース
+ * @returns 描かれていれば true
+ */
+async function isPanePlaced($: Pick<CoreEngineInterface, 'ui'>): Promise<boolean> {
+  try {
+    const panes = await $.ui.panes()
+    return panes.some(pane => pane.id === PANE_ID && pane.isPlaced)
+  } catch {
+    return false
+  }
+}
+
+/**
  * モデルに応答の形式と記法を教える文。プロンプトごとに、ユーザーには見えない文脈として添える
  */
 const GUIDE_TEXT = [
@@ -119,6 +200,7 @@ const GUIDE_TEXT = [
   '2. `### 概要`: ここからはエンジニア向け。ファイル・コード・設計判断などの具体的な説明を書く',
   '3. `## 次アクション`: 必要なときだけ、応答の最後に置く。ユーザーがすること（コマンドの実行・判断・確認）や、続けて Claude ができる作業があるときに、誰が何をするかを 1 行ずつ、1〜3 項目の箇条書きで書く。選んでもらう選択肢もここに置く。することが無ければ置かない。ほかの部分と同じ内容を繰り返さない',
   '応答全体が 300 文字に満たない短い返答（一言で済む回答、確認の問いかけなど）では、`### 簡潔版` と `### 概要` を付けない。`## 次アクション` は短い返答でも、必要なら置く。',
+  '文と文のつながりは、接続詞で読み手に示す。理由は「なぜなら、〜からだ」、言い換えやまとめは「つまり、〜」で書き、「〇〇が〇〇するのは、〜だから」のように、何が何をするのかをはっきりさせる。簡潔版でも同じにする。',
   'この形式は、出力スタイルが定める行数や見出しの目安より優先する。',
   '',
   '# 応答の色分け',
@@ -178,7 +260,7 @@ const CHAT_MODE_TEXT = [
   '- ファイルの作成・編集・削除、コミットやプッシュ、パッケージのインストールなど、状態を変える操作はしない',
   '- 外部サービスへの送信・作成・更新もしない。GitHub は gh の読み取り用コマンド（pr view/list/diff、issue view/list、api の GET など）で読む',
   '- 使えるのは、Read・Glob・Grep・WebFetch・WebSearch などの読み取り用のツール、読み取り用の Bash コマンド、名前から読み取り専用と判断できる MCP ツールだけ。ほかのツール（Edit・Write・PowerShell など）は拒否される',
-  '変更が必要なときは変更案を示し、入力欄の上の「チャットモード」ボタンで OFF にするようユーザーに伝える。',
+  '変更が必要なときは変更案を示し、「チャットモード」ボタン（サイドバーか入力欄の上）で OFF にするようユーザーに伝える。',
 ].join('\n')
 
 /**
@@ -249,7 +331,33 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     await loadSavedToggles($)
+    // 端末に描かない実行（-p など）ではボタンを押せないので、サイドバーもコマンドも作らない
+    const surfaces = await $.session.surfaces()
+    if (surfaces.length > 0) {
+      await $.command.register({
+        name: PANE_COMMAND,
+        description: '出力の設定（チャットモード・応答カスタム・文書を簡潔に）のボタンをサイドバーに開く',
+      })
+      // 頼まれずに開くサイドバーは、端末の幅が足りるまで描かれない。その間は帯にボタンを出す
+      void openPane($)
+    }
     return next(e)
+  })
+
+  on('command.run', { command: PANE_COMMAND }, async $ => {
+    await openPane($)
+    return {
+      text: '出力の設定のボタンをサイドバーに開いた。全画面表示で端末の幅が 110 文字未満のときは、入力欄の上に出る。',
+    }
+  })
+
+  // サイドバーが閉じたら、入力欄の上の帯にボタンを戻す
+  on('ui.close', async ($, e, next) => {
+    const closed = await next(e)
+    if (e.id === PANE_ID) {
+      $.ui.invalidate('ui.render')
+    }
+    return closed
   })
 
   // /clear・/resume・/branch は $.state を既定値に戻し、session.start は再び来ないので読み直す
@@ -258,48 +366,46 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // サイドバーに置けないとき（全画面でない表示・端末の幅が足りない・閉じた）だけ、入力欄の上の帯にボタンを出す
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     // アンケートが帯を使っている間は譲る
-    if (e.props.hasSurvey) {
+    if (e.props.hasSurvey || (await isPanePlaced($))) {
       return next(e)
     }
 
-    const [chatMode, customized, docConcise] = await Promise.all([
-      read($, isChatMode),
-      read($, isCustomized),
-      read($, isDocConcise),
-    ])
+    const states = await readToggleStates($)
     const { Box, Button, Text } = $.ui.resolve(e)
-
-    /**
-     * on/off を切り替えるボタンと、今の状態を描く
-     * @param toggle - 描くボタン
-     * @param isOn - 今 on か
-     * @param onPress - 押したときに on/off を入れ替える処理
-     * @returns その要素
-     */
-    const renderToggle = (toggle: Toggle, isOn: boolean, onPress: () => Promise<void>) => (
-      <Box flexDirection="row">
-        <Button key={toggle.key} label={toggle.label} plain onPress={onPress} />
-        <Text color={isOn ? toggle.onColor : undefined} dimColor={!isOn}>
-          {isOn ? ' ON' : ' OFF'}
-        </Text>
-      </Box>
-    )
 
     return (
       <Box flexDirection="row" columnGap={3}>
-        {renderToggle(CHAT_MODE_TOGGLE, chatMode, async () => {
-          await update($, isChatMode, isOnNow => !isOnNow)
-        })}
-        {renderToggle(CUSTOMIZED_TOGGLE, customized, async () => {
-          const value = await update($, isCustomized, isOnNow => !isOnNow)
-          await $.store.set(CUSTOMIZED_STORE_KEY, value)
-        })}
-        {renderToggle(DOC_CONCISE_TOGGLE, docConcise, async () => {
-          const value = await update($, isDocConcise, isOnNow => !isOnNow)
-          await $.store.set(DOC_CONCISE_STORE_KEY, value)
-        })}
+        {states.map(({ toggle, isOn, onPress }) => (
+          <Box flexDirection="row">
+            <Button key={toggle.key} label={toggle.label} plain onPress={onPress} />
+            <Text color={isOn ? toggle.onColor : undefined} dimColor={!isOn}>
+              {isOn ? ' ON' : ' OFF'}
+            </Text>
+          </Box>
+        ))}
+      </Box>
+    )
+  })
+
+  // サイドバーには縦に並べる。全画面でない表示や幅の狭い端末では、入力欄の上に枠付きで出るので横に並べる
+  on('ui.render', { component: 'Pane', requestId: PANE_ID }, async ($, e) => {
+    const states = await readToggleStates($)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const isDocked = e.props.placement === 'dock'
+
+    return (
+      <Box flexDirection={isDocked ? 'column' : 'row'} columnGap={3} rowGap={1}>
+        {states.map(({ toggle, isOn, onPress }) => (
+          <Box flexDirection="row">
+            <Button key={toggle.key} label={toggle.label} plain onPress={onPress} />
+            <Text color={isOn ? toggle.onColor : undefined} dimColor={!isOn}>
+              {isOn ? ' ON' : ' OFF'}
+            </Text>
+          </Box>
+        ))}
       </Box>
     )
   })

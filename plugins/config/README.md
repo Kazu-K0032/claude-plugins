@@ -1,6 +1,6 @@
 # config
 
-ユーザー全体（`~/.claude/`）の Claude Code 設定を整える Skill 集。どのリポジトリで作業していても共通の設定（ステータスライン・応答言語）を入れること、スコープをまたいだ設定の衝突・重複を点検すること、このマーケットプレイスのプラグインで見つけた不具合・改善案を Issue にすること、入力欄の上のボタンで応答・文書の書き方とチャットモードを切り替える mod を入れることを扱う。
+ユーザー全体（`~/.claude/`）の Claude Code 設定を整える Skill 集。どのリポジトリで作業していても共通の設定（ステータスライン・応答言語）を入れること、スコープをまたいだ設定の衝突・重複を点検すること、このマーケットプレイスのプラグインで見つけた不具合・改善案を Issue にすること、サイドバーのボタンで応答・文書の書き方とチャットモードを切り替える mod を入れることを扱う。
 
 リポジトリ単位の設定（`.claude/`・`.github/` 等）は [project](../project/README.md) の `/project:init-repo` が扱う。例外として、`/config:plugin-feedback` だけは、承認を省く切り替えを作業ディレクトリの `.claude/settings.local.json` に書き込む（理由は「設計上の決めごと」）。
 
@@ -11,7 +11,7 @@
 | `/config:setup-global` | `~/.claude/settings.json` に 2 行のステータスラインと日本語での応答（`language`）を設定 |
 | `/config:conflicts` | settings.json の各スコープ・権限ルール・フック・MCP サーバー・スキル・CLAUDE.md を横断して、衝突・重複を点検 |
 | `/config:plugin-feedback` | セッション中に見つけた、このマーケットプレイスのプラグインの不具合・改善案を、下書きの承認後に `Kazu-K0032/claude-plugins` の Issue にする（関連する Issue があればコメントで追記。承認は省くこともできる） |
-| `/config:mod-output-customize` | 入力欄の上のボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を `~/.claude/mods/` に入れる。詳細は [README](skills/mod-output-customize/README.md) |
+| `/config:mod-output-customize` | サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を `~/.claude/mods/` に入れる。詳細は [README](skills/mod-output-customize/README.md) |
 
 標準の `/doctor` とは見る観点が違う。`/doctor` はインストールの状態・壊れた設定ファイル・使われていない拡張機能・コンテキストの使用量を点検する。`/config:conflicts` は、スコープ間の上書き・deny に覆われた allow・フックや MCP の重複定義・CLAUDE.md 同士の矛盾など、**設定どうしがぶつかって効いていないもの**と、書き方の誤りで意図したコマンドに一致しない権限ルールを点検する。
 

@@ -190,6 +190,7 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
   expect(drawn.text).toBe('質問')
   expect(drawn.context?.some(block => block.includes('# 応答の色分け'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('### 簡潔版') && block.includes('## 次アクション'))).toBe(true)
+  expect(drawn.context?.some(block => block.includes('なぜなら') && block.includes('つまり'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('# 文書の書き方') && block.includes('文字数を少なく'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('チャットモード'))).toBe(false)
 
