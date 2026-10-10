@@ -22,8 +22,8 @@
 | パス | 内容 |
 | --- | --- |
 | `files/mod-output-customize/.claude-plugin/plugin.json` | mod のマニフェスト |
-| `files/mod-output-customize/hooks/` | `hooks.json`（`modules` で `register.tsx` を読む）、ボタンと指示の本体（`register.tsx`）、色分けする行の解析（`emphasis.ts`）、チャットモードで通すコマンド・MCP ツールの判定（`readonly.ts`） |
-| `files/mod-output-customize/types/index.d.ts` | mod が持つ 3 つの on / off の型 |
+| `files/mod-output-customize/hooks/` | `hooks.json`（`modules` で `register.tsx` を読む）、ボタンと指示の本体（`register.tsx`）、色分けする行の解析（`emphasis.ts`）、チャットモードで通すコマンド・MCP ツールの判定（`readonly.ts`）、次アクションから入力欄の候補にする依頼文の取り出し（`sections.ts`） |
+| `files/mod-output-customize/types/index.d.ts` | mod が持つ 3 つの on / off と、入力欄の候補に出す依頼文の型 |
 | `files/mod-output-customize/tests/` | `claude plugin test` で動かすテスト |
 | `files/mod-output-customize/tsconfig.json` | エディタでの型チェック用。Claude Code が mod を読み込むと書き出す `.claude-plugin/types/` を参照する |
 

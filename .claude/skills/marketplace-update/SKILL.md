@@ -35,8 +35,8 @@ python .claude/skills/marketplace-update/scripts/check.py
 
 | カテゴリ | 内容 | 直し方 |
 | --- | --- | --- |
-| `rule-form` | `allowed-tools` に `Write()` / `NotebookEdit()` / `Glob()` のパス規則がある | 書き込みは `Edit(<パス>)`、検索は `Read(<パス>)` に置き換える。これらのパス規則は権限判定に使われない |
-| `deny-conflict` | スキルが事前許可するコマンドが、テンプレートの deny に一致する | スキル側のコマンドを読み取り系に変えるか、deny の見直しをユーザーに確認する（**deny を無断で緩めない**） |
+| `rule-form` | `allowed-tools` に `Write()` / `NotebookEdit()` / `MultiEdit()` / `Glob()` のパス規則がある | 書き込みは `Edit(<パス>)`、検索は `Read(<パス>)` に置き換える。これらのパス規則は権限判定に使われない |
+| `deny-conflict` | スキルが事前許可するコマンドが、テンプレートの deny の Bash 規則に一致する（`PowerShell()`・`Edit()` などの規則は照合しない） | スキル側のコマンドを読み取り系に変えるか、deny の見直しをユーザーに確認する（**deny を無断で緩めない**） |
 | `plugin-root-ref` | `${CLAUDE_PLUGIN_ROOT}/...` の参照先が無い | パスの誤り・ファイルの移動漏れを直す |
 | `catalog` | スキル名・README の一覧・`marketplace.json` の source がずれている、または `plugins/` 配下のプラグインが `marketplace.json` に登録されていない | 実体に合わせて README か名前を直す。未登録なら `marketplace.json` の `plugins` にエントリを追加する |
 | `template-inventory` | テンプレートを持つスキル（`skills/<スキル名>/files/`）の README にある `files/...` が存在しない、または README が無い | 収録物表か実ファイルのどちらが正かを判断して揃える |

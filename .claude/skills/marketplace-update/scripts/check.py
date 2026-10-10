@@ -2,8 +2,8 @@
 """マーケットプレイスの整合性チェック。
 
 チェック対象（1〜6 は plugins/ 配下の全プラグイン、2 の基準は project の init-repo テンプレート）:
-  1. 権限規則の書式（allowed-tools に Write()/NotebookEdit()/Glob() のパス規則を使っていないか）
-  2. init-repo テンプレートの deny と、各スキルが使うコマンドの衝突
+  1. 権限規則の書式（allowed-tools に Write()/NotebookEdit()/MultiEdit()/Glob() のパス規則を使っていないか）
+  2. init-repo テンプレートの deny の Bash 規則と、各スキルが使うコマンドの衝突
   3. allowed-tools の書き込み許可パスが tmp 配下に収まっているか
   4. ${CLAUDE_PLUGIN_ROOT} 参照先のファイルが実在するか
   5. カタログの整合（スキル名・README の一覧・marketplace.json の source と登録漏れ）

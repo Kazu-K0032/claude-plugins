@@ -127,12 +127,12 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 ├── .claude/
 │   ├── hooks/                            # Claude Code のフック（ガード・Lint・セッション通知）
 │   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions・ADR・ブランチ名）
-│   └── settings.json                     # 権限・フック・モデルの設定（コミット対象）
+│   └── settings.json                     # 権限・フックの設定（コミット対象）
 ├── .vscode/                              # エディタ設定（推奨拡張機能・保存時の整形）
 ├── .github/
 │   ├── dependabot.yml                    # 依存パッケージ更新（GitHub Actions 限定・月次）
 │   ├── labels.yml                        # GitHub ラベル定義（sync-labels.yml が同期）
-│   ├── ISSUE_TEMPLATE/                   # Issue フォーム（feature / refactor / release / retro）
+│   ├── ISSUE_TEMPLATE/                   # Issue フォーム（feature / bug / refactor / release / retro）
 │   └── workflows/                        # CI/CD
 ├── docs/
 │   ├── README.md                         # 全ドキュメントの案内板
