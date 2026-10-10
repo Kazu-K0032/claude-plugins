@@ -57,6 +57,7 @@
 ## 変更を終えた場合
 
 - 利用者に、push する前に `/marketplace-update` を実行するよう勧める。このスキルは `disable-model-invocation: true` のため、Claude からは呼べない
+- PR では `.github/workflows/plugin-checks.yml` が、`check.py`・マニフェストの検証・mod のテストを動かす。`/marketplace-update` の手順 5（機械チェックが見ない箇所の確認）は CI では動かないため、CI があっても省かない
 - `check.py` だけなら、Claude が `python .claude/skills/marketplace-update/scripts/check.py` で実行して、NG・WARN を確かめてよい
 
 ## 既知の食い違い
