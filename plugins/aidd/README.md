@@ -12,7 +12,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:issue-start` | Issue の記述を今のコードと突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする |
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:issue-pr-sync` | Issue / PR の本文（PR 本文が空なら新規作成）・タイトル・サイドバーを、現在の差分とレビュー対応に合わせて更新 |
-| `/aidd:commit` | ステージ済み差分から Conventional Commits 形式のメッセージを提案 |
+| `/aidd:commit` | ステージ済み差分と会話の経緯から Conventional Commits 形式のメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を添える） |
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
