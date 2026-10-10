@@ -2,6 +2,9 @@ import { expect, test } from 'claude-code/testing'
 
 import { parse, unwrapMarks } from '../hooks/emphasis'
 
+/** 並ぶボタンの key */
+const BUTTON_KEYS = ['toggle-chat-mode', 'toggle-customized', 'toggle-doc-concise']
+
 const SURFACES = ['terminal', 'desktop'] as const
 
 test('✅ / ❌ の行と ==語句== を含む行だけを色付きの行に分ける', () => {
@@ -164,6 +167,23 @@ const BAND_PROPS = {
   view: {},
 } as const
 
+test('ボタンには数字キーを割り当てず、クリックでだけ切り替える', async ($, on) => {
+  on('session.surfaces', () => ({ value: ['terminal'] }))
+
+  const band = await $.ui.mount({
+    plugin: 'mod-output-customize',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: BAND_PROPS,
+  })
+  const buttons = await band.findAll({ type: 'Button' })
+
+  expect(buttons.map(button => button.key)).toEqual(BUTTON_KEYS)
+  expect(buttons.map(button => button.props.hotkey)).toEqual(BUTTON_KEYS.map(() => undefined))
+
+  await band.unmount()
+})
+
 test('端末に描く実行ではプロンプトに記法の説明を文脈として添える', async ($, on) => {
   let surfaces: readonly ('terminal' | 'desktop')[] = ['terminal']
   on('session.surfaces', () => ({ value: surfaces }))
@@ -173,6 +193,7 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
   expect(drawn.text).toBe('質問')
   expect(drawn.context?.some(block => block.includes('# 応答の色分け'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('### 簡潔版') && block.includes('## 次アクション'))).toBe(true)
+  expect(drawn.context?.some(block => block.includes('なぜなら') && block.includes('つまり'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('# 文書の書き方') && block.includes('文字数を少なく'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('チャットモード'))).toBe(false)
 
@@ -181,7 +202,7 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
   expect(printed.context ?? []).toEqual([])
 })
 
-test('ボタン 1 で応答のカスタマイズを OFF にすると、記法を使わせない文を添えて保存する', async ($, on) => {
+test('応答カスタムのボタンで OFF にすると、記法を使わせない文を添えて保存する', async ($, on) => {
   const saved: [string, unknown][] = []
   on('store.set', (_$, e) => {
     saved.push([e.key, e.value])
@@ -206,7 +227,7 @@ test('ボタン 1 で応答のカスタマイズを OFF にすると、記法を
   await band.unmount()
 })
 
-test('ボタン 2 で文書の書き方の指定を OFF にすると、解除の文を添えて保存する', async ($, on) => {
+test('文書を簡潔にのボタンで OFF にすると、解除の文を添えて保存する', async ($, on) => {
   const saved: [string, unknown][] = []
   on('store.set', (_$, e) => {
     saved.push([e.key, e.value])
@@ -232,7 +253,7 @@ test('ボタン 2 で文書の書き方の指定を OFF にすると、解除の
   await band.unmount()
 })
 
-test('ボタン 0 でチャットモードにすると、読み取り用のツールとコマンドだけを通す', async ($, on) => {
+test('チャットモードのボタンで ON にすると、読み取り用のツールとコマンドだけを通す', async ($, on) => {
   const saved: unknown[] = []
   on('store.set', (_$, e) => {
     saved.push(e.value)

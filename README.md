@@ -6,11 +6,13 @@
 
 | プラグイン | 内容 | 呼び出し例 |
 | --- | --- | --- |
-| [aidd](plugins/aidd/README.md) | AIDD × DocDD の定型作業（ADR・Issue 着手の準備・コミット・PR 準備・Issue/PR 更新・技術調査・ドキュメント追従チェック・利用分析レポート） | `/aidd:adr` |
-| [config](plugins/config/README.md) | ユーザー全体（`~/.claude/`）の Claude Code 設定（ステータスライン・日本語化）の導入、設定の衝突・重複の点検、プラグインの不具合・改善案の起票、入力欄の上のボタンで応答・文書の書き方とチャットモードを切り替える mod の導入 | `/config:conflicts` |
+| [aidd](plugins/aidd/README.md) | AIDD × DocDD の定型作業（ADR・Issue の着手から実装まで・コミット・PR 準備・Issue/PR 更新・技術調査・ドキュメント追従チェック・利用分析レポート） | `/aidd:adr` |
+| [config](plugins/config/README.md) | ユーザー全体（`~/.claude/`）の Claude Code 設定（ステータスライン・日本語化）の導入、設定の衝突・重複の点検、プラグインの不具合・改善案の起票、サイドバーのボタンで応答・文書の書き方とチャットモードを切り替える mod の導入 | `/config:conflicts` |
 | [project](plugins/project/README.md) | リポジトリ単位の規約・足場（ハーネス設定・GitHub の定型ファイル・ドキュメントの骨組み・技術スタック別の構成と規約）の導入 | `/project:init-repo` |
 
 プラグイン由来の Skill は必ず `/プラグイン名:スキル名` の形で呼び出す。
+
+プラグインが何をして何をしないか（コミットしない・外部へ書き込まないなど）と、その理由は [設計の方針](docs/policies/README.md) にまとめている。方針の土台になる考え方は [AI駆動開発の価値](docs/values/README.md) にある。
 
 ## 導入
 

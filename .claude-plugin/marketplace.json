@@ -10,13 +10,13 @@
     {
       "name": "aidd",
       "source": "./plugins/aidd",
-      "description": "AIDD × DocDD の定型作業（ADR・Issue 着手の準備・コミット・PR 準備・Issue/PR 更新・技術調査・ドキュメント追従チェック・利用分析レポート）を Skill 化したツールキット",
+      "description": "AIDD × DocDD の定型作業（ADR・Issue の着手から実装まで・コミット・PR 準備・Issue/PR 更新・技術調査・ドキュメント追従チェック・利用分析レポート）を Skill 化したツールキット",
       "category": "productivity"
     },
     {
       "name": "config",
       "source": "./plugins/config",
-      "description": "ユーザー全体（~/.claude/）の Claude Code 設定の導入、設定の衝突・重複の点検、このマーケットプレイスのプラグインの不具合・改善案の起票、入力欄の上のボタンで応答・文書の書き方とチャットモードを切り替える mod の導入を行う Skill 集",
+      "description": "ユーザー全体（~/.claude/）の Claude Code 設定の導入、設定の衝突・重複の点検、このマーケットプレイスのプラグインの不具合・改善案の起票、サイドバーのボタンで応答・文書の書き方とチャットモードを切り替える mod の導入を行う Skill 集",
       "category": "productivity"
     },
     {

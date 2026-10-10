@@ -9,6 +9,7 @@
 - SSOT を破る重複記述をしない。唯一の情報源にリンクで紐づける
 - 未読の既存ファイルに Write しない
 - データ消失・課金影響・履歴破壊を伴う操作を無断実行しない
+- トークン・パスワード・署名付き URL・Webhook URL などの秘密を、Issue・PR・コメント・コミット・ファイルに書かない。コマンドの出力に含まれていても写さない
 - ドキュメントを無断で自動編集しない。提案にとどめる（条件は「ドキュメント更新を提案するとき」を参照）
 - 未検証のパッケージ版・Docker イメージタグ・クラウド設定値を「確認済み」と断定しない
 
@@ -30,6 +31,14 @@
 
 - 既存の可能性があるファイルは必ず Read してから書く
 - 複数ファイルを編集する前に、どのファイルをなぜ変更するかを述べる。実装ファイルとテストファイルを取り違えない
+
+### 実装がひと区切りついたとき
+
+1 つの目的の変更を終え、確かめ（テスト・lint など）が通ったら、次を踏む。
+
+- その区切りで直したファイルだけを `git add` でステージに置く
+- `/aidd:commit` の手順（`~/.claude/plugins/cache/` の下の aidd プラグインにある `skills/commit/SKILL.md`）で、コミットメッセージを `tmp.md` に書く。スキルが見つからなければ、利用者に `/aidd:commit` の実行を頼む
+- コミット・push はしない。利用者が `tmp.md` を見てコミットする
 
 ### 大規模ランの前
 
@@ -117,13 +126,13 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 <repository-name>/
 ├── .claude/
 │   ├── hooks/                            # Claude Code のフック（ガード・Lint・セッション通知）
-│   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions）
-│   └── settings.json                     # 権限・フック・モデルの設定（コミット対象）
+│   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions・ADR・ブランチ名）
+│   └── settings.json                     # 権限・フックの設定（コミット対象）
 ├── .vscode/                              # エディタ設定（推奨拡張機能・保存時の整形）
 ├── .github/
 │   ├── dependabot.yml                    # 依存パッケージ更新（GitHub Actions 限定・月次）
 │   ├── labels.yml                        # GitHub ラベル定義（sync-labels.yml が同期）
-│   ├── ISSUE_TEMPLATE/                   # Issue フォーム（feature / refactor / release / retro）
+│   ├── ISSUE_TEMPLATE/                   # Issue フォーム（feature / bug / refactor / release / retro）
 │   └── workflows/                        # CI/CD
 ├── docs/
 │   ├── README.md                         # 全ドキュメントの案内板
@@ -144,3 +153,4 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 TODO: セッション開始時に常時読ませたい文書だけを @import する。存在しないパスを書くと読み込みエラーになるため、実在する文書に絞る。
 
 @README.md
+@docs/adr/README.md

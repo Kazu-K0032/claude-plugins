@@ -50,12 +50,14 @@ Claude Code の `.claude/rules/`（対象ファイルを開いた時に自動適
 
 `references/` は Skill の実行時に `SKILL.md` の指示で読ませる判断基準で、導入先へはコピーしない。両者の違いは [aidd の README](../aidd/README.md) の「references/ とは何か」を参照。
 
+コピーした規約は、プラグインを更新しても書き換わらない。規約を直したときは、PR の「利用先への影響」に、Skill を再実行すれば差分を取り込めることを書く。
+
 ### インストーラは全 Skill で共有する
 
-テンプレートを持つ Skill は、`skills/<Skill 名>/files/` にコピー元を置き、`scripts/install.sh --skill <Skill 名>` で導入する。状態判定（NEW / SAME / DIFF）と「既存ファイルは `--only` の明示指定なしに上書きしない」動きを、全 Skill で揃えるため。
+テンプレートを持つ Skill は、`skills/<Skill 名>/files/` にコピー元を置き、`scripts/install.sh --skill <Skill 名>` で導入する。状態判定（NEW / SAME / DIFF）と「既存ファイルは `--only` の明示指定なしに上書きしない」動き（[P1](../../docs/policies/p01-operation-boundary.md)）を、全 Skill で揃えるため。
 
 技術スタック別の Skill を足すときは、`skills/<Skill 名>/` に `SKILL.md`・`README.md`（`files/...` の収録物表）・`files/` を置く。
 
 ### プラグインをまたぐファイルはコピーで持つ
 
-プラグインはインストール時にそれぞれ単独でキャッシュへコピーされるため、別のプラグインのファイルは参照できない。`references/markdown.md` は `aidd` と同じ内容をこのプラグインにも置いている。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。
+`references/markdown.md` は `aidd` と同じ内容をこのプラグインにも置いている（理由は [P5](../../docs/policies/p05-standalone-plugin.md)）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。

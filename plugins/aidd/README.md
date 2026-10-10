@@ -8,8 +8,8 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 | スキル | 用途 |
 | --- | --- |
-| `/aidd:adr` | ADR（アーキテクチャ決定記録）の新規作成・ステータス更新 |
-| `/aidd:issue-start` | Issue の記述を今のコードと突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする |
+| `/aidd:adr` | ADR（判断の記録）の作成・ステータス更新。小さな技術的判断も対象にし、重さ（極小・簡易・詳細）を選んで書き、一覧に 1 行足す。判断が決まると Claude から作るかを聞く |
+| `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う） |
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:issue-pr-sync` | Issue / PR の本文（PR 本文が空なら新規作成）・タイトル・サイドバーを、現在の差分とレビュー対応に合わせて更新 |
 | `/aidd:commit` | ステージ済み差分と会話の経緯から Conventional Commits 形式のメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を添える） |
@@ -27,7 +27,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 | Workflow | 用途 |
 | --- | --- |
-| `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証してレポートを出力 |
+| `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証して、直す箇所を high・medium・low に分けて出力 |
 | `docs-consistency-audit` | ドキュメント間の値の矛盾・重複記述・参照方向違反を横断監査 |
 
 収録は上記 8 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
@@ -42,7 +42,8 @@ aidd/
 │   ├── adr/
 │   │   ├── SKILL.md
 │   │   ├── _template.md        # 詳細版の雛形
-│   │   └── _template-short.md  # 簡易版の雛形（本文 10 行未満の文章）
+│   │   ├── _template-short.md  # 簡易版の雛形（本文 10 行未満の文章を目安）
+│   │   └── _template-mini.md   # 極小の雛形（題と 1〜2 文）
 │   └── ...              # 各 Skill が補助ファイル・scripts/ を持つ
 ├── agents/              # サブエージェント定義
 │   └── research.md
@@ -91,19 +92,19 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `docs/adr/` のようなパスはプロジェクトごとに違う。プラグインの設定機構（`userConfig`）は**プロジェクトの `settings.json` を読まない**仕様のため、設定値では切り替えられない。
 
-代わりに各 Skill が「規約のパスを見る → 無ければ候補を探す → それでも無ければユーザーに聞く」の順で解決する。勝手にディレクトリを作ることはしない。
+代わりに各 Skill が「規約のパスを見る → 無ければ候補を探す → それでも無ければユーザーに聞く」の順で解決する。推測した場所には置かない（[P3](../../docs/policies/p03-check-placement.md)）。
 
 ### `allowed-tools` は出力先が固定のものだけ許可する
 
 `tmp/<ブランチ名>/` のようにパスパターンを固定できる書き込みは `allowed-tools` に載せる。レポート・下書きの出力はここに該当する。
 
-出力先がプロジェクトごとに変わる Skill（`adr` など）は書き込み許可を載せず、通常の許可プロンプトを通す。パターンを固定できない書き込みを白紙委任しないため。「ユーザー承認が前提」の Skill では、この方が意図に合う。
+出力先がプロジェクトごとに変わる Skill（`adr` など）は書き込み許可を載せず、通常の許可プロンプトを通す。パターンを固定できない書き込みを白紙委任しないため（[P1](../../docs/policies/p01-operation-boundary.md)）。「ユーザー承認が前提」の Skill では、この方が意図に合う。
 
 書き込みの許可は `Edit(<パス>)` で書く。Claude Code はファイル権限を `Edit()` と `Read()` の規則だけで判定し、`Write()` / `NotebookEdit()` / `Glob()` のパス規則は受け付けるが参照しない（起動時に警告が出る）。Ref: [Configure permissions](https://code.claude.com/docs/ja/permissions)
 
 ### 同梱スクリプトの実行は `allowed-tools` に載せない
 
-`${CLAUDE_PLUGIN_ROOT}` が frontmatter の `allowed-tools` で展開されるかは公式に記載が無い。プラグインの実体パスはインストール先で変わるため、当てにせず通常の許可プロンプトを通す。
+`${CLAUDE_PLUGIN_ROOT}` が frontmatter の `allowed-tools` で展開されるかは公式に記載が無い。プラグインの実体パスはインストール先で変わるため、当てにせず通常の許可プロンプトを通す（[P1](../../docs/policies/p01-operation-boundary.md)）。
 
 `ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。
 
@@ -113,20 +114,18 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 逆に Skill 側から起動するときは、接頭辞付きの識別子（`subagent_type: aidd:research`）で指定する。接頭辞なしの裸の名前は、同名のエージェントを持つ他プラグインと衝突しうるため。
 
-### 外部へ直接書き込まない
+### GitHub への書き込み
 
-レビュー結果・レポートは必ず `tmp/<ブランチ名>/` へ出力し、**PR へのコメント投稿はしない**。`pr-review` は移植元では `gh pr comment` で投稿していたが、このプラグインでは投稿処理を削除した。
+レビュー結果・レポートは `tmp/<ブランチ名>/` へ出力し、PR へは投稿しない。`pr-review` は移植元では `gh pr comment` で投稿していたが、このプラグインでは投稿処理を削除した。指摘を人が読み、採否を決めてから投稿するため。
 
-理由は 2 つ。プラグインは複数プロジェクトへ配られるため、どのリポジトリでも同じ判断で外部へ書き込むのは危険。もう 1 つは、レビュー結果は人が読んで採否を決めるべきもので、投稿は判断のあとに来る操作だから。
-
-例外は次の 2 つ。どちらも GitHub 上の状態を変えること自体が目的のため、下書きを出しても人が同じ操作を手でやり直すだけになり、スキルの意味が消える。
+GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるかの線引きは [P1](../../docs/policies/p01-operation-boundary.md)。
 
 | スキル | 外部への書き込み |
 | --- | --- |
 | `issue-pr-sync` | Issue / PR の本文・タイトル・サイドバーを、実態に合わせて更新する |
-| `issue-start` | Issue に紐づく作業用のブランチを作り、自分を担当者に足す。ユーザーが選んだときだけ、確認結果を Issue にコメントする |
+| `issue-start` | Issue に紐づく作業用のブランチを作り、自分を担当者に足す。決めた仕様に合わせて Issue の本文とタスクを書き換える。着手を見送ったときは、ユーザーが選べば理由をコメントする |
 
-`issue-start` のコメントは、状態を変える操作ではなく経緯の記録にあたる。確認結果を前提に実装を進めると、実装中・PR のレビュー中・後から Issue を読む人が、その方針にした理由をたどる必要が出る。セッション内の報告や `tmp/`（`.gitignore` 済み）では、その人たちに届かない。そのため、既定は報告だけにしたまま、ユーザーが選んだときだけ Issue に書く。
+`issue-start` が Issue の本文を書き換えるのは、計画モードで決めた仕様を、実装中・PR のレビュー中・後から Issue を読む人に届けるため。セッション内の報告や `tmp/`（`.gitignore` 済み）では、その人たちに届かない。
 
 どちらも `gh` の書き込み系サブコマンドを `allowed-tools` に載せず、通常の許可プロンプトを通す。`gh issue develop` は一覧の表示（`--list`）とブランチの作成が同じ前方一致になるため、一覧の表示も含めて載せない。
 
@@ -138,10 +137,15 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `issue-start` の歯止め。
 
-- 書き込むのは、ブランチの作成、自分を担当者に足すこと、確認結果のコメントだけ。Issue の本文・ラベルと既存のコメントは変えず、既存の担当者も外さない
-- 確認結果は既定ではユーザーへの報告に留める。Issue にコメントするのは、確認結果を示した後の `AskUserQuestion` でユーザーが選んだときだけ。本文は同梱のテンプレート（`comment-template.md`）の形に揃える
-- 確認で前提が崩れていると分かったときは、ブランチを作らずに止める（止めた理由のコメントだけは、ユーザーが選べば投稿する）。漏れ・食い違いがあるときは確認結果を示して進めてよいかを、作業ツリーに未コミットの変更があるときはその扱いを、書き込む前に聞く
+- 書き込むのは、ブランチの作成、自分を担当者に足すこと、Issue の本文の更新、着手を見送った理由のコメントだけ。ラベルと既存のコメントは変えず、既存の担当者も外さない
+- Issue の本文を書き換える前に、今の本文を `tmp/` に書き出し、報告でパスを示す
+- 確認で前提が崩れていると分かったときは、ブランチを作らずに止める。止めた理由のコメントは、ユーザーが選んだときだけ、同梱のテンプレート（`comment-template.md`）の形で投稿する。作業ツリーに未コミットの変更があるときは、ブランチを作る前に扱いを聞く
+- 決めることは、計画モードで選択肢の質問にし、答えを待ってから実装する。実装は手元のファイルの編集まで。コミット・push はせず、直したファイルだけをステージに置き、コミットメッセージと PR の下書きを書く
 - Issue に紐づいたブランチが既にあれば、新しく作らずにそのブランチへ移動する
+
+### `issue-start` の要件の詰め方
+
+決めることを依存関係の木にし、前提が決まった問いだけを回ごとにまとめて聞く。考え方は [mattpocock/skills の grilling](https://github.com/mattpocock/skills/blob/main/docs/productivity/grilling.md) を参考にした。別のプラグインのため呼び出さず、手順に書き込んでいる（[P5](../../docs/policies/p05-standalone-plugin.md)）。
 
 ### ブランチ名の `/` は `-` に置き換える
 
@@ -149,6 +153,16 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 ワークフロー（`.js`）にはこの README を読ませにくい。そのため、各スキル・ワークフローにも同じ 1 文を書いている。規約を変えるときは、次の箇所もそろえて直す。
 
-- `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`pr-create` の `SKILL.md`
+- `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
 - `workflows/` の `pr-review.js`・`docs-consistency-audit.js`
+
+### Issue 番号を省いたら、ブランチ名から取る
+
+`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名から番号を取る。
+
+ブランチ名の形を変えるときは、次の箇所もそろえて直す。
+
+- `skills/` の `issue-start`・`pr-create`・`issue-pr-sync` の `SKILL.md`
+- `workflows/` の `pr-review.js`
+- `project` の `init-repo` が配る `.claude/rules/branch.md`（このリポジトリの `.claude/rules/branch.md` と組）

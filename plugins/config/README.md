@@ -1,6 +1,6 @@
 # config
 
-ユーザー全体（`~/.claude/`）の Claude Code 設定を整える Skill 集。どのリポジトリで作業していても共通の設定（ステータスライン・応答言語）を入れること、スコープをまたいだ設定の衝突・重複を点検すること、このマーケットプレイスのプラグインで見つけた不具合・改善案を Issue にすること、入力欄の上のボタンで応答・文書の書き方とチャットモードを切り替える mod を入れることを扱う。
+ユーザー全体（`~/.claude/`）の Claude Code 設定を整える Skill 集。どのリポジトリで作業していても共通の設定（ステータスライン・応答言語）を入れること、スコープをまたいだ設定の衝突・重複を点検すること、このマーケットプレイスのプラグインで見つけた不具合・改善案を Issue にすること、サイドバーのボタンで応答・文書の書き方とチャットモードを切り替える mod を入れることを扱う。
 
 リポジトリ単位の設定（`.claude/`・`.github/` 等）は [project](../project/README.md) の `/project:init-repo` が扱う。例外として、`/config:plugin-feedback` だけは、承認を省く切り替えを作業ディレクトリの `.claude/settings.local.json` に書き込む（理由は「設計上の決めごと」）。
 
@@ -11,7 +11,7 @@
 | `/config:setup-global` | `~/.claude/settings.json` に 2 行のステータスラインと日本語での応答（`language`）を設定 |
 | `/config:conflicts` | settings.json の各スコープ・権限ルール・フック・MCP サーバー・スキル・CLAUDE.md を横断して、衝突・重複を点検 |
 | `/config:plugin-feedback` | セッション中に見つけた、このマーケットプレイスのプラグインの不具合・改善案を、下書きの承認後に `Kazu-K0032/claude-plugins` の Issue にする（関連する Issue があればコメントで追記。承認は省くこともできる） |
-| `/config:mod-output-customize` | 入力欄の上のボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を `~/.claude/mods/` に入れる。詳細は [README](skills/mod-output-customize/README.md) |
+| `/config:mod-output-customize` | サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を `~/.claude/mods/` に入れる。詳細は [README](skills/mod-output-customize/README.md) |
 
 標準の `/doctor` とは見る観点が違う。`/doctor` はインストールの状態・壊れた設定ファイル・使われていない拡張機能・コンテキストの使用量を点検する。`/config:conflicts` は、スコープ間の上書き・deny に覆われた allow・フックや MCP の重複定義・CLAUDE.md 同士の矛盾など、**設定どうしがぶつかって効いていないもの**と、書き方の誤りで意図したコマンドに一致しない権限ルールを点検する。
 
@@ -83,7 +83,7 @@ config/
 - **スクリプトは Node.js で書き、外部パッケージを使わない**。ステータスラインは描画のたびに実行されるため、`jq` のような追加ツールに頼らず、Windows・macOS・Linux で同じように動くようにする。mod だけは例外で、Claude Code 自身の環境（Node.js も DOM も無い）で動く TypeScript で書く
 - **mod は config から直接読み込まず、スキルでコピーして入れる**。config を入れた全員に、既定で ON の指示がプロンプトのたびに足されるのを避け、使いたい人だけが入れられるようにする。読み込みは `~/.claude/settings.json` の `env.CLAUDE_CODE_PLUGIN_DIRS` で行い、プラグインの更新後は `/config:mod-output-customize` を再実行してコピーし直す（ステータスラインと同じ）
 - **ステータスラインのスクリプトは `~/.claude/` へコピーして使う**。プラグインは `statusLine` を設定できず、ユーザーの `settings.json` では `${CLAUDE_PLUGIN_ROOT}` が展開されないため。プラグインの更新後は `/config:setup-global` を再実行してコピーし直す
-- **既存の設定は承認なしに上書きしない**。`setup-global` は変更前後の値を表で見せてから書き込む
+- **既存の設定は承認なしに上書きしない**（[P1](../../docs/policies/p01-operation-boundary.md)）。`setup-global` は変更前後の値を表で見せてから書き込む
 - **`conflicts` は読み取り専用**。修正案は出すが、設定ファイルは書き換えない。`~/.claude.json` は認証情報を含むため、スクリプトが MCP の起動方法だけを抜き出して渡す
 - **起票の提案は SessionStart フックで入れる**。SessionStart の出力はそのまま Claude の文脈に入り、プラグインと一緒に更新・削除される。ほかの方法は次の理由で採らない
   - SessionEnd フック：出力が Claude にもユーザーにも届かない
@@ -94,7 +94,7 @@ config/
   - スキルを直接呼んだことは、起票への同意とはみなすが、下書きの承認とはみなさない。公開リポジトリに載る本文（公開前に言い換えた後のもの）を、ユーザーはまだ見ていないため
   - 承認を省く切り替えは、提案を止める `CLAUDE_PLUGIN_FEEDBACK` とは別の変数にする。同じ変数に値を足すと、「提案は止める」と「承認は省く」を同時に指定できないため
   - 初めての実行で `settings.local.json` に既定値（`off`）を書き込み、実行のたびに今の値と変え方を伝える。切り替えがあることに、README を読まなくても気づけるようにするため。書き込むときは通常の許可プロンプトを通し、ほかのキーは変えない
-  - この書き込みは、2 つの方針の例外として認めている。1 つは、`config` はユーザー全体（`~/.claude/`）の設定だけを扱い、リポジトリ単位の `.claude/` は `project` が扱うこと。もう 1 つは、勝手にディレクトリを作らないこと（`.claude/` が無ければ作るため）。例外にする理由は、切り替えをプロジェクトごとの見える場所に置き、その場で変えられるようにするため。書き込むのは個人用のファイル（`init-repo` の `.gitignore` で外している）で、初めての実行で `env` に 1 キーを足すだけ。共有の設定（`.claude/settings.json`）には書かない
+  - この書き込みは、[P1](../../docs/policies/p01-operation-boundary.md)（`settings.local.json` への書き込みの条件）に沿う。切り替えをプロジェクトごとの見える場所に置き、その場で変えられるようにするため
   - ほかの場所で既に設定していれば、`settings.local.json` には書き込まない。`settings.local.json` はユーザー全体の設定より優先されるため、書き込むと `~/.claude/settings.json` の設定を上書きしてしまう
   - 値は、環境変数より先に `settings.local.json` から読む。環境変数はセッションの開始時に決まるため、途中でファイルを書き換えた値を拾えない
 - **起票先は `--repo Kazu-K0032/claude-plugins` に固定する**。既存の Issue の本文・ラベルは変えない。公開リポジトリのため、利用先のリポジトリ名・トークン・業務のファイルの中身は下書きから消す

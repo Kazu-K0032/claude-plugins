@@ -3,7 +3,7 @@
 // ルール設定: 0=off, 1=warn, 2=error
 // Ref: https://commitlint.js.org/reference/rules-configuration.html#rules-configuration
 
-module.exports = {
+export default {
   // config-conventional のデフォルトルール一式を土台にし、下の rules で個別に上書きする。
   // Ref: https://github.com/conventional-changelog/commitlint/blob/master/@commitlint/config-conventional/README.md
   extends: ['@commitlint/config-conventional'],
