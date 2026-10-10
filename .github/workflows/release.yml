@@ -1,0 +1,158 @@
+name: リリース
+
+# 手順は docs/release.md。release ラベル付きの Issue で、develop から release/v<version> と main への PR を作る。
+# その PR をマージしたら、タグ v<version> と GitHub Release を作る。マージは人が行う
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions: {}
+
+# 2 つのリリースが同時に走り、同じ版のブランチやタグを作り合わないようにする
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: リリースする内容の検査
+    # 公開リポジトリでは誰でも Issue フォームから release ラベルを付けられるため、書き込み権限のある人の Issue だけを受ける
+    if: >-
+      github.event_name == 'issues'
+      && contains(github.event.issue.labels.*.name, 'release')
+      && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
+    permissions:
+      contents: read
+    uses: ./.github/workflows/plugin-checks.yml
+    with:
+      ref: develop
+      base_ref: main
+
+  create_release_pr:
+    name: リリースの PR を作る
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          # main との差分と、既存のタグを見るため
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: 版を読む
+        id: meta
+        # 3 つの plugin.json の版がそろっていることは、checks の check.py が確かめている
+        run: echo "version=v$(jq -r .version plugins/aidd/.claude-plugin/plugin.json)" >> "$GITHUB_OUTPUT"
+
+      - name: リリースできるかを確かめる
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          if [ -z "$(git log --oneline origin/main..origin/develop)" ]; then
+            echo "::error::main に無いコミットが develop にありません"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/${VERSION}" > /dev/null; then
+            echo "::error::タグ ${VERSION} は既にあります。develop で plugin.json の版を上げてから、Issue のワークフローを再実行してください。plugins/ を変えていないときは docs/release.md の手作業の手順で出します"
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin "release/${VERSION}" > /dev/null; then
+            echo "::error::ブランチ release/${VERSION} は既にあります"
+            exit 1
+          fi
+
+      - name: release ブランチを作る
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: git push origin "HEAD:refs/heads/release/${VERSION}"
+
+      - name: main への PR を作る
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          body=$(mktemp)
+          # main は既定ブランチのため、マージで Issue が閉じる
+          printf '%s\n\nCloses #%s\n' "${ISSUE_BODY}" "${ISSUE_NUMBER}" > "$body"
+          pr_url=$(gh pr create \
+            --base main \
+            --head "release/${VERSION}" \
+            --title "${VERSION} をリリース" \
+            --label release \
+            --body-file "$body")
+          gh issue comment "${ISSUE_NUMBER}" --body "リリースの PR を作りました: ${pr_url}"
+          echo "# リリースの PR" >> "$GITHUB_STEP_SUMMARY"
+          echo "${pr_url}" >> "$GITHUB_STEP_SUMMARY"
+
+  report_failure:
+    name: 失敗を Issue に知らせる
+    needs: [checks, create_release_pr]
+    if: failure() && github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Issue にコメントする
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "${ISSUE_NUMBER}" --body "リリースの PR を作れませんでした。原因はログを見てください: ${RUN_URL}"
+
+  publish_release:
+    name: タグと Release を作る
+    # hotfix/ と release/<YYYY-MM-DD> は手作業で Release を作るため、release/v<version> の PR だけを受ける
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.merged == true
+      && contains(github.event.pull_request.labels.*.name, 'release')
+      && startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Release を作る
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          version="${HEAD_REF#release/}"
+          if ! [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::ブランチ名 ${HEAD_REF} から版を読めません"
+            exit 1
+          fi
+          if gh api "repos/${GH_REPO}/git/ref/tags/${version}" > /dev/null 2>&1; then
+            echo "::error::タグ ${version} は既にあります"
+            exit 1
+          fi
+          # 説明は、前のタグから入った PR のタイトルの一覧になる
+          release_url=$(gh release create "$version" \
+            --target "$MERGE_SHA" \
+            --title "$version" \
+            --generate-notes)
+          comment="${version} をリリースしました: ${release_url}"
+          gh pr comment "$PR_NUMBER" --body "$comment"
+          for issue in $(gh pr view "$PR_NUMBER" --json closingIssuesReferences --jq '.closingIssuesReferences[].number'); do
+            gh issue comment "$issue" --body "$comment"
+          done
+          echo "# ${comment}" >> "$GITHUB_STEP_SUMMARY"

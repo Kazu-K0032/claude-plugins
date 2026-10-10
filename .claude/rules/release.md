@@ -9,10 +9,17 @@
 
 | ブランチ名 | 作成元 |
 | --- | --- |
-| `release/v<version>`（`plugins/` を変えないときは `release/<YYYY-MM-DD>`） | `develop` |
+| `release/<YYYY-MM-DD>`（`plugins/` を変えない docs だけのリリース） | `develop` |
 | `hotfix/<Issue番号>-<説明>` | `main` |
 
+- `release/v<version>` は `.github/workflows/release.yml` が作る。手で作らない
 - `hotfix/` のブランチで Issue 番号が要るときは、`hotfix/` の後ろの番号を使う
+
+## リリースする場合
+
+- 通常のリリースは、`release` ラベル付きの Issue（Issue フォームの「リリース」）を作ると、`release.yml` が release ブランチと `main` への PR を作る。マージすると、タグと Release も作る
+- リリースの Issue は利用者が作る。いつリリースするかは人が決めるため。Claude は手順を示す
+- hotfix と docs だけのリリースは、`release.yml` を使わず、`docs/release.md` の手作業の手順で行う
 
 ## PR を作る場合
 
@@ -22,6 +29,6 @@
 
 ## 版を変える場合
 
-- `plugin.json` の `version` は、`release/v<version>` と `hotfix/` のブランチでだけ上げる。普段の変更では触らない
+- `plugin.json` の `version` は、リリースの前に版を上げるための `develop` への PR と、`hotfix/` のブランチでだけ上げる。普段の変更では触らない
 - 3 つのプラグインの `plugin.json` を同じ版にする。`marketplace.json` には書かない
-- マージ・push・Release の作成は利用者が行う。Claude は手順とコマンドを示す
+- マージ・push・hotfix の Release の作成は利用者が行う。Claude は手順とコマンドを示す

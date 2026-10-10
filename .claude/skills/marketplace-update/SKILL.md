@@ -31,7 +31,7 @@ python .claude/skills/marketplace-update/scripts/check.py
 
 `python3` しか無い環境ではそちらで実行する。NG が 1 件でもあれば終了コードは 1。
 
-`release/`・`hotfix/` のブランチ（`main` へ出すもの）では、`--base origin/main` を付けて版の上げ忘れも見る。先に利用者に `git fetch origin` を頼み、`origin/main` を最新にしておく。
+版を上げるブランチ（リリースの前に版を上げる PR と `hotfix/`）と `release/` のブランチでは、`--base origin/main` を付けて版の上げ忘れも見る。先に利用者に `git fetch origin` を頼み、`origin/main` を最新にしておく。
 
 ```bash
 python .claude/skills/marketplace-update/scripts/check.py --base origin/main
@@ -48,7 +48,7 @@ python .claude/skills/marketplace-update/scripts/check.py --base origin/main
 | `template-inventory` | テンプレートを持つスキル（`skills/<スキル名>/files/`）の README にある `files/...` が存在しない、または README が無い | 収録物表か実ファイルのどちらが正かを判断して揃える |
 | `duplicated-files` | 重複ファイルの組の片方が存在しない、または `duplicated-files.md` の `paths` に載っていない | 表と `paths` を実際のパスに合わせる |
 | `argument-hint` | 入力ヒントの引数が `[]` か `<>` で囲まれていない、`[]` に「（任意。省略時は」が無い、または `<>` に「任意」「省略」がある | `.claude/rules/argument-hint.md` の書き方に直す。省略時の動きは本文を読んで確かめてから書く |
-| `version` | `plugin.json` の版が `X.Y.Z` でない・プラグインの間でそろっていない、`marketplace.json` に版がある。`--base` を付けたときは、`plugins/` を変えたのに版が上がっていない | 3 つの `plugin.json` を同じ版にし、`marketplace.json` から消す。版を上げるのはリリースのときだけ（`docs/release.md`） |
+| `version` | `plugin.json` の版が `X.Y.Z` でない・プラグインの間でそろっていない、`marketplace.json` に版がある。`--base` を付けたときは、`plugins/` を変えたのに版が上がっていない | 3 つの `plugin.json` を同じ版にし、`marketplace.json` から消す。版を上げるのは、リリースの前に版を上げる PR と hotfix だけ（`docs/release.md`） |
 
 ### 4. WARN を判断する
 

@@ -1,0 +1,16 @@
+name: "リリース"
+description: "develop の内容を main にリリースする（手順は docs/release.md）"
+title: "リリース"
+labels: ["release"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        この Issue を作ると、Actions が `develop` から `release/v<version>` を作り、`main` への PR を開きます。PR をマージすると、タグと GitHub Release ができます。
+
+        先に `develop` で 3 つの `plugin.json` の版を上げておいてください。`plugins/` を変えていない docs だけのリリースと、hotfix では、この Issue を使いません。
+  - type: textarea
+    id: notes
+    attributes:
+      label: メモ
+      description: リリースの PR の本文に入ります。無ければ空のままにします

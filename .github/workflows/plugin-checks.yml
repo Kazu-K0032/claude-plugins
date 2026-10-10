@@ -4,6 +4,17 @@ on:
   pull_request:
     # main はリリース、develop は普段の変更の PR を受ける（手順は docs/release.md）
     branches: [main, develop]
+  # release.yml から呼ぶ。Actions が GITHUB_TOKEN で作ったリリースの PR では、pull_request で動かないため
+  workflow_call:
+    inputs:
+      ref:
+        description: 検査するブランチ
+        type: string
+        required: true
+      base_ref:
+        description: マージ先のブランチ（main なら版の上げ忘れも見る）
+        type: string
+        required: true
 
 permissions: {}
 
@@ -22,14 +33,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # pull_request では空になり、PR の内容を取る
+          ref: ${{ inputs.ref }}
           # 版の検査で、マージ先のブランチと比べるため
           fetch-depth: 0
 
       - name: 整合チェック（スキルと配る設定・版）
         # 手順は .claude/skills/marketplace-update/SKILL.md。NG があれば終了コード 1 で落ちる
-        # main へのリリースの PR では、plugins/ を変えたのに版を上げていないものも落とす
+        # main への PR とリリースの Issue（release.yml）では、plugins/ を変えたのに版を上げていないものも落とす
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ inputs.base_ref || github.base_ref }}
         run: |
           if [ "$BASE_REF" = "main" ]; then
             python3 .claude/skills/marketplace-update/scripts/check.py --base "origin/$BASE_REF"
