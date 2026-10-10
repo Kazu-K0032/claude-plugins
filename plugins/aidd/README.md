@@ -42,7 +42,8 @@ aidd/
 │   ├── adr/
 │   │   ├── SKILL.md
 │   │   ├── _template.md        # 詳細版の雛形
-│   │   └── _template-short.md  # 簡易版の雛形（本文 10 行未満の文章）
+│   │   ├── _template-short.md  # 簡易版の雛形（本文 10 行未満の文章を目安）
+│   │   └── _template-mini.md   # 極小の雛形（題と 1〜2 文）
 │   └── ...              # 各 Skill が補助ファイル・scripts/ を持つ
 ├── agents/              # サブエージェント定義
 │   └── research.md

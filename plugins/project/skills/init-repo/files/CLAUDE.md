@@ -117,7 +117,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 <repository-name>/
 ├── .claude/
 │   ├── hooks/                            # Claude Code のフック（ガード・Lint・セッション通知）
-│   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions）
+│   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions・ADR）
 │   └── settings.json                     # 権限・フック・モデルの設定（コミット対象）
 ├── .vscode/                              # エディタ設定（推奨拡張機能・保存時の整形）
 ├── .github/
