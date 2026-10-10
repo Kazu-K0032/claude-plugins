@@ -78,6 +78,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `.claude/rules/github-actions.md` | ワークフローの安全な書き方 | `.github/workflows/` がある、または入れる | 同等の規約 |
 | `.claude/rules/readme.md` | README を案内板として運用する | `README.md` を入れる、またはドキュメントが複数ある | 同等の規約 |
 | `.claude/rules/adr.md` | 判断の前に ADR の一覧を見る・判断を ADR に残すか聞く | `docs/adr/README.md` を入れる | `CLAUDE.md`・`.claude/rules/` 内の ADR の規約 |
+| `.claude/rules/branch.md` | ブランチ名を Issue 番号と作業の要点にそろえる | GitHub で Issue を使う | `CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md` 内のブランチ名の規約 |
 | `.github/ISSUE_TEMPLATE/` | Issue の起票形式 | GitHub で Issue を使う | `.github/ISSUE_TEMPLATE/`・`.github/issue_template.md` |
 | `.github/PULL_REQUEST_TEMPLATE.md` | PR 本文の形式 | GitHub で PR を使う | `.github/pull_request_template.md`・`docs/pull_request_template.md`・ルートの `PULL_REQUEST_TEMPLATE.md` |
 | `.github/dependabot.yml` | GitHub Actions の依存更新 | `.github/workflows/` がある、または入れる | `.github/dependabot.yml`・`renovate.json`・`.github/renovate.json` |

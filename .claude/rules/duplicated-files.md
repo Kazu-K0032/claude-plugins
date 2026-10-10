@@ -2,17 +2,20 @@
 paths:
   - "plugins/aidd/references/markdown.md"
   - "plugins/project/references/markdown.md"
+  - ".claude/rules/branch.md"
+  - "plugins/project/skills/init-repo/files/.claude/rules/branch.md"
 ---
 
 # 重複ファイルの同期ルール
 
-プラグインはインストール時にそれぞれ単独でキャッシュへコピーされるため、別のプラグインのファイルを参照できない。そのため、同じ内容のファイルを複数のプラグインに置くことがある。片方だけ直して内容がずれるのを防ぐため、組になっているファイルをこの表で管理する。
+プラグインはインストール時にそれぞれ単独でキャッシュへコピーされるため、別のプラグインのファイルを参照できない。そのため、同じ内容のファイルを複数のプラグインに置くことがある。このリポジトリ自身にも、テンプレートと同じ規約を置くことがある。片方だけ直して内容がずれるのを防ぐため、組になっているファイルをこの表で管理する。
 
 ## 同じ内容を持つファイルの組
 
 | ファイル | 組になるファイル | 内容 | 意図的な差分 |
 | --- | --- | --- | --- |
 | `plugins/aidd/references/markdown.md` | `plugins/project/references/markdown.md` | markdownlint 準拠の書式 | なし |
+| `.claude/rules/branch.md` | `plugins/project/skills/init-repo/files/.claude/rules/branch.md` | ブランチ名の規約 | なし |
 
 ## 組の片方を編集したとき
 
