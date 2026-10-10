@@ -12,7 +12,7 @@
 /project:init-repo
 ```
 
-衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定の調整、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
+衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定とスペルチェックの除外語の調整、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
 
 | 引数の例 | 動き |
 | --- | --- |
@@ -70,7 +70,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
 - `.gitignore`・`.vscode/`・`cspell.json` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
-- `pr-checks.yml` のスペルチェックは、`npx` で `cspell@9.8.0` を取得して動かす。版を上げるときは、Skill の候補の洗い出しのコマンド（[SKILL.md](SKILL.md) の手順 5）の版もそろえる
+- `pr-checks.yml` のスペルチェックは、`npx` で版を固定した cspell を取得して動かす。版は `files/.github/workflows/pr-checks.yml` と、Skill の候補の洗い出しのコマンド（[SKILL.md](SKILL.md) の手順 5）の 2 か所に書いてある。版を上げるときは両方をそろえる
 - `commitlint.config.js` は設定だけ。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る
 
 ## 除外したもの
