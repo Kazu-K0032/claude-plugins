@@ -2,7 +2,7 @@
 # git の commit / push を Claude に実行させないためのガバナンスガード（PreToolUse: Bash）。
 #
 # なぜ必要か:
-#   settings.json の permissions.deny は「コマンド先頭一致」でしか判定しないため、
+#   settings.json の permissions.deny はルールの形に当たるコマンドしか判定しないため、
 #   `bash script.sh` のようなラッパー経由や、&& ; | での連結でコミット/push を呼ばれると
 #   deny を素通りしてしまう。運用では commit / push は
 #   人間が最後に手動で行うため、Claude（Bash ツール）経由の実行を全て塞ぐ。

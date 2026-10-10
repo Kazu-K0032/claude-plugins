@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # PreToolUse hook: 破壊的コマンドを検出し承認をエスカレーションする。
 # データ消失・課金影響・履歴破壊を伴う操作を対象にする。
-# rm・git clean は settings.json の deny でも止めているが、deny はコマンドの先頭一致のため、
-# bash -c などを経由した実行は止まらない。そのため、ここでも検出する。
+# rm・git clean・git push --force は settings.json の deny でも止めているが、deny はルールの形に
+# 当たるコマンドしか止めず、bash -c などを経由した実行は止まらない。そのため、ここでも検出する。
 #
 # カスタマイズ方針:
 #   プロジェクト固有の破壊的操作（クラウド CLI の delete 系・本番ホストへの SSH 等）は
@@ -76,8 +76,9 @@ patterns=(
 # コンテナと named volume を削除する。DB データが消えるとアプリの全コンテンツが失われる
 'docker[[:space:]]+compose[[:space:]]+down[[:space:]].*-v'
 'docker-compose[[:space:]]+down[[:space:]].*-v'
-# -r または -f オプション付きの rm。再帰削除・強制削除はファイル復元ができない
-'rm[[:space:]]+-[a-zA-Z]*[rf][a-zA-Z]*[rf]'
+# -r・-R・-f（--recursive・--force）のどれかが付いた rm。再帰削除・強制削除はファイル復元ができない
+# オプションはファイル名の後ろにも置けるため、同じコマンドの中（; & | の手前まで）を探す
+'(^|[^[:alnum:]_-])rm[[:space:]]+([^;&|]*[[:space:]])?(-[a-zA-Z]*[rRf][a-zA-Z]*|--recursive|--force)([[:space:]]|$)'
 # ステージング・ワーキングツリーをコミットに強制リセットする。未コミット変更が消える
 'git[[:space:]]+reset[[:space:]]+--hard'
 # 未追跡ファイルを強制削除する。-f で復元できないファイルが消える
