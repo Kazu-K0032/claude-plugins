@@ -3,7 +3,7 @@ name: issue-pr-sync
 description: 指定した Issue と PR を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える）・ラベル等のサイドバーを、承認後に直接反映する。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
 argument-hint: "<Issue番号|URL> <PR番号|URL>"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/**/issue-pr-sync_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync_*.md)
 ---
 
 # Issue / PR の同期更新
@@ -72,7 +72,7 @@ git diff <baseRefName>...HEAD
 1. Issue / PR タイトルの変更案（「タイトルの方針」）
 1. サイドバーの変更案（「サイドバーの更新方針」）
 
-本文は `tmp/<ブランチ名>/issue-pr-sync_<ts>_issue.md` / `_pr.md` に書き出す。ブランチ名の `/` は置換せずサブディレクトリとして扱う（`commit` / `pr-create` と同じ規約）。
+本文は `tmp/<ブランチ名>/issue-pr-sync_<ts>_issue.md` / `_pr.md` に書き出す。ブランチ名の `/` は `-` に置換する（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。
 
 更新が不要と判断した対象があれば、無理に変更を作らず「変更なし」とする。
 

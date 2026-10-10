@@ -480,10 +480,10 @@ def git_branch():
 def out_dir():
     """レポート出力先ディレクトリ tmp/<ブランチ名>/ のパスを返す。
 
-    commit / pr-create と同じ規約: ブランチ名の `/` は置換せず
-    サブディレクトリとして扱う（例: tmp/issues/1449-.../）。
+    ブランチ名の `/` は `-` に置換する（例: tmp/issues-1449-.../）。
+    規約は aidd の README.md の「ブランチ名の `/` は `-` に置き換える」。
     """
-    return os.path.join("tmp", git_branch())
+    return os.path.join("tmp", git_branch().replace("/", "-"))
 
 
 def custom_agent_names():

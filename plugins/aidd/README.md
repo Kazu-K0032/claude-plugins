@@ -141,3 +141,13 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 - 確認結果は既定ではユーザーへの報告に留める。Issue にコメントするのは、確認結果を示した後の `AskUserQuestion` でユーザーが選んだときだけ。本文は同梱のテンプレート（`comment-template.md`）の形に揃える
 - 確認で前提が崩れていると分かったときは、ブランチを作らずに止める（止めた理由のコメントだけは、ユーザーが選べば投稿する）。漏れ・食い違いがあるときは確認結果を示して進めてよいかを、作業ツリーに未コミットの変更があるときはその扱いを、書き込む前に聞く
 - Issue に紐づいたブランチが既にあれば、新しく作らずにそのブランチへ移動する
+
+### ブランチ名の `/` は `-` に置き換える
+
+`tmp/<ブランチ名>/` に出力するときは、ブランチ名の `/` を `-` に置き換える（例：`issues/1-sample` → `tmp/issues-1-sample/`）。1 つのブランチの出力を 1 か所にまとめるため。`allowed-tools` の書き込み先も、1 階層だけに当たる `tmp/*/` で書く。
+
+ワークフロー（`.js`）にはこの README を読ませにくい。そのため、各スキル・ワークフローにも同じ 1 文を書いている。規約を変えるときは、次の箇所もそろえて直す。
+
+- `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`pr-create` の `SKILL.md`
+- `skills/ai-report/scripts/analyze.py` の `out_dir()`
+- `workflows/` の `pr-review.js`・`docs-consistency-audit.js`

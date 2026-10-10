@@ -32,7 +32,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 
 ## 手順
 
-1. `git branch --show-current` で現在のブランチ名を取得する（出力パス用）
+1. `git branch --show-current` で現在のブランチ名を取得する（出力パス用。`/` は `-` に置換する。規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）
 2. `date +%Y%m%d_%H%M%S` でタイムスタンプを取得する
 3. `gh issue view $ARGUMENTS` でIssueの内容（タイトル・本文・タスク）を取得する
 4. `git log --oneline main..HEAD` で現在のブランチのコミット一覧を取得する（既定ブランチが `main` でない場合はそのブランチ名に読み替える）
