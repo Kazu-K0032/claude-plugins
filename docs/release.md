@@ -1,26 +1,8 @@
 # リリース手順
 
-プラグインの利用者に、リリースした内容だけを届けるための手順。ブランチの使い方・版の上げ方・リリースの流れを決める。
+プラグインの利用者に、リリースした内容だけを届けるための手順。版の上げ方・リリースの流れを決める。ブランチの役割・名前・マージの仕方は [CONTRIBUTING.md](../CONTRIBUTING.md) にある。
 
 通常のリリースは、`.github/workflows/release.yml` が release ブランチ・PR・タグ・Release を作る。人が行うのは、リリースの Issue の作成と、PR のマージだけ。マージ・push・Release の作成は人が行う（[P1](policies/p01-operation-boundary.md)）。Claude は、ブランチの作成・版の書き換え・PR の作成までを手伝う。
-
-## ブランチの役割
-
-| ブランチ | 役割 |
-| --- | --- |
-| `main` | リリースした内容だけを置く。利用者のマーケットプレイスが取得する。GitHub の既定ブランチ |
-| `develop` | 次のリリースに入れる変更を溜める。普段の PR のマージ先 |
-
-| ブランチ名 | 用途 | 作成元 | PR のマージ先 |
-| --- | --- | --- | --- |
-| `issues/<Issue番号>-<説明>` | 普段の変更と、版を上げる変更 | `develop` | `develop` |
-| `release/v<version>` | リリース。`release.yml` が作る | `develop` | `main` |
-| `release/<YYYY-MM-DD>` | `plugins/` 以外（README・docs など）だけを `main` に出す | `develop` | `main` |
-| `hotfix/<Issue番号>-<説明>` | リリース済みの版の急ぎの修正 | `main` | `main` |
-
-- PR はすべて merge commit でマージする。squash と rebase は使わない
-- `hotfix/` を `main` にマージしたら、`main` から `develop` へ PR を出してマージする
-- `develop` へのマージでは、PR の `Closes #<番号>` で Issue が閉じない。マージした人が手で閉じる
 
 ## 版
 
@@ -74,6 +56,8 @@ git switch -c release/2026-10-11 --no-track origin/develop
    git switch -c hotfix/12-fix-commit-skill --no-track origin/main
    ```
 
+   コミットの `Ref:` などに Issue 番号が要るときは、`hotfix/` の後ろの番号を使う
+
 1. 直して、版を PATCH で上げる
 1. `main` へ PR を作ってマージする。`release` ラベルは付けない
 1. マージした `main` のコミットに、GitHub Release を作る（下の「Release の作り方」）
@@ -106,20 +90,3 @@ hotfix で、手で Release を作るときの手順。通常のリリースで�
    ```
 
 1. **Settings** → **Actions** → **General** → **Workflow permissions** で、**Allow GitHub Actions to create and approve pull requests** を有効にする。無効だと、`release.yml` が PR を作れない
-
-## 理由
-
-- 【main をリリース専用にする】利用者が更新したときに届くのは、その時点の `main` の中身だから。版を上げるだけでは、リリースの後に `main` へ入れた変更まで同じ版で届く
-- 【既定ブランチを main のままにする】利用者は ref なしで登録しており、既定ブランチを取得するから。変えると登録し直しが要る
-- 【リリースを Actions で行う】release ブランチの作成・PR・タグ・Release を手で行うと、版とタグ名のずれや、Release の作り忘れが起きるから。人は、いつリリースするか（Issue の作成）と、何を出すか（マージ）だけを決める
-- 【版を develop で上げる】release ブランチは Actions が作るため、ブランチの中で版を書き換える手順を挟まないから。中身は、リリースの Issue を作った時点の `develop` で固定される。版を上げた後に `plugins/` の変更が `develop` に入っても、次のリリースの検査が版の上げ忘れとして落とす
-- 【リリースの PR の検査をワークフローの中で行う】Actions が `GITHUB_TOKEN` で作った PR では、`pull_request` のワークフローが動かないから。PAT を使えば動くが、secrets と期限の管理が増える
-- 【書き込み権限のある人の Issue だけを受ける】公開リポジトリでは、誰でも Issue フォームからラベル付きの Issue を作れるから
-- 【hotfix と docs だけのリリースは手で行う】回数が少なく、作成元やタグの有無が通常のリリースと違うから
-- 【版は plugin.json だけに書く】`marketplace.json` にも書けるが、`plugin.json` が優先され、書く場所が 2 つになるから
-- 【3 つのプラグインで 1 つの版にする】ref を指定して戻すと、カタログ全体がその時点に戻るから。プラグインごとに版を分けても戻せる単位は変わらず、タグと Release が増えるだけになる。プラグインの間に版の範囲付きの依存を足すときは、公式のタグの形（`<プラグイン>--v<version>`）への切り替えを考える
-- 【タグは Release で付ける】利用者が Releases のページで版の一覧と変更点を見られるから
-- 【merge commit でマージする】squash や rebase では `main` に新しいコミットができ、`develop` と履歴がずれて、取り込みで衝突するから
-- 【CI で版を確かめる】版を上げ忘れると、`main` にマージしても既存の利用者に届かないから
-
-公式の説明：[Versions and updates](https://code.claude.com/docs/en/plugins/loading#versions-and-updates)・[Keep users up to date](https://code.claude.com/docs/en/plugins/host-marketplace#keep-users-up-to-date)

@@ -2,7 +2,7 @@ name: プラグインの検査
 
 on:
   pull_request:
-    # main はリリース、develop は普段の変更の PR を受ける（手順は docs/release.md）
+    # main はリリース、develop は普段の変更の PR を受ける（ブランチの決まりは CONTRIBUTING.md）
     branches: [main, develop]
   # release.yml から呼ぶ。Actions が GITHUB_TOKEN で作ったリリースの PR では、pull_request で動かないため
   workflow_call:
