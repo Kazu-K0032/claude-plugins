@@ -2,8 +2,8 @@
 name: commit
 description: ステージング済みの差分を分析し、Conventional Commits 形式のコミットメッセージを提案する。コミットメッセージの作成やステージング済み変更のレビューを求められた時に使用する
 disable-model-invocation: true
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Read, Read(tmp.md), Edit(tmp.md)
-argument-hint: "[補足指示（任意。省略時はステージ済みの差分だけで提案する。例: Issue#5 を参照に付ける / 1 コミットにまとめる）]"
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(gh pr checks:*), Read, Read(tmp.md), Edit(tmp.md)
+argument-hint: "[補足指示（任意。省略時はステージ済みの差分と会話の経緯から提案する。例: Issue#5 を参照に付ける / 1 コミットにまとめる）]"
 ---
 
 # コミット提案
@@ -18,8 +18,23 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 4. `git log --oneline -5` で直近のコミットメッセージのスタイルを確認する
 5. リポジトリに commitlint 設定（`commitlint.config.*` / `.commitlintrc.*` / `package.json` の `commitlint`）があれば `Read` し、行長上限・許可 type を確認する
 6. コミット分割が必要か判断する（下記ルール参照）
-7. `commit-rule.md` の Conventional Commits 形式に従い、コミットメッセージを提案する
-8. 提案したコミットメッセージをプロジェクトルート直下の `tmp.md` に書き込む。**既存の `tmp.md` がある場合は、上書き前に必ず `Read` してから `Write` する**（新規時はそのまま作成）
+7. 会話の経緯から、GitHub Actions の失敗を直すコミットかを判断する（例: 失敗した実行のログを読んで直した、補足指示で CI の修正と言われた）。差分だけでは判断できないため、会話にそうした経緯が無ければ通常のコミットとして扱う。CI の修正であれば、Why に CI の失敗を書き（`commit-rule.md` の「CI の失敗を直すコミット」）、下記「失敗した実行の URL の取り方」で URL を取る
+8. `commit-rule.md` の Conventional Commits 形式に従い、コミットメッセージを提案する
+9. 提案したコミットメッセージをプロジェクトルート直下の `tmp.md` に書き込む。**既存の `tmp.md` がある場合は、上書き前に必ず `Read` してから `Write` する**（新規時はそのまま作成）
+
+## 失敗した実行の URL の取り方
+
+会話の経緯に失敗した実行の URL が出ていれば、それを使う（ジョブの URL なら末尾の `/job/<job_id>` を削る）。出ていなければ、現在のブランチの PR のチェック結果から、失敗した GitHub Actions の実行をワークフロー名と URL の組で取り出す。
+
+```bash
+gh pr checks --json bucket,link,workflow -q '[.[] | select(.bucket == "fail" and .workflow != "") | "\(.workflow) \(.link | sub("/job/[0-9]+$"; ""))"] | unique | .[]'
+```
+
+- `link` は失敗したジョブの URL のため、末尾の `/job/<job_id>` を削って実行の URL にし、同じ実行は 1 つにまとめている
+- `workflow` が空のチェックは GitHub Actions 以外（外部の CI・GitHub App）のため除いている
+- 複数の実行が出たときは、ワークフロー名と会話の経緯から、このコミットで直した失敗の実行だけを選ぶ
+- 何も出力されない、またはコマンドが失敗した（PR が無い等）ときは、URL の行を書かない。失敗の後に新しいコミットを push していると、失敗した実行が結果に出ないことがある
+- 書き方（`Ref:` を 2 行に分ける・行長の上限を超えたら書かない）は `commit-rule.md` の「CI の失敗を直すコミット」に従う
 
 ## コミット分割のルール
 
