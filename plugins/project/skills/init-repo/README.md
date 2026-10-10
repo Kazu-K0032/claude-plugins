@@ -37,7 +37,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/settings.json` | 権限（秘匿ファイルの deny・`*.example` の allow）とフックの設定 | 秘匿ファイルの deny パスをプロジェクトに合わせる |
 | `files/.claude/hooks/guard-destructive.sh` | 破壊的コマンドを検出して承認へエスカレーションする PreToolUse フック | `patterns` にプロジェクト固有の破壊的操作を追記する |
 | `files/.claude/hooks/guard-git-write.sh` | `git commit` / `git push` / `gh` 書き込みを Claude に実行させないガード（既定では未配線） | 使う場合は settings.json の PreToolUse に追加する |
-| `files/.claude/hooks/post-edit-lint.sh` | 編集後に Lint を流す PostToolUse フック（非ブロッキング） | 冒頭の `LINT_DIR` / `TARGET_PREFIX` と言語別ブロックを調整する |
+| `files/.claude/hooks/post-edit-lint.sh` | 編集後に Lint を流し、結果を Claude へ返す PostToolUse フック（非ブロッキング） | 冒頭の `LINT_DIR` / `TARGET_PREFIX` と言語別ブロックを調整する |
 | `files/.claude/hooks/session-start.sh` | セッション開始時に運用ルールを通知する SessionStart フック | 文言を変えるだけ |
 | `files/.claude/rules/comment.md` | インラインコメントの規約（なぜを書く・読み手を選ばない言葉） | そのまま使える |
 | `files/.claude/rules/env.md` | 環境変数と `*.example` の追従ルール | 変数の種類と追記先の表 |
