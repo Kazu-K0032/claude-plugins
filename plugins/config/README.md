@@ -12,7 +12,7 @@
 | `/config:conflicts` | settings.json の各スコープ・権限ルール・フック・MCP サーバー・スキル・CLAUDE.md を横断して、衝突・重複を点検 |
 | `/config:plugin-feedback` | セッション中に見つけた、このマーケットプレイスのプラグインの不具合・改善案を、承認後に `Kazu-K0032/claude-plugins` の Issue にする（関連する Issue があればコメントで追記） |
 
-標準の `/doctor` とは見る観点が違う。`/doctor` はインストールの状態・壊れた設定ファイル・使われていない拡張機能・コンテキストの使用量を点検する。`/config:conflicts` は、スコープ間の上書き・deny に覆われた allow・フックや MCP の重複定義・CLAUDE.md 同士の矛盾など、**設定どうしがぶつかって効いていないもの**を点検する。
+標準の `/doctor` とは見る観点が違う。`/doctor` はインストールの状態・壊れた設定ファイル・使われていない拡張機能・コンテキストの使用量を点検する。`/config:conflicts` は、スコープ間の上書き・deny に覆われた allow・フックや MCP の重複定義・CLAUDE.md 同士の矛盾など、**設定どうしがぶつかって効いていないもの**と、書き方の誤りで意図したコマンドに一致しない権限ルールを点検する。
 
 `/config:plugin-feedback` も、標準の `/feedback` とは送り先が違う。`/feedback` は Claude Code 本体の不具合を Anthropic へ送る。`/config:plugin-feedback` は、このマーケットプレイスのプラグイン（`aidd`・`config`・`project`）の不具合・改善案をこのリポジトリの Issue にする。
 
