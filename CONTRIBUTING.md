@@ -9,6 +9,8 @@
 | `main` | リリースした内容だけを置く。利用者のマーケットプレイスが取得する。GitHub の既定ブランチ |
 | `develop` | 次のリリースに入れる変更を溜める。普段の PR のマージ先 |
 
+- `main` は、ブランチの保護ルール（[.github/rulesets/](.github/rulesets/README.md)）で、直接の push・force push・削除を止めている
+
 ## ブランチを作る場合
 
 | ブランチ名 | 用途 | 作成元 | PR のマージ先 |
