@@ -200,7 +200,7 @@ test('ボタン 1 で応答のカスタマイズを OFF にすると、記法を
 
   const submitted = await $.prompt.submit(PROMPT)
   expect(submitted.context?.some(block => block.includes('# 応答の色分け'))).toBe(false)
-  expect(submitted.context?.some(block => block.includes('使わない'))).toBe(true)
+  expect(submitted.context?.some(block => block.includes('# 応答の形式') && block.includes('今回は通常の形式'))).toBe(true)
   expect(saved).toEqual([['isCustomized', false]])
 
   await band.unmount()
@@ -232,7 +232,7 @@ test('ボタン 2 で文書の書き方の指定を OFF にすると、解除の
   await band.unmount()
 })
 
-test('ボタン 0 でチャットモードにすると、ファイル編集と読み取り以外の Bash を止める', async ($, on) => {
+test('ボタン 0 でチャットモードにすると、読み取り用のツールとコマンドだけを通す', async ($, on) => {
   const saved: unknown[] = []
   on('store.set', (_$, e) => {
     saved.push(e.value)
@@ -265,9 +265,20 @@ test('ボタン 0 でチャットモードにすると、ファイル編集と�
   await $.tool.call({ tool: 'Edit', file_path: '/tmp/a.ts', old_string: 'a', new_string: 'b' })
   await $.tool.call({ tool: 'Write', file_path: '/tmp/a.ts', content: 'a' })
   await $.tool.call({ tool: 'Read', file_path: '/tmp/a.ts' })
+  await $.tool.call({ tool: 'PowerShell', command: 'Remove-Item a.txt' })
+  await $.tool.call({ tool: 'Monitor', description: 'm', timeout_ms: 1000, command: 'rm -rf build' })
+  await $.tool.call({ tool: 'Monitor', description: 'm', timeout_ms: 1000, command: 'tail -n 5 log.txt' })
+  await $.tool.call({ tool: 'CronCreate', cron: '*/5 * * * *', prompt: 'x' })
+  await $.tool.call({ tool: 'Glob', pattern: '*.ts' })
   await $.tool.call({ tool: 'mcp__claude_ai_Gmail__send_message', to: 'a@example.com' })
   await $.tool.call({ tool: 'mcp__claude_ai_Gmail__get_thread', thread_id: 't' })
-  expect(ran).toEqual(['grep -rn foo src | head -5 2>/dev/null', 'Read', 'mcp__claude_ai_Gmail__get_thread'])
+  expect(ran).toEqual([
+    'grep -rn foo src | head -5 2>/dev/null',
+    'Read',
+    'Monitor',
+    'Glob',
+    'mcp__claude_ai_Gmail__get_thread',
+  ])
 
   const submitted = await $.prompt.submit(PROMPT)
   expect(submitted.context?.some(block => block.includes('# チャットモード'))).toBe(true)

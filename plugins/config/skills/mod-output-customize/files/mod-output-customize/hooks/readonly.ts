@@ -1,4 +1,7 @@
-/** chat モードで通すコマンド。ほかのコマンドを起動できるもの・ファイルを書けるものは入れない */
+/**
+ * チャットモードで通すコマンド。書き出しや別のコマンドの起動ができる引数は FORBIDDEN_ARGS で、
+ * git・gh はサブコマンドの許可リストで止める。引数を絞っても安全にできないコマンドは入れない
+ */
 const READ_ONLY_COMMANDS = new Set([
   'basename',
   'cat',
@@ -62,6 +65,47 @@ const GH_API_FORBIDDEN_ARGS = ['-X', '--method', '--input']
 
 /** gh api の本文に値を足す引数。付けると POST になるので、graphql の query のときだけ通す */
 const GH_API_FIELD_ARGS = ['-f', '-F', '--field', '--raw-field']
+
+/**
+ * チャットモードで通す組み込みのツール。読む・調べる・会話を進めるだけで、ファイルや外部の状態を変えないもの。
+ * ここに無いツール（PowerShell・Artifact・CronCreate・Workflow など）は止める。Bash・Monitor・MCP は別に判定する
+ */
+const READ_ONLY_TOOLS = new Set([
+  // サブエージェントのツール呼び出しも、それぞれ tool.call を通るので止められる
+  'Agent',
+  'AskUserQuestion',
+  'CronList',
+  'EnterPlanMode',
+  'ExitPlanMode',
+  'GetTask',
+  'Glob',
+  'Grep',
+  'ListAgents',
+  'ListConnectors',
+  'ListMcpResourcesTool',
+  'ListPlugins',
+  'ListSkills',
+  'LSP',
+  'memory_list',
+  'memory_read',
+  'Read',
+  'ReadMcpResourceDirTool',
+  'ReadMcpResourceTool',
+  'ReadNotifications',
+  'SearchMcpRegistry',
+  'SearchPlugins',
+  'SearchSkills',
+  'Skill',
+  // TaskCreate・TaskUpdate・TodoWrite は、セッションの中の作業メモだけを変える
+  'TaskCreate',
+  'TaskGet',
+  'TaskList',
+  'TaskUpdate',
+  'TodoWrite',
+  'ToolSearch',
+  'WebFetch',
+  'WebSearch',
+])
 
 /** MCP ツールの名前のうち、読み取りを表す語 */
 const MCP_READ_WORDS = new Set([
@@ -136,8 +180,8 @@ const MCP_WRITE_WORDS = new Set([
 const FORBIDDEN_ARGS: Record<string, readonly string[]> = {
   find: ['-exec', '-execdir', '-ok', '-okdir', '-delete', '-fprint', '-fprint0', '-fprintf', '-fls'],
   git: ['--output', '-O', '--open-files-in-pager', '--ext-diff'],
-  rg: ['--pre'],
-  sort: ['-o', '--output'],
+  rg: ['--pre', '--hostname-bin'],
+  sort: ['-o', '--output', '--compress-program'],
   tree: ['-o'],
 }
 
@@ -278,7 +322,7 @@ function isHarmlessRedirect(operator: string, target: string): boolean {
 /**
  * 引数が禁じた引数に当たるか
  * @param arg - 確かめる引数
- * @param option - 禁じた引数。`--x` は `--x=値` も、1 文字の `-x` は `-ax` のようにまとめた形も当たる
+ * @param option - 禁じた引数。`--xyz` は `--xyz=値` と省略形の `--xy`・`--xy=値` も、1 文字の `-x` は `-ax` のようにまとめた形も当たる
  * @returns 当たれば true
  */
 function matchesOption(arg: string, option: string): boolean {
@@ -286,7 +330,9 @@ function matchesOption(arg: string, option: string): boolean {
     return true
   }
   if (option.startsWith('--')) {
-    return arg.startsWith(`${option}=`)
+    // GNU の getopt_long と git は、紛れない範囲で長いオプションの省略形（sort の --out=… など）を受け付ける
+    const name = arg.split('=')[0] ?? ''
+    return name.length > 2 && name.startsWith('--') && option.startsWith(name)
   }
   if (option.length === 2) {
     return /^-[^-]/.test(arg) && arg.includes(option.slice(1))
@@ -327,7 +373,8 @@ function isReadOnlyGh(args: readonly string[]): boolean {
     return true
   }
 
-  return apiArgs.includes('graphql') && !apiArgs.some(arg => /mutation/i.test(arg) || arg.includes('=@'))
+  // -f / -F を付けると POST になる。通すのは、エンドポイントが graphql の query だけ
+  return action === 'graphql' && !apiArgs.some(arg => /mutation/i.test(arg) || arg.includes('=@'))
 }
 
 /**
@@ -354,7 +401,12 @@ function isReadOnlySimpleCommand(words: readonly string[]): boolean {
     return subcommand !== undefined && READ_ONLY_GIT_SUBCOMMANDS.has(subcommand)
   }
   if (name === 'uniq') {
-    return args.filter(arg => !arg.startsWith('-')).length <= 1
+    // 2 つ目のファイル引数は出力先になる。単独の - は標準入力のファイル引数で、-- より後ろはすべてファイル引数
+    const end = args.indexOf('--')
+    const before = end === -1 ? args : args.slice(0, end)
+    const after = end === -1 ? [] : args.slice(end + 1)
+    const files = before.filter(arg => arg === '-' || !arg.startsWith('-')).length + after.length
+    return files <= 1
   }
 
   return true
@@ -401,4 +453,13 @@ export function isReadOnlyMcpTool(tool: string): boolean {
     .split(/[^a-z0-9]+/)
 
   return words.some(word => MCP_READ_WORDS.has(word)) && !words.some(word => MCP_WRITE_WORDS.has(word))
+}
+
+/**
+ * 組み込みのツールが、チャットモードで通してよい読み取り用のものか
+ * @param tool - ツールの名前
+ * @returns 許可リストにあれば true。Bash・Monitor・MCP は isReadOnlyCommand・isReadOnlyMcpTool で判定する
+ */
+export function isReadOnlyTool(tool: string): boolean {
+  return READ_ONLY_TOOLS.has(tool)
 }

@@ -1,9 +1,9 @@
 import { atom, read, update } from 'claude-code'
-import type { CoreEngineInterface, Register } from 'claude-code'
+import type { CoreEngineInterface, Register, ToolCallInput } from 'claude-code'
 
 import { hasEmphasis, parse } from './emphasis'
 import type { Block, Span, Tone } from './emphasis'
-import { isReadOnlyCommand, isReadOnlyMcpTool } from './readonly'
+import { isReadOnlyCommand, isReadOnlyMcpTool, isReadOnlyTool } from './readonly'
 
 /** 強調に使う色。テーマのキーか生の色名 */
 const EMPHASIS_COLOR = 'red'
@@ -73,9 +73,16 @@ const DOC_CONCISE_TOGGLE: Toggle = {
   onColor: 'suggestion',
 }
 
-/** チャットモードでファイル編集のツールを止めたとき、モデルに返す理由 */
-const WRITE_DENY_REASON =
-  'チャットモード（読み取り専用）のため、ファイルは変更できません。変更内容は提案にとどめ、変更が必要ならユーザーにチャットモードを OFF にしてもらってください。'
+/** チャットモードで、読み取り用でないツール（ファイルの編集・PowerShell など）を止めたとき、モデルに返す理由 */
+const TOOL_DENY_REASON = [
+  'チャットモード（読み取り専用）のため、このツールは使えません。',
+  '使えるのは Read・Glob・Grep・WebFetch・WebSearch などの読み取り用のツールだけです。',
+  '変更内容は提案にとどめ、変更が必要ならユーザーにチャットモードを OFF にしてもらってください。',
+].join('')
+
+/** チャットモードの判定が失敗したとき、読み取り用でないツールを止める理由 */
+const CHECK_FAILED_DENY_REASON =
+  'チャットモードかどうかを確かめられなかったため、安全のためこのツールを止めました。もう一度試してください。'
 
 /** チャットモードで Bash のコマンドを止めたとき、モデルに返す理由 */
 const BASH_DENY_REASON = [
@@ -171,9 +178,30 @@ const CHAT_MODE_TEXT = [
   'いまはチャットモード。質問への回答と、ファイルを読む・検索するといった調査だけを行う。',
   '- ファイルの作成・編集・削除、コミットやプッシュ、パッケージのインストールなど、状態を変える操作はしない',
   '- 外部サービスへの送信・作成・更新もしない。GitHub は gh の読み取り用コマンド（pr view/list/diff、issue view/list、api の GET など）で読む',
-  '- Edit / Write / NotebookEdit、読み取り用以外の Bash コマンド、名前から読み取り専用と判断できない MCP ツールは拒否される',
+  '- 使えるのは、Read・Glob・Grep・WebFetch・WebSearch などの読み取り用のツール、読み取り用の Bash コマンド、名前から読み取り専用と判断できる MCP ツールだけ。ほかのツール（Edit・Write・PowerShell など）は拒否される',
   '変更が必要なときは変更案を示し、入力欄の上の「チャットモード」ボタンで OFF にするようユーザーに伝える。',
 ].join('\n')
+
+/**
+ * チャットモードでツールを止める理由を返す。読み取り用だけを通す許可リスト方式で、知らないツールは止める
+ * @param e - tool.call の入力
+ * @returns 止めるなら理由、通すなら null
+ */
+function chatModeDenyReason(e: ToolCallInput): string | null {
+  if (e.tool === 'Bash') {
+    return isReadOnlyCommand(e.command) ? null : BASH_DENY_REASON
+  }
+  // Monitor はシェルのコマンドか WebSocket を見張る。版によっては無いツールなので名前を文字列で比べる
+  if (String(e.tool) === 'Monitor') {
+    const command = 'command' in e ? e.command : undefined
+    return typeof command === 'string' && isReadOnlyCommand(command) ? null : BASH_DENY_REASON
+  }
+  if (e.tool.startsWith('mcp__')) {
+    return isReadOnlyMcpTool(e.tool) ? null : MCP_DENY_REASON
+  }
+
+  return isReadOnlyTool(e.tool) ? null : TOOL_DENY_REASON
+}
 
 export const register: Register = on => {
   // システムプロンプト（prompt.compose）には足さない。Team / Enterprise でログインしている時や
@@ -200,23 +228,24 @@ export const register: Register = on => {
     return next({ ...e, context: [...(e.context ?? []), ...added] })
   })
 
-  on('tool.call', { tool: ['Bash', 'Edit', 'Write', 'NotebookEdit'] }, async ($, e, next) => {
+  on('tool.call', async ($, e, next) => {
     if (!(await read($, isChatMode))) {
       return next(e)
     }
-    if (e.tool === 'Bash') {
-      return isReadOnlyCommand(e.command) ? next(e) : { deny: BASH_DENY_REASON }
+    const reason = chatModeDenyReason(e)
+
+    return reason === null ? next(e) : { deny: reason }
+  }).catch(($, e, next) => {
+    // フックが失敗したら止める側に倒す。読み取り用のツールは、チャットモードかどうかに関係なく通してよい
+    if (next.called) {
+      return next(e)
     }
-
-    return { deny: WRITE_DENY_REASON }
-  })
-
-  on('tool.call', async ($, e, next) => {
-    if (!e.tool.startsWith('mcp__') || isReadOnlyMcpTool(e.tool) || !(await read($, isChatMode))) {
+    const reason = chatModeDenyReason(e)
+    if (reason === null) {
       return next(e)
     }
 
-    return { deny: MCP_DENY_REASON }
+    return { deny: next.error.kind === 're-entry' ? reason : CHECK_FAILED_DENY_REASON }
   })
 
   on('session.start', async ($, e, next) => {
