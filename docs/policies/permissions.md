@@ -11,6 +11,7 @@
 | `config:plugin-feedback` | `gh issue create`・`gh issue comment` | deny に入れない | `create` が止まり、下書きを Web の画面に貼る手順になる |
 | `aidd:issue-start` | `gh issue develop`・`gh issue edit`・`gh issue comment` | deny に入れない | `edit`（担当者の追加と本文の更新）が止まる。本文は `tmp/` に下書きを残すところまでになる |
 | `aidd:issue-start` | `git add <ファイル>`（実装で直したファイルと、作った ADR だけをステージに置く） | deny に `git add` を入れない | 止まらない |
+| `init-repo` の `CLAUDE.md`（「実装がひと区切りついたとき」） | `git add <ファイル>`（その区切りで直したファイルだけ）と、`tmp.md` への書き込み | deny に `git add` を入れない | 止まらない |
 | `aidd:adr` | `<ADR_DIR>`（`docs/adr/` など）への ADR の作成と、一覧（`README.md`）の作成・更新 | deny にこのディレクトリへの書き込み（`Edit`）を入れない | 止まらない |
 | `aidd:issue-pr-sync` | `gh issue edit`・`gh pr edit` | deny に入れない | 反映が止まり、下書きを出すところまでになる |
 | `config` のフック・`config:plugin-feedback` | 環境変数 `CLAUDE_PLUGIN_FEEDBACK`・`CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` を読む | `settings.json` の `env` に入れない（利用者が決める値のため） | 関係しない |
