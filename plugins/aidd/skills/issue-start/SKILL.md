@@ -1,6 +1,6 @@
 ---
 name: issue-start
-description: 指定した Issue に着手し、実装と PR の下書きまで進める。Issue の記述を今のコード・引用元と突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする。計画モードで決めることを選択肢の質問で詰めて計画を作り、承認後に実装する。決めた仕様で Issue を更新し、実装したファイルをステージに置き、コミットメッセージを tmp.md に、PR 本文と検証コメントを tmp/ に書いて終わる。コミット・push はしない。Issue に取りかかる時に使用する
+description: 指定した Issue に着手し、実装と PR の下書きまで進める。Issue の記述を今のコード・引用元と突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする。関係する ADR を読み、計画モードで決めることを選択肢の質問で詰めて計画を作り、承認後に実装する。決めた仕様で Issue を更新し、決めたことを ADR にするかを聞き、実装したファイルをステージに置き、コミットメッセージを tmp.md に、PR 本文と検証コメントを tmp/ に書いて終わる。コミット・push はしない。Issue に取りかかる時に使用する
 argument-hint: "<Issue番号|URL>"
 disable-model-invocation: true
 allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start_*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
@@ -25,8 +25,9 @@ GitHub に書き込むのは次の 4 つだけ。ラベルと既存のコメン�
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-research.md` | 引用元を確かめた結果の扱い（確かめられなかった引用を「確認済み」としない） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/comment-template.md` | 着手を見送ったときに Issue に投稿するコメントの形 |
-| `${CLAUDE_PLUGIN_ROOT}/skills/commit/SKILL.md` | コミットメッセージの作り方（Step 13） |
-| `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/SKILL.md` | PR 本文と検証コメントの作り方（Step 14） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/adr/SKILL.md` | ADR の一覧の置き場所（「出力先の決定」）と、ADR の作り方（Step 13） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/commit/SKILL.md` | コミットメッセージの作り方（Step 14） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/SKILL.md` | PR 本文と検証コメントの作り方（Step 15） |
 
 ## 出力先
 
@@ -37,7 +38,7 @@ GitHub に書き込むのは次の 4 つだけ。ラベルと既存のコメン�
 | `issue-start_<ts>_issue_before.md` | 書き換える前の Issue の本文（Step 9・12 で、書き換えるたびに残す） |
 | `issue-start_<ts>_issue.md` | 反映する Issue の本文 |
 | `issue-start_<ts>_plan.md` | 計画モードに入れなかったときの計画（Step 7） |
-| `pr-create_<ts>.md`・`pr-verify_<ts>.md` | PR 本文と検証コメント（Step 14） |
+| `pr-create_<ts>.md`・`pr-verify_<ts>.md` | PR 本文と検証コメント（Step 15） |
 
 コミットメッセージは、`commit` と同じくプロジェクトのルートの `tmp.md` に書く。
 
@@ -74,6 +75,7 @@ git log --oneline --all --grep "#<番号>"
 | チェックリストからの漏れ | Issue に出てくる名前・語句（ファイル名・関数名・スキル名・設定キーなど）で `Grep` し、直す必要があるのにチェックリストに無い箇所を探す。一覧・件数・説明文など、同じ内容を別の場所に書いた箇所を特に見る |
 | 着手済みかどうか | Step 1 の紐づいたブランチ・PR・コミット・担当者から、誰かが既に取りかかっていないか、もう実装されていないかを確かめる |
 | リポジトリの規約との食い違い | `CLAUDE.md`・`.claude/rules/`・docs の方針を読み、やりたいことが規約に反していないかを確かめる |
+| 関係する ADR | ADR の一覧（`adr` の「出力先の決定」と同じ順で探した `<ADR_DIR>/README.md`）の題から関係する ADR を開き、やりたいことが反していないかを確かめる。反していれば食い違いとして控え、Step 8 で問いにする |
 | 決めること | 本文の「決めること」と、確かめる中で新たに出てきた判断を一覧にし、それぞれに推奨案と理由を添える |
 
 ### Step 3: 判定する
@@ -93,7 +95,7 @@ git log --oneline --all --grep "#<番号>"
 
 #### 前提が崩れているとき
 
-Step 15 の形のうち「判定」と「確認の結果」の節で確認結果を示し、止めた理由と、Issue をどう直せば着手できるかを書く。そのうえで `AskUserQuestion` で Issue にコメントするかを聞く。Issue が閉じているときは聞かずに終わる。閉じた Issue に理由を残しても、読む人がいないため。
+Step 16 の形のうち「判定」と「確認の結果」の節で確認結果を示し、止めた理由と、Issue をどう直せば着手できるかを書く。そのうえで `AskUserQuestion` で Issue にコメントするかを聞く。Issue が閉じているときは聞かずに終わる。閉じた Issue に理由を残しても、読む人がいないため。
 
 | 選択肢 | 次の動き |
 | --- | --- |
@@ -115,7 +117,7 @@ Step 1 の `git status --porcelain` に出力があれば、ブランチを作�
 | 選択肢 | 次の動き |
 | --- | --- |
 | 中止する | ユーザーが変更を退避・コミットしてから、もう一度呼ぶよう案内して終わる |
-| このまま移動する | 変更を持ったまま Step 5 へ進む。持ち越した変更は、Step 13 でステージに置かない |
+| このまま移動する | 変更を持ったまま Step 5 へ進む。持ち越した変更は、Step 14 でステージに置かない |
 
 ### Step 5: ブランチを用意する
 
@@ -164,6 +166,7 @@ gh issue edit <番号> --add-assignee @me
 1. 依存する決めごとが全て決まっているものを「今聞ける問い」とし、まとめて `AskUserQuestion` で聞く。1 回に 4 問まで、多ければ分ける。選択肢は推奨案を先頭にし、ラベルに「(Recommended)」を付ける。ほかの問いの答えに依存する問いは、同じ回に入れない
 1. 答えを受けて木を更新し、新しく聞けるようになった問いを次の回で聞く。答えで要らなくなった問いは消す
 1. 事実（ファイルの中身・既存の作り・使える仕組み）は、利用者に聞かずに自分で調べる（`Explore` エージェントなど）。調べている間も、その事実に依存しない問いは先に聞く
+1. Step 2 で見つけた関係する ADR は、前提として扱う。ADR に反する変更が要るときは、「ADR に合わせる・判断を変える（新しい ADR を足す）」を問いにする
 1. 今聞ける問いが無くなったら、計画を書く。決めたこと・直すファイル・Issue をどう書き換えるか・確かめ方を書く。決めることが 1 つも無ければ、質問せずに計画を書く
 1. 承認の画面で「Yes, and use auto mode」を選ぶと、確認なしで実装から PR の下書きまで進むことを伝え、`ExitPlanMode` を呼ぶ。「No, keep planning」なら、指摘を受けて計画を直す
 
@@ -184,7 +187,7 @@ gh issue edit <番号> --body-file tmp/<ブランチ名>/issue-start_<ts>_issue.
 ### Step 10: 実装する
 
 - 計画どおりに直す。リポジトリの `CLAUDE.md`・`.claude/rules/` に従う
-- 直した・作ったファイルを控える。Step 13 でステージに置くため
+- 直した・作ったファイルを控える。Step 14 でステージに置くため
 - 作業用の一時ファイルは `tmp/<ブランチ名>/` に置く。消さずに済むようにするため
 - ファイルを消す必要があるときは、消さずに、消すコマンドを報告に書いて人に頼む
 - 途中で計画に無い判断が要るときは、`AskUserQuestion` で聞く
@@ -199,16 +202,22 @@ gh issue edit <番号> --body-file tmp/<ブランチ名>/issue-start_<ts>_issue.
 
 Step 9 と同じ手順（書き換える前の本文を書き出してから反映する）で、実装で埋まったタスクにチェックを入れる。埋まっていないタスクは外したままにする。
 
-### Step 13: ステージに置き、コミットメッセージを作る
+### Step 13: ADR にするかを聞く
 
-1. Step 10 で控えたファイルを `git add <ファイル>` でステージに置く。`git add -A`・`git add .` は使わない。作業中にできたファイル（キャッシュなど）や、Step 4 で持ち越した変更を混ぜないため
+Step 8 で決めたことのうち、ADR にできるもの（あとで同じことで迷いそう・次の判断の参考になる）があれば、`AskUserQuestion` で「作らない・極小・簡易・詳細」から選んでもらう。1 回に 4 件まで、おすすめを先頭にする。
+
+選ばれたものは、`adr` スキルを Skill ツールで呼んで作る（`adr` は `disable-model-invocation: false` で呼べる）。作った ADR と、一覧（`<ADR_DIR>/README.md`）も、Step 14 でステージに置く。ADR にできるものが無ければ、聞かずに Step 14 へ進む。
+
+### Step 14: ステージに置き、コミットメッセージを作る
+
+1. Step 10 で控えたファイルと、Step 13 で作った ADR・一覧を `git add <ファイル>` でステージに置く。`git add -A`・`git add .` は使わない。作業中にできたファイル（キャッシュなど）や、Step 4 で持ち越した変更を混ぜないため
 1. `${CLAUDE_PLUGIN_ROOT}/skills/commit/SKILL.md` を読み、その手順でコミットメッセージを `tmp.md` に書く。コミットはしない
 
-### Step 14: PR の下書きを作る
+### Step 15: PR の下書きを作る
 
 `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/SKILL.md` を読み、その手順で PR 本文と検証コメントを `tmp/<ブランチ名>/` に書く。まだコミットが無いため、コミット一覧と差分（`git log`・`git diff <既定のブランチ>...HEAD`）の代わりに、ステージ済みの差分（`git diff --cached`）と `tmp.md` のメッセージを使う。ブランチに前からのコミットがあれば、それも合わせて使う。
 
-### Step 15: 報告して終わる
+### Step 16: 報告して終わる
 
 次の形で報告する。中身が無い節は書かない。
 
@@ -241,6 +250,7 @@ Step 9 と同じ手順（書き換える前の本文を書き出してから反�
 
 ### 作ったもの
 
+- ADR：`<ADR_DIR>/<ファイル>`（<重さ>）
 - コミットメッセージ：`tmp.md`
 - PR 本文：`tmp/<ブランチ名>/pr-create_<ts>.md`
 - 検証コメント：`tmp/<ブランチ名>/pr-verify_<ts>.md`
