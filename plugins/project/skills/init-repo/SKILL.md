@@ -68,7 +68,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 | テンプレート | 満たす要件 | 入れる条件 | 同じ役割の既存物の例 |
 | --- | --- | --- | --- |
-| `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・git の commit / push と gh の取り消しにくい操作の deny）とフックの配線 | Claude Code を使う（常に該当） | `.claude/settings.json` |
+| `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・コミット / push・削除・権限の変更・深刻な外部操作の deny）とフックの配線 | Claude Code を使う（常に該当） | `.claude/settings.json` |
 | `.claude/hooks/guard-destructive.sh` | 破壊的コマンドの承認エスカレーション | `settings.json` を入れる | 既存の PreToolUse フック |
 | `.claude/hooks/post-edit-lint.sh` | 編集後の Lint | Lint ツールがある（`package.json` の `lint` スクリプト・`ruff`・`golangci-lint` 等） | 既存の PostToolUse フック・lint-staged |
 | `.claude/hooks/session-start.sh` | セッション開始時の運用ルール通知 | `settings.json` を入れる | 既存の SessionStart フック |

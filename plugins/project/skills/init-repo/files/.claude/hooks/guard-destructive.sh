@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # PreToolUse hook: 破壊的コマンドを検出し承認をエスカレーションする。
-# settings.json の deny で止めている git push/commit/tag/remote、gh mutation とは
-# 重複させず、データ消失・課金影響・履歴破壊を伴う操作のみを対象にする。
+# データ消失・課金影響・履歴破壊を伴う操作を対象にする。
+# rm・git clean は settings.json の deny でも止めているが、deny はコマンドの先頭一致のため、
+# bash -c などを経由した実行は止まらない。そのため、ここでも検出する。
 #
 # カスタマイズ方針:
 #   プロジェクト固有の破壊的操作（クラウド CLI の delete 系・本番ホストへの SSH 等）は
