@@ -44,7 +44,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/rules/github-actions.md` | ワークフローの実装ルール（最小権限・SHA 固定・インジェクション対策） | そのまま使える |
 | `files/.claude/rules/adr.md` | 判断の前に ADR の一覧を見て、新しい判断を ADR に残すか聞く規約 | ADR の置き場所が `docs/adr/` でなければパスを直す |
 | `files/.claude/rules/readme.md` | README を案内板として運用するための規約 | README の種別表 |
-| `files/.claude/rules/branch.md` | ブランチ名を `issues/<Issue番号>-<説明>` にする規約 | 名前の形が違うリポジトリでは書き換える |
+| `files/.claude/rules/branch.md` | ブランチ名を `issues/<Issue番号>-<説明>` にし、スキルの引数などに要る Issue 番号をブランチ名から取る規約 | 名前の形が違うリポジトリでは書き換える |
 | `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / リファクタ / リリース / AIDD 振り返り） | `config.yml` の検証環境リンク、`release.yml` の手順 |
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト） | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
