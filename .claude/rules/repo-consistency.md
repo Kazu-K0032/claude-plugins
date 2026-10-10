@@ -18,12 +18,11 @@
 | 番号 | 方針 | 読む場面 |
 | --- | --- | --- |
 | [P1](../../docs/policies/p01-operation-boundary.md) | Claude に任せる操作と、人が行う操作を分けること | コマンドや外部への操作を、Claude に任せてよいか迷うとき |
-| [P2](../../docs/policies/p02-settings-scope.md) | 設定の置き場所をプラグインで分けること | 新しいスキルを、どのプラグインに入れるか決めるとき |
-| [P3](../../docs/policies/p03-no-auto-mkdir.md) | 勝手にディレクトリを作らないこと | 出力先のディレクトリが無いとき |
-| [P4](../../docs/policies/p04-tmp-output.md) | 下書きとレポートは tmp に出すこと | レポート・下書き・一時ファイルの置き場所を決めるとき |
-| [P5](../../docs/policies/p05-rules-copy.md) | 常に効かせたい規約はリポジトリへコピーして配ること | 規約や判断基準の置き場所を決めるとき |
-| [P6](../../docs/policies/p06-cross-plugin-copy.md) | プラグインをまたぐファイルはコピーで持つこと | ほかのプラグインのファイルを使いたいとき |
-| [P7](../../docs/policies/p07-excluded-files.md) | 除外したものを作るときは除外の理由を確かめること | `init-repo`・`gas` が配らないファイルを作るとき |
+| [P2](../../docs/policies/p02-settings-scope.md) | ユーザー全体の設定は config、リポジトリの設定は project が扱うこと | 新しいスキルを、どのプラグインに入れるか決めるとき |
+| [P3](../../docs/policies/p03-check-placement.md) | ADR などの文書は、プロジェクトの規約どおりの場所に置くこと | ADR など、置き場所がプロジェクトごとに違うファイルを作るとき |
+| [P4](../../docs/policies/p04-tmp-output.md) | スキルの下書きやレポートは tmp に出し、コミットに混ぜないこと | レポート・下書き・一時ファイルの置き場所を決めるとき |
+| [P5](../../docs/policies/p05-standalone-plugin.md) | どのプラグインも、単独で入れて動くようにすること | ほかのプラグインのファイルを使いたいとき |
+| [P6](../../docs/policies/p06-common-template.md) | 共通のテンプレートには、どのプロジェクトでも使うものだけを入れること | テンプレートにファイルを足すとき、`init-repo` が配らないファイルを別のスキルで作るとき |
 
 スキルの操作と、`init-repo` が配る `settings.json`（deny）・フック・`.gitignore` との対応は、[docs/policies/permissions.md](../../docs/policies/permissions.md) にまとめている。
 
@@ -39,7 +38,7 @@
 1. 変更が方針に反するときは、実装する前に利用者に伝え、次の 3 つから選んでもらう
     - 変更のほうを、方針に合わせる
     - 方針を変える。方針のファイルを直し、その方針に沿って書いた場所（README・`SKILL.md`・テンプレート・`check.py`）もすべて直す
-    - 例外として認める。方針のファイルの「対象と例外」に理由を書く
+    - 例外として認める。方針のファイルの冒頭の表の「例外」に、理由とともに書く
 1. 新しい方針を決めたとき（会話で「〜はしない」「〜は人が行う」と決めたなど）は、`docs/policies/` に方針のファイルを足し、このファイルと `docs/policies/README.md` の一覧にも足す。書き方は `docs/policies/README.md` の「ファイルの書き方」に従う
 1. ある方針が 1 つのプラグインにしか書かれていないのに、ほかのプラグインで同じ場面が出てきたら、その方針をほかのプラグインにも広げるかを利用者に聞く
 1. 次のどちらかを変えたら、`docs/policies/permissions.md` を直す
@@ -54,5 +53,5 @@ push 前の `/marketplace-update` は、`check.py` で次の検査を自動で�
 - `rule-form`：`allowed-tools` に、権限の判定に使われない書き方が無いか（P1）
 - `deny-conflict`：スキルの `allowed-tools` や本文のコマンドが、`init-repo` の deny に当たっていないか（P1）
 - `output-path`：`allowed-tools` の書き込み先が、`tmp/` の外になっていないか（P1・P4）
-- `plugin-root-ref`：`${CLAUDE_PLUGIN_ROOT}` で指したファイルが、そのプラグインの中にあるか（P6）
-- `duplicated-files`：重複ファイルの組がそろっているか（P6）
+- `plugin-root-ref`：`${CLAUDE_PLUGIN_ROOT}` で指したファイルが、そのプラグインの中にあるか（P5）
+- `duplicated-files`：重複ファイルの組がそろっているか（P5）

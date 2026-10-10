@@ -1,16 +1,17 @@
-# P4 下書きとレポートは tmp に出すこと
+# P4 スキルの下書きやレポートは tmp に出し、コミットに混ぜないこと
+
+| 区分 | 内容 |
+| --- | --- |
+| 対象 | `aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`pr-create`・`ai-report`・`pr-review`・`docs-consistency-audit` |
 
 レポートや下書きは `tmp/<ブランチ名>/` と `tmp.md` に書き、`.gitignore` でコミットから外す。
 
-## 理由
-
-作業中のファイルを、コミットに混ぜないため。
-
-## 対象と例外
-
-- 対象：`aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`pr-create`・`ai-report`・`pr-review`・`docs-consistency-audit`
 - 作業用の一時ファイルも、`tmp/<ブランチ名>/` に置く。削除は禁止のため、消さずに済む場所に置く（[P1](p01-operation-boundary.md)）
 - ブランチ名の `/` は `-` に置き換える（例：`issues/1-sample` → `tmp/issues-1-sample/`）。1 つのブランチの出力を 1 か所にまとめるため
+
+## 理由
+
+- 【コミットへの混入】作業中のファイルを、コミットに混ぜたくないから
 
 ## 変えたいとき
 
@@ -24,8 +25,4 @@
 
 ### Q. スキルの出力を、リポジトリに残したい（ADR など）
 
-`tmp/` には置かない。リポジトリの規約の場所に書く。場所が決まっていなければ、[P3](p03-no-auto-mkdir.md) のとおり利用者に聞く。
-
-## 経緯
-
-ブランチ名に `/` があるとき、`/` を `-` に置き換えるスキルと、サブディレクトリにするスキルが混ざっていた。同じブランチの出力が `tmp/` の 2 か所に分かれたため、`-` に置き換える形にそろえた（[#22](https://github.com/Kazu-K0032/claude-plugins/issues/22)）。
+`tmp/` には置かない。リポジトリの規約の場所に書く。場所が決まっていなければ、[P3](p03-check-placement.md) のとおり利用者に聞く。

@@ -91,7 +91,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `docs/adr/` のようなパスはプロジェクトごとに違う。プラグインの設定機構（`userConfig`）は**プロジェクトの `settings.json` を読まない**仕様のため、設定値では切り替えられない。
 
-代わりに各 Skill が「規約のパスを見る → 無ければ候補を探す → それでも無ければユーザーに聞く」の順で解決する。勝手にディレクトリを作ることはしない（[P3](../../docs/policies/p03-no-auto-mkdir.md)）。
+代わりに各 Skill が「規約のパスを見る → 無ければ候補を探す → それでも無ければユーザーに聞く」の順で解決する。推測した場所には置かない（[P3](../../docs/policies/p03-check-placement.md)）。
 
 ### `allowed-tools` は出力先が固定のものだけ許可する
 

@@ -46,7 +46,11 @@ project/
 
 ### 規約はリポジトリへコピーして配る
 
-各 Skill が規約ファイルを導入先の `.claude/rules/` へコピーする。`references/` は導入先へコピーしない。理由と両者の使い分けは [P5](../../docs/policies/p05-rules-copy.md)。
+Claude Code の `.claude/rules/`（対象ファイルを開いた時に自動適用される規約）は、プラグインでは配布できない。そのため、各 Skill が規約ファイルを導入先の `.claude/rules/` へコピーする。コピーされた規約はプラグインの有無に関係なく効く。
+
+`references/` は Skill の実行時に `SKILL.md` の指示で読ませる判断基準で、導入先へはコピーしない。両者の違いは [aidd の README](../aidd/README.md) の「references/ とは何か」を参照。
+
+コピーした規約は、プラグインを更新しても書き換わらない。規約を直したときは、PR の「利用先への影響」に、Skill を再実行すれば差分を取り込めることを書く。
 
 ### インストーラは全 Skill で共有する
 
@@ -56,4 +60,4 @@ project/
 
 ### プラグインをまたぐファイルはコピーで持つ
 
-`references/markdown.md` は `aidd` と同じ内容をこのプラグインにも置いている（理由は [P6](../../docs/policies/p06-cross-plugin-copy.md)）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。
+`references/markdown.md` は `aidd` と同じ内容をこのプラグインにも置いている（理由は [P5](../../docs/policies/p05-standalone-plugin.md)）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。
