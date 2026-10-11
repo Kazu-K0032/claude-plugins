@@ -89,7 +89,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | デプロイ系ワークフロー | 配信構成（ホスティング・CDN・静的化）専用 |
 | アプリ固有のログ監視フック | 対象プロダクト専用 |
 | Skill・エージェント・Workflow | プラグイン本体として配布済み。リポジトリへコピーしない |
-| 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。技術スタック別の Skill（`/project:gas` 等）が配るか、必要なリポジトリで `.claude/rules/` に追加する |
+| 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。技術スタック別の Skill（`/project:gas`・`/project:terraform` 等）が配るか、必要なリポジトリで `.claude/rules/` に追加する |
 
 ## なぜ Skill として配るのか
 

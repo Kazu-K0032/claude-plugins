@@ -2,7 +2,7 @@
 
 | 区分 | 内容 |
 | --- | --- |
-| 対象 | `project:init-repo`（`.claude/rules/readme.md`・`README.md` と `docs/README.md` のひな形・README を作り替える手順）、`project:wordpress`（`wordpress/` 配下の README のひな形）、`aidd:adr`（ADR の一覧の `README.md`） |
+| 対象 | `project:init-repo`（`.claude/rules/readme.md`・`README.md` と `docs/README.md` のひな形・README を作り替える手順）、`project:wordpress`（`wordpress/` 配下の README のひな形）、`project:terraform`（`infra/` 配下の README のひな形）、`aidd:adr`（ADR の一覧の `README.md`） |
 | 対象外 | このリポジトリ自身の README（ルート・プラグイン・スキル）。この方針は、利用先に配る README の規約・ひな形と、スキルが作る README を対象にする |
 | 価値 | [V4](../values/v04-record-reasons.md) |
 

@@ -1,0 +1,18 @@
+# Terraform が取得するプロバイダとモジュール。.terraform.lock.hcl は版を揃えるためコミットする
+# Ref: https://developer.hashicorp.com/terraform/language/files/dependency-lock
+.terraform/
+
+# state（インフラの今の状態の記録）。秘匿値を平文で含み、backend に置くため管理しない
+*.tfstate
+*.tfstate.*
+
+# 保存した plan。秘匿値を平文で含むため管理しない
+tfplan
+
+# 変数の値（秘匿値を含む。雛形の terraform.tfvars.example はコミットする）
+*.tfvars
+*.tfvars.json
+
+# Terraform が異常終了したときのログ
+crash.log
+crash.*.log

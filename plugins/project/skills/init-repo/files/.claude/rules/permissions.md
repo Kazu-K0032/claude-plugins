@@ -38,7 +38,7 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 | 外部ツール | 読み取り | リモートへの反映・取り込み（`clasp push` など）、ログイン |
 
 - `git remote` は、読み取りも止めている。変更のサブコマンドを並べると、抜けが出やすいため。リモートの URL は `gh repo view` で確かめる
-- 外部ツールの禁止は、deny に入れていない。使うツールが決まったら、deny に足す
+- 外部ツールの禁止は、deny に入れていない。使うツールが決まったら、deny に足す。Terraform は、`/project:terraform` が配るフックで止める
 - `attribution` の `commit`・`pr` を空文字にし、コミットと PR の本文に Claude の署名行を付けない。コミットの禁止を外しても、Claude の名前が履歴に残らないようにするため
 
 ## deny を足す・外す場合
@@ -54,3 +54,4 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 - `guard-git-write.sh` は、`git commit`・`git push` と、`gh` での Issue・PR などの作成・更新・クローズ・マージ・削除を止める。既定では `settings.json` に登録していない
 - 登録すると、Issue・PR の作成・更新も止まり、それを使うスキル（`/aidd:issue-start` など）が途中で止まる。登録するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - `guard-destructive.sh` は、破壊的なコマンドを見つけて承認を求める。このプロジェクト固有の破壊的な操作は、`patterns` に足す
+- `guard-terraform.sh`（`/project:terraform` が配る）は、Claude が Terraform でインフラや state を変えるコマンドを止める。反映は人が行うため
