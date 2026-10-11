@@ -8,6 +8,7 @@
 #   - TARGET_PREFIX に検査対象のパス接頭辞を指定する。全体を対象にするなら "" のまま。
 #   - PHP・Python 等を追加する場合は末尾の「言語別チェック」に同じ形でブロックを足す。
 #     結果は report に足し、exit 0 ではなく finish で終える（exit 0 で終えると結果が Claude に届かない）。
+#     ツールの置き場所が LINT_DIR と違うときは、ブロックの中で置き場所からの相対パスを作る。
 
 set -euo pipefail
 
@@ -50,9 +51,8 @@ if printf '%s' "$file_path" | grep -qE '(^|/)(node_modules|vendor|dist|build)/';
   exit 0
 fi
 
-# lint ツールが未インストールなら黙って終了する（環境差で毎回警告を出さない）
-[ -d "$LINT_DIR/node_modules/.bin" ] || finish
-
+# lint ツールが未インストールの場合は、各ブロックの実行ファイルの確認で黙って飛ばす（環境差で毎回警告を出さない）。
+# ここで node_modules の有無を見て終えると、Node を使わないリポジトリで PHP 等のブロックまで届かないため
 if [ "$LINT_DIR" = "." ]; then
   rel_path="$file_path"
 else
