@@ -15,13 +15,13 @@ paths:
 | ファイル | 組になるファイル | 内容 | 意図的な差分 |
 | --- | --- | --- | --- |
 | `plugins/aidd/references/markdown.md` | `plugins/project/references/markdown.md` | markdownlint 準拠の書式 | なし |
-| `.claude/rules/branch.md` | `plugins/project/skills/init-repo/files/.claude/rules/branch.md` | ブランチ名の規約 | なし |
+| `.claude/rules/branch.md` | `plugins/project/skills/init-repo/files/.claude/rules/branch.md` | ブランチ名の規約 | テンプレートだけ frontmatter に `docs-type` を持つ。導入先の `CLAUDE.md` は rules に `docs-type` を求めるが、このリポジトリは docs-type の規約を使わない。付けると、`aidd:docs-sync` が規約を使っているとみなし、`docs-type` の無い rules・スキルを FAIL にする |
 
 ## 組の片方を編集したとき
 
 - もう片方にも同じ変更を入れるべきか検討する。プラグイン固有の事情が無い限り、同じ変更を入れる
 - 入れない場合は、理由をユーザーに伝える。ずらしたままにすると決めたら、表の「意図的な差分」に何がなぜ違うかを書く
-- push 前の `/marketplace-update` の機械チェック（`check.py` の `duplicated-files`）が、組の内容が一致しているかを検査する
+- push 前の `/marketplace-update` の機械チェック（`check.py` の `duplicated-files`）が、組の内容が一致しているかを検査する。「意図的な差分」が「なし」でない組は、先頭の frontmatter を除いた本文を比べる。本文の差分は、理由を書いても WARN のまま残る
 
 ## 組を増やす・減らすとき
 
