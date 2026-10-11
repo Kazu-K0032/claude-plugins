@@ -10,7 +10,7 @@
 | --- | --- |
 | `/config:setup-global` | `~/.claude/settings.json` に 2 行のステータスラインと日本語での応答（`language`）を設定 |
 | `/config:conflicts` | settings.json の各スコープ・権限ルール・フック・MCP サーバー・スキル・CLAUDE.md を横断して、衝突・重複を点検 |
-| `/config:plugin-feedback` | セッション中に見つけた、このマーケットプレイスのプラグインの不具合・改善案を、下書きの承認後に `Kazu-K0032/claude-plugins` の Issue にする（関連する Issue があればコメントで追記。承認は省くこともできる） |
+| `/config:plugin-feedback` | セッション中に見つけた、このマーケットプレイスのプラグインの不具合・改善案を、下書きの承認後に `Kazu-K0032/claude-plugins` の Issue にする（関連する Issue があればコメントで追記。承認は省くこともできる）。下書きの前に、同じ件の Issue の状況と、方針とのずれを伝える |
 | `/config:mod-output-customize` | サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を `~/.claude/mods/` に入れる。詳細は [README](skills/mod-output-customize/README.md) |
 
 標準の `/doctor` とは見る観点が違う。`/doctor` はインストールの状態・壊れた設定ファイル・使われていない拡張機能・コンテキストの使用量を点検する。`/config:conflicts` は、スコープ間の上書き・deny に覆われた allow・フックや MCP の重複定義・CLAUDE.md 同士の矛盾など、**設定どうしがぶつかって効いていないもの**と、書き方の誤りで意図したコマンドに一致しない権限ルールを点検する。
@@ -97,4 +97,7 @@ config/
   - この書き込みは、[P1](../../docs/policies/p01-operation-boundary.md)（`settings.local.json` への書き込みの条件）に沿う。切り替えをプロジェクトごとの見える場所に置き、その場で変えられるようにするため
   - ほかの場所で既に設定していれば、`settings.local.json` には書き込まない。`settings.local.json` はユーザー全体の設定より優先されるため、書き込むと `~/.claude/settings.json` の設定を上書きしてしまう
   - 値は、環境変数より先に `settings.local.json` から読む。環境変数はセッションの開始時に決まるため、途中でファイルを書き換えた値を拾えない
+- **下書きの前に、同じ件の Issue の状況と方針とのずれを伝える**。作者が Issue を読んでから、対応待ちの件・対応しないと決めた件・方針とずれる件だと気づく手間を省くため
+  - 方針（`docs/values/`・`docs/policies/`）は、`gh api` で GitHub から読む。`docs/` はプラグインと一緒に配られないため（[P5](../../docs/policies/p05-standalone-plugin.md) の例外）。`gh api` は書き込みもできるため、`allowed-tools` には入れない
+  - ずれの判断は Claude の判断のため、起票は止めない。ずれを伝え、承知で求める理由をユーザーに書いてもらう。承認を省く設定でも、この問いは省かない
 - **起票先は `--repo Kazu-K0032/claude-plugins` に固定する**。既存の Issue の本文・ラベルは変えない。公開リポジトリのため、利用先のリポジトリ名・トークン・業務のファイルの中身は下書きから消す
