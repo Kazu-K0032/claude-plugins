@@ -1,0 +1,34 @@
+# WordPress 本体と、WordPress が作るファイルは管理しない
+# Ref: https://github.com/github/gitignore/blob/main/WordPress.gitignore
+/wp-admin/
+/wp-includes/
+/index.php
+/license.txt
+/readme.html
+/wp-*.php
+/xmlrpc.php
+/.htaccess
+wp-config.php
+/wp-content/index.php
+/wp-content/uploads/
+/wp-content/cache/
+/wp-content/upgrade/
+/wp-content/languages/
+*.log
+
+# 標準のテーマ（Twenty Twenty-Five など）は、WordPress 本体と一緒に入るため管理しない
+/wp-content/themes/twenty*/
+
+# サードパーティのプラグインは管理しない。版の追跡と、再配布のライセンスの確認を避けるため。
+# 自分で書く処理は mu-plugins に置く
+/wp-content/plugins/
+
+# Composer で入れる Lint のツールと、Composer の認証情報
+/vendor/
+auth.json
+
+# テーマで Node のツールを使うときの依存パッケージ
+node_modules/
+
+# DB のダンプ（利用者の個人情報を含むことがある）
+*.sql
