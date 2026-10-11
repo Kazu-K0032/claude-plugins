@@ -4,6 +4,9 @@ on:
   pull_request:
     # main はリリース、develop は普段の変更の PR を受ける（ブランチの決まりは CONTRIBUTING.md）
     branches: [main, develop]
+    # edited は、マージ先の付け替えで動き直すため。既定の 3 つだけだと、前のマージ先での結果が残る
+    # タイトル・本文の編集でも動くが、条件で飛ばさない。飛ばしたジョブは成功と報告され、前の失敗を隠すため
+    types: [opened, synchronize, reopened, edited]
   # release.yml から呼ぶ。Actions が GITHUB_TOKEN で作ったリリースの PR では、pull_request で動かないため
   workflow_call:
     inputs:
