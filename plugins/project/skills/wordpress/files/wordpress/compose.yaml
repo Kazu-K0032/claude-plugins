@@ -1,0 +1,74 @@
+# ローカルで WordPress を動かすための構成。wordpress/ で docker compose up -d を実行して起動する
+# イメージの版は本番に合わせて直す。版の違いで、本番だけで起きる不具合を見逃さないため
+
+# 省略するとディレクトリ名（wordpress）になり、ほかのリポジトリの wordpress/compose.yaml と
+# コンテナ・ボリュームの名前がぶつかる。DB のボリュームを取り違えないよう、テーマのスラッグを使う
+name: my-theme
+
+services:
+  db:
+    image: mysql:8.4.9
+    restart: unless-stopped
+    # MySQL 8 系の既定の照合順序（utf8mb4_0900_ai_ci）は、WordPress の推奨（utf8mb4_unicode_ci）と違う。
+    # プラグインが作るテーブルと照合順序が混ざると、検索や結合で「Illegal mix of collations」になるため、そろえる
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
+      MYSQL_USER: ${MYSQL_USER:-wordpress}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+    volumes:
+      # docker compose down でコンテナを消しても、DB の中身を残すため
+      - db_data:/var/lib/mysql
+    healthcheck:
+      # 初回の起動中は、ネットワークを閉じた仮の DB が動く。TCP で確かめ、仮の DB を「起動済み」と取り違えないようにする
+      test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--protocol=tcp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  wordpress:
+    image: wordpress:7.1.3-php8.3-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${WORDPRESS_PORT:-8080}:80"
+    # cli でも同じ値を使うため、名前（wordpress-env）を付けて使い回す
+    environment: &wordpress-env
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE:-wordpress}
+      WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
+      # WP_DEBUG を有効にし、PHP のエラーと非推奨の関数に開発中に気づけるようにする
+      WORDPRESS_DEBUG: "1"
+    volumes:
+      # WordPress 本体は Docker のボリュームに置き、このリポジトリで管理するテーマと mu-plugins だけをつなぐ
+      - wp_core:/var/www/html
+      - ./wp-content/themes/my-theme:/var/www/html/wp-content/themes/my-theme
+      - ./wp-content/mu-plugins:/var/www/html/wp-content/mu-plugins
+
+  # WP-CLI。docker compose run --rm cli wp <コマンド> で使い、普段は起動しない
+  cli:
+    image: wordpress:cli-2.12.0-php8.3
+    profiles: ["cli"]
+    # cli のイメージの既定の利用者（UID 82）は、WordPress のイメージ（UID 33）が作ったファイルに書き込めないため、そろえる
+    # Ref: https://hub.docker.com/_/wordpress
+    user: "33:33"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *wordpress-env
+      # UID 33 には書き込めるホームが無く、WP-CLI が設定を置けないため
+      HOME: /tmp
+    volumes:
+      - wp_core:/var/www/html
+      - ./wp-content/themes/my-theme:/var/www/html/wp-content/themes/my-theme
+      - ./wp-content/mu-plugins:/var/www/html/wp-content/mu-plugins
+
+volumes:
+  db_data:
+  wp_core:

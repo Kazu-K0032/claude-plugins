@@ -2,7 +2,7 @@
 
 | 区分 | 内容 |
 | --- | --- |
-| 対象 | `aidd:adr`（ADR の置き場所）、`project:init-repo`（README から移す本文の置き場所） |
+| 対象 | `aidd:adr`（ADR の置き場所）、`project:init-repo`（README から移す本文の置き場所）、`project:wordpress`（Lint の規則の ADR の置き場所） |
 | 対象外 | 置き場所をスキルが決めているもの（`tmp/<ブランチ名>/`、`~/.claude/` の設定、テンプレートのファイル） |
 | 価値 | [V4](../values/v04-record-reasons.md) |
 
