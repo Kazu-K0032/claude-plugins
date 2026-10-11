@@ -127,7 +127,7 @@ gh pr list --repo Kazu-K0032/claude-plugins --state all --search "#<番号>" --j
 | 同じ件の Issue | 伝えること | その後 |
 | --- | --- | --- |
 | open | タイトル・URL・進み具合（担当者・ラベル・紐づく PR・最後の更新日）を示し、「同じ件が対応待ちのため、更新を待ってほしい」と伝える | 新しく分かったこと（別の再現条件・根拠など）があれば、コメントでの追記を提案する。同意されたら手順 6 へ進む（起票済みの件のため、手順 5 は飛ばす）。無い・断られたら終える |
-| closed（`stateReason` が `COMPLETED`） | 直した PR を示し、直した変更がまだリリースされていないことがあると伝える。PR を `develop` に溜め、リリースでまとめて出すため | `/plugin marketplace update kazu` での更新を案内する。更新しても起きるなら、手順 5 へ進む。それ以外は終える |
+| closed（`stateReason` が `COMPLETED`） | 直した PR を示し、直した変更がまだリリースされていないことがあると伝える。PR を `develop` に溜め、リリースでまとめて出すため | `/plugin marketplace update kazu` と `/reload-plugins` での更新を案内する。更新しても起きるなら、手順 5 へ進む。それ以外は終える |
 | closed（`stateReason` が `NOT_PLANNED`・`DUPLICATE`、または `wontfix`・`duplicate`・`invalid` のラベル） | 閉じた理由を、最後のコメントとラベルからたどり、「〇〇という理由で、あえて対応していない」と伝える。重複として閉じた場合は、重複先の Issue でこの表を当て直す | `AskUserQuestion` で「それでも起票する / やめる」を聞く。起票するなら、閉じた理由を承知で求める理由をユーザーに書いてもらい、手順 5 へ進む |
 
 閉じた理由がたどれないときは、たどれなかったことを伝え、`NOT_PLANNED` と同じく起票するかを聞く。
