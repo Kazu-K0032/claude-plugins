@@ -1,14 +1,14 @@
 ---
 name: plugin-feedback
-description: kazu マーケットプレイスのプラグイン（aidd・config・project）の不具合・改善案を、既存の Issue と照らし合わせて下書きし、承認後に（ユーザーが承認を省くよう求めた場合は省いて）Kazu-K0032/claude-plugins へ Issue として作成する（関連する Issue があればコメントで追記する）。ユーザーが起票に同意した時、または起票を頼まれた時に使用する
+description: kazu マーケットプレイスのプラグイン（aidd・config・project）の不具合・改善案を、既存の Issue の状況とマーケットプレイスの方針（価値・設計の方針）に照らし合わせて下書きし、承認後に（ユーザーが承認を省くよう求めた場合は省いて）Kazu-K0032/claude-plugins へ Issue として作成する（関連する Issue があればコメントで追記する）。ユーザーが起票に同意した時、または起票を頼まれた時に使用する
 disable-model-invocation: false
-allowed-tools: Read, AskUserQuestion, Bash(gh auth status:*), Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh label list:*), Bash(gh repo view:*), Bash(git rev-parse:*), Bash(printenv CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL)
+allowed-tools: Read, AskUserQuestion, Bash(gh auth status:*), Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh pr list:*), Bash(gh label list:*), Bash(gh repo view:*), Bash(git rev-parse:*), Bash(printenv CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL)
 argument-hint: "[起票したい内容（任意。省略時はこのセッションの内容から候補を挙げる。例: gas スキルのトリガー登録で迷った）]"
 ---
 
 # プラグインの不具合・改善案の起票（plugin-feedback）
 
-セッション中に分かった kazu マーケットプレイスのプラグインの不具合・改善案を、`Kazu-K0032/claude-plugins` の Issue にする。既存の Issue と照らし合わせ、関連する Issue があればコメントで追記する。**GitHub への書き込みは、下書きの承認を取ってから行う**。承認を省くのは、ユーザーが省くよう求めたときだけ（手順 7）。
+セッション中に分かった kazu マーケットプレイスのプラグインの不具合・改善案を、`Kazu-K0032/claude-plugins` の Issue にする。既存の Issue と照らし合わせ、関連する Issue があればコメントで追記する。下書きを作る前に、同じ件の Issue の状況と、マーケットプレイスの方針とのずれをユーザーに伝える（手順 4・5）。**GitHub への書き込みは、下書きの承認を取ってから行う**。承認を省くのは、ユーザーが省くよう求めたときだけ（手順 9）。
 
 | 種類 | 例 |
 | --- | --- |
@@ -17,7 +17,7 @@ argument-hint: "[起票したい内容（任意。省略時はこのセッショ
 
 対象外は 2 つ。Claude Code 本体の不具合（組み込みの `/feedback` で Anthropic へ送る）と、利用先のプロジェクト自身の不具合。
 
-起票の提案は、config の SessionStart フックが入れる文面（`${CLAUDE_PLUGIN_ROOT}/hooks/plugin-feedback.md`）に沿って行われる。このスキルは、ユーザーが同意した後の起票を受け持つ。ユーザーがこのスキルを直接呼んだときは、起票に同意したものとして扱う。ただし、呼んだことを下書きの承認（手順 7）の代わりにはしない。公開リポジトリに載る本文を、ユーザーはまだ見ていないため。
+起票の提案は、config の SessionStart フックが入れる文面（`${CLAUDE_PLUGIN_ROOT}/hooks/plugin-feedback.md`）に沿って行われる。このスキルは、ユーザーが同意した後の起票を受け持つ。ユーザーがこのスキルを直接呼んだときは、起票に同意したものとして扱う。ただし、呼んだことを下書きの承認（手順 9）の代わりにはしない。公開リポジトリに載る本文を、ユーザーはまだ見ていないため。
 
 ## 参照ファイル
 
@@ -49,7 +49,7 @@ gh auth status
 
 #### 承認の設定
 
-下書きの承認（手順 7）を省くかは、環境変数 `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` で切り替える。値が `true` か `on`（大文字・小文字は問わない）なら省き、それ以外（`off`・未設定など）は承認を取る。ユーザーが省くよう指示しているとき（引数・会話・CLAUDE.md・記憶）も省く。実行のたびに次の順で確かめ、どうするかをユーザーに伝えてから手順 2 へ進む。
+下書きの承認（手順 9）を省くかは、環境変数 `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` で切り替える。値が `true` か `on`（大文字・小文字は問わない）なら省き、それ以外（`off`・未設定など）は承認を取る。ユーザーが省くよう指示しているとき（引数・会話・CLAUDE.md・記憶）も省く。実行のたびに次の順で確かめ、どうするかをユーザーに伝えてから手順 2 へ進む。
 
 1. 作業ディレクトリ（Claude Code を起動したディレクトリ）の `.claude/settings.local.json` を `Read` し、`env` に `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` があるかを見る。セッションの途中で書き換えた値も拾えるよう、環境変数より先にファイルを見る
 1. ファイルに無ければ、ほかの場所（`~/.claude/settings.json`・起動したシェルなど）で設定されていないかを確かめる
@@ -82,7 +82,7 @@ gh auth status
 
 ### 2. 起票する件を決める
 
-1. 引数か会話から、起票する件を拾う。候補が複数あれば `AskUserQuestion` で選んでもらう。複数を選んだ場合は、1 件ずつ手順 3〜8 を繰り返す
+1. 引数か会話から、起票する件を拾う。候補が複数あれば `AskUserQuestion` で選んでもらう。複数を選んだ場合は、1 件ずつ手順 3〜10 を繰り返す
 1. 件ごとに次を決める
     - 種類：不具合（`bug`）か改善案（`enhancement`）か
     - 対象：プラグインとスキル（例：`project:gas`）。導入したテンプレート・ルールが対象なら、プラグイン内のパスも決める（例：`plugins/project/skills/gas/files/.claude/rules/gas.md`）
@@ -109,25 +109,64 @@ gh issue list --repo Kazu-K0032/claude-plugins --state all --search "<語>" --js
 関係がありそうな Issue は、本文とコメントまで読む。`gh issue view --comments` は端末以外から実行するとコメントしか出ないため、`--json` で取る。
 
 ```bash
-gh issue view <番号> --repo Kazu-K0032/claude-plugins --json number,title,body,comments,state,labels,url
+gh issue view <番号> --repo Kazu-K0032/claude-plugins --json number,title,body,comments,state,stateReason,labels,assignees,updatedAt,url
 ```
 
-### 4. 起票の形を決める
+紐づく PR は、番号で検索して探す。このリポジトリの PR は `develop` に向けるため、`Closes #<番号>` があっても Issue と PR が自動ではつながらない。
+
+```bash
+gh pr list --repo Kazu-K0032/claude-plugins --state all --search "#<番号>" --json number,title,state,baseRefName,mergedAt,url
+```
+
+読んだ Issue を、「同じ件」「関連する件（同じプラグイン・スキル・テーマで、まとめて直すのが自然なもの）」「無関係」に分ける。判断に迷ったら、候補の Issue を示して `AskUserQuestion` で選んでもらう。
+
+### 4. 同じ件の Issue の状況を伝える
+
+同じ件の Issue があれば、下書きを作る前に、状態ごとに次を伝える。無ければ手順 5 へ進む。
+
+| 同じ件の Issue | 伝えること | その後 |
+| --- | --- | --- |
+| open | タイトル・URL・進み具合（担当者・ラベル・紐づく PR・最後の更新日）を示し、「同じ件が対応待ちのため、更新を待ってほしい」と伝える | 新しく分かったこと（別の再現条件・根拠など）があれば、コメントでの追記を提案する。同意されたら手順 6 へ進む（起票済みの件のため、手順 5 は飛ばす）。無い・断られたら終える |
+| closed（`stateReason` が `COMPLETED`） | 直した PR を示し、直した変更がまだリリースされていないことがあると伝える。PR を `develop` に溜め、リリースでまとめて出すため | `/plugin marketplace update kazu` と `/reload-plugins` での更新を案内する。更新しても起きるなら、手順 5 へ進む。それ以外は終える |
+| closed（`stateReason` が `NOT_PLANNED`・`DUPLICATE`、または `wontfix`・`duplicate`・`invalid` のラベル） | 閉じた理由を、最後のコメントとラベルからたどり、「〇〇という理由で、あえて対応していない」と伝える。重複として閉じた場合は、重複先の Issue でこの表を当て直す | `AskUserQuestion` で「それでも起票する / やめる」を聞く。起票するなら、閉じた理由を承知で求める理由をユーザーに書いてもらい、手順 5 へ進む |
+
+閉じた理由がたどれないときは、たどれなかったことを伝え、`NOT_PLANNED` と同じく起票するかを聞く。
+
+### 5. 方針と照らす
+
+件が、マーケットプレイスの価値（`docs/values/`）・設計の方針（`docs/policies/`）とずれないかを確かめる。不具合でも、方針どおりの挙動（削除が deny で止まるなど）なら、ずれとして扱う。
+
+1. 価値と方針の一覧を読む。`gh repo view --json nameWithOwner` が `Kazu-K0032/claude-plugins` を返すなら、手元の `docs/values/README.md`・`docs/policies/README.md` を `Read` で読む。リリース前の方針も含めるため。それ以外は、`gh api` で GitHub から読む
+
+    ```bash
+    gh api repos/Kazu-K0032/claude-plugins/contents/docs/values/README.md -H "Accept: application/vnd.github.raw"
+    gh api repos/Kazu-K0032/claude-plugins/contents/docs/policies/README.md -H "Accept: application/vnd.github.raw"
+    ```
+
+1. 一覧の「読む場面」から関係する価値・方針を選び、そのファイル（一覧のリンク先）も同じ方法で読む
+1. 件が、読んだ文書の決めごと（禁止・しないと決めたこと・Q&A の答え）と食い違うかを見る
+1. ずれる、またはずれるか迷うときは、該当する価値・方針の番号・題・該当の文を示し、`AskUserQuestion` で「承知の上で起票する / ずれていない / やめる」を聞く。「承知の上で起票する」なら、ずれを承知で求める理由をユーザーに書いてもらう。「やめる」なら起票しない
+
+ずれの判断は Claude の判断のため、起票を止めない。ずれを伝えて聞くところまでにとどめる。`gh api` が失敗した・ログインしていないなどで読めないときは、照らさずに進み、照らしていないことを手順 11 で報告する。
+
+`gh api` は書き込みもできるため、`allowed-tools` に入れていない。読むたびに許可プロンプトが出る。
+
+### 6. 起票の形を決める
 
 | 既存の Issue | 形 |
 | --- | --- |
-| 同じ件で open | 新しく分かったこと（別の再現条件・根拠など）だけをコメントで追記する。新しいことが無ければ、既存の Issue の URL を伝えて終える |
-| 関連する件で open（同じプラグイン・スキル・テーマで、まとめて直すのが自然なもの） | コメントで追記する |
-| 同じ件・関連する件で closed | 新しい Issue を作り、本文の末尾に `関連: #<番号>` を書く |
+| 同じ件で open（手順 4 で追記に同意された） | 新しく分かったことだけをコメントで追記する |
+| 関連する件で open | コメントで追記する |
+| 同じ件で closed（手順 4 で起票を続けた）・関連する件で closed | 新しい Issue を作り、本文の末尾に `関連: #<番号>` を書く |
 | 無い・無関係 | 新しい Issue を作る |
 
 判断に迷ったら、候補の Issue を示して `AskUserQuestion` で選んでもらう。
 
-### 5. 下書きを作る
+### 7. 下書きを作る
 
-`references/issue-format.md` の型で、タイトル・ラベル・本文を作る。コメントの場合は本文だけ。書くのは、会話・エラー文・ファイル・引用元で裏が取れたことだけ。
+`references/issue-format.md` の型で、タイトル・ラベル・本文を作る。コメントの場合は本文だけ。書くのは、会話・エラー文・ファイル・引用元で裏が取れたことだけ。手順 4・5 でユーザーが書いた理由は、型の「承知の上で求める理由」の節に入れる。
 
-### 6. 公開してよいか点検する
+### 8. 公開してよいか点検する
 
 `Kazu-K0032/claude-plugins` は公開リポジトリである。`references/issue-format.md` の「公開前の点検」に従い、利用先の情報を下書きから消すか言い換える。利用先のリポジトリは次で特定する。
 
@@ -138,7 +177,7 @@ gh repo view --json nameWithOwner,isPrivate
 
 どちらも失敗した場合（Git の管理外など）は、作業ディレクトリ名を利用先の名前として扱う。今いるのが `Kazu-K0032/claude-plugins` 自身なら、リポジトリ名は言い換えなくてよい。
 
-### 7. 承認を取る
+### 9. 承認を取る
 
 1. ラベルを付けられるかを確かめる（新しい Issue の場合だけ）。リポジトリ名は必ず付ける。付けないと、今いる利用先のリポジトリの権限が返る
 
@@ -153,20 +192,23 @@ gh repo view --json nameWithOwner,isPrivate
 
     | 条件 | 扱い |
     | --- | --- |
-    | 手順 1 の「承認の設定」で、省くと伝えた（値が `true`・`on`、または省く指示がある） | 承認を省いて手順 8 へ進む |
-    | 手順 1 の後に、ユーザーが省くよう指示した（「下書きはいらない、そのまま起票して」など） | 省くことを伝えてから、手順 8 へ進む |
+    | 手順 1 の「承認の設定」で、省くと伝えた（値が `true`・`on`、または省く指示がある） | 承認を省いて手順 10 へ進む |
+    | 手順 1 の後に、ユーザーが省くよう指示した（「下書きはいらない、そのまま起票して」など） | 省くことを伝えてから、手順 10 へ進む |
     | それ以外（スキルを直接呼んだだけの場合を含む） | 承認を取る |
+
+    承認を省くときも、手順 4・5 の問い（対応しないと決めた件・方針とずれる件を起票するか）は省かない。承知で求める理由は、ユーザーにしか書けないため。
 
 1. 次を表示する
     - 起票先（新しい Issue か、`#<番号>` へのコメントか）と、そう判断した理由。関連する Issue があればその URL
+    - 手順 4・5 で伝えた、同じ件の Issue の閉じた理由・方針とのずれ（あれば）
     - タイトルとラベル（コメントなら無し。ラベルを付けられない場合は「作者が付ける」と書く）
     - 本文の全文
-    - 手順 6 で消した・言い換えた箇所
-1. `AskUserQuestion` で「作成する / 直してから作成する / やめる」を聞く。「直してから作成する」なら、指摘を反映して手順 7 をやり直す
+    - 手順 8 で消した・言い換えた箇所
+1. `AskUserQuestion` で「作成する / 直してから作成する / やめる」を聞く。「直してから作成する」なら、指摘を反映して手順 9 をやり直す
 
-### 8. 作成する
+### 10. 作成する
 
-承認された本文（承認を省いた場合は、手順 5・6 で作った下書き）を**一字一句そのまま**、引用符付きのヒアドキュメントで標準入力から渡す。下書きのファイルは作らない。利用先のリポジトリや `~/.claude` に下書きを残さないため。
+承認された本文（承認を省いた場合は、手順 7・8 で作った下書き）を**一字一句そのまま**、引用符付きのヒアドキュメントで標準入力から渡す。下書きのファイルは作らない。利用先のリポジトリや `~/.claude` に下書きを残さないため。
 
 新しい Issue の場合（ラベルを付けられない場合は `--label` を外す）：
 
@@ -186,30 +228,32 @@ __ISSUE_BODY__
 
 `gh` が失敗したら、エラーを示して「`gh` で書き込めない場合」に進む。`Resource not accessible by personal access token` などの 403 は、手順 1 の fine-grained トークンが原因のことが多い。
 
-### 9. 報告する
+### 11. 報告する
 
 - 作成した Issue・コメントの URL
 - ラベルを付けなかった場合は、その理由（書き込み権限が無いため、作者が付ける）
-- 承認を省いた場合は、その理由（`CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` の値と設定場所・どこにあったどんな指示か）と、手順 6 で消した・言い換えた箇所
-- 起票しなかった候補と、その理由（断られた・既存の Issue と同じ件だった等）
+- 承認を省いた場合は、その理由（`CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` の値と設定場所・どこにあったどんな指示か）と、手順 8 で消した・言い換えた箇所
+- 方針とのずれを承知で起票した場合は、ずれた価値・方針の番号。方針を読めずに照らさなかった場合は、そのこと
+- 起票しなかった候補と、その理由（断られた・既存の Issue と同じ件で対応待ちだった・対応しないと決めて閉じていた等）
 
 ## `gh` で書き込めない場合
 
 `gh` が無い・ログインしていない・トークンで書き込めない場合は、下書きを作ってユーザーに手で起票してもらう。
 
-1. 手順 2・4〜6 で下書きを作る。`gh` が使えて読み取りだけできる場合（fine-grained トークン等）は、手順 3 の検索も行う。使えない場合は、[Issue の一覧](https://github.com/Kazu-K0032/claude-plugins/issues?q=is%3Aissue) で同じ件が無いかを確かめるよう伝える
+1. 手順 2・6〜8 で下書きを作る。`gh` が使えて読み取りだけできる場合（fine-grained トークン等）は、手順 3〜5 も行う。使えない場合は、[Issue の一覧](https://github.com/Kazu-K0032/claude-plugins/issues?q=is%3Aissue) で同じ件が無いかを確かめるよう伝える
 1. タイトルと本文を、そのまま貼り付けられる形で示す
 1. 貼り付け先を案内して終える。新しい Issue なら [新しい Issue の画面](https://github.com/Kazu-K0032/claude-plugins/issues/new)、コメントなら既存の Issue の URL
 
 ## 禁止事項
 
-- 承認を取る前に `gh issue create` / `gh issue comment` を実行しない（手順 7 で承認を省くと決めた場合を除く）
+- 承認を取る前に `gh issue create` / `gh issue comment` を実行しない（手順 9 で承認を省くと決めた場合を除く）
 - スキルを呼ばれたことだけを理由に、承認を省かない
 - 初めての実行のとき以外に、`settings.local.json` へ書き込まない。書き込むときも、ほかのキーを変えない
 - `--repo Kazu-K0032/claude-plugins` を省かない。利用先や他のリポジトリに起票しない
 - 既存の Issue の本文の編集・クローズ・ラベルの変更をしない（追記はコメントだけ）
-- 承認された本文（承認を省いた場合は、手順 5・6 で作った下書き）を書き換えて投稿しない
+- 承認された本文（承認を省いた場合は、手順 7・8 で作った下書き）を書き換えて投稿しない
 - 書き込み権限が無いのに `--label` を付けて、ラベルが付いたように報告しない
+- 対応しないと決めて閉じた件・方針とずれる件を、ユーザーに聞かずに起票しない
 - 裏の取れない原因・再現手順を書かない
 - 利用先の非公開の情報（リポジトリ名・メールアドレス・トークン・業務のファイルの中身）を書かない
 

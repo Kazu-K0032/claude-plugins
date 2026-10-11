@@ -1,0 +1,5 @@
+# variables.tf の変数に渡す値の雛形。terraform.tfvars にコピーして値を書く（terraform.tfvars はコミットしない）
+# 変数を足したら、ここにも名前と一言のコメントを足す。秘匿値は空にしておく
+# 例:
+# # 障害の通知を送るメールアドレス
+# alert_email = ""

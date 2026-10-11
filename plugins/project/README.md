@@ -10,6 +10,8 @@
 | --- | --- |
 | [`/project:init-repo`](skills/init-repo/README.md) | ハーネス設定（`.claude/`）・GitHub の定型ファイル・エディタ設定・スペルチェックの設定・`.gitignore`・ドキュメントの骨組みをリポジトリへ導入 |
 | [`/project:gas`](skills/gas/README.md) | Google Apps Script の `src/` 構成（`constants.js`・`main.js`・`utils.js`・`trigger.js`）と clasp の設定、GAS の実装規約を導入 |
+| [`/project:wordpress`](skills/wordpress/README.md) | WordPress の `wordpress/wp-content/` 構成（クラシックテーマの最小構成・mu-plugins）と Docker のローカル環境・PHP の Lint（phpcs）の設定、WordPress の実装規約を導入 |
+| [`/project:terraform`](skills/terraform/README.md) | Terraform の `infra/` 構成（環境ごとの設定 `stg`・`prod` と `modules/`）、Claude に apply などをさせないフック、Terraform の実装規約を導入 |
 
 技術スタック別の Skill は、土台を入れた後に重ねて使う想定。たとえば GAS のリポジトリでは `/project:init-repo` → `/project:gas` の順に実行する。どの Skill も手動でのみ呼ぶ（`disable-model-invocation: true`）ため、使わない技術スタックの Skill が入っていてもコンテキストを消費しない。
 
@@ -36,7 +38,16 @@ project/
     │   ├── SKILL.md
     │   ├── README.md       # 収録物の一覧・除外したもの
     │   └── files/          # 導入先リポジトリのルートへ置く一式
-    └── gas/
+    ├── gas/
+    │   ├── SKILL.md
+    │   ├── README.md
+    │   └── files/
+    ├── wordpress/
+    │   ├── SKILL.md
+    │   ├── README.md
+    │   ├── adr/            # 利用先の ADR の置き場所へ書く ADR の元
+    │   └── files/
+    └── terraform/
         ├── SKILL.md
         ├── README.md
         └── files/

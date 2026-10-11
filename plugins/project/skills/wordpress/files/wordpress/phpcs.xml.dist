@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<ruleset name="My Theme">
+    <description>WordPress のコーディング規約で、テーマと mu-plugins を検査する</description>
+
+    <!-- このリポジトリで書くコードだけを検査する。WordPress 本体とサードパーティのプラグインは見ない -->
+    <file>wp-content/themes/my-theme</file>
+    <file>wp-content/mu-plugins</file>
+
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <!-- 進み具合（p）と、違反した規則の名前（s）を出す。規則を外すかどうかを、名前で判断できるようにするため -->
+    <arg value="ps"/>
+
+    <!-- 本番の PHP と WordPress の版に合わせる。動かない書き方と、非推奨の関数を見つけるため -->
+    <config name="testVersion" value="8.3-"/>
+    <config name="minimum_wp_version" value="7.0"/>
+
+    <!--
+        WordPress の規約（Core・Docs・Extra）を土台にする。
+        整形の規則（インデント・配列の書き方・Yoda 条件・括弧の内側の空白）は外す。エディタの整形と食い違いやすいため。
+        エスケープ・nonce・国際化など、安全と WordPress の作法の規則は残す。
+    -->
+    <rule ref="WordPress">
+        <!-- インデントはスペース 4 つ。タブを求める規則を外し、下でタブを禁止する -->
+        <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
+        <!-- 配列は [] で書く。array() を求める規則を外し、下で array() を禁止する -->
+        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+        <!-- Yoda 条件（定数を左に置く比較）は使わない -->
+        <exclude name="WordPress.PHP.YodaConditions"/>
+        <!-- 関数の呼び出し・宣言・制御構文・キャストの括弧の内側に空白を入れない -->
+        <exclude name="PEAR.Functions.FunctionCallSignature"/>
+        <exclude name="Squiz.Functions.FunctionDeclarationArgumentSpacing"/>
+        <exclude name="WordPress.WhiteSpace.ControlStructureSpacing"/>
+        <exclude name="WordPress.WhiteSpace.OperatorSpacing"/>
+        <exclude name="WordPress.WhiteSpace.CastStructureSpacing"/>
+        <exclude name="Generic.WhiteSpace.ArbitraryParenthesesSpacing"/>
+        <!-- 配列の括弧の内側の空白・1 行の連想配列・項目の縦揃えを求める規則は外す -->
+        <exclude name="NormalizedArrays.Arrays.ArrayBraceSpacing"/>
+        <exclude name="WordPress.Arrays.ArrayDeclarationSpacing"/>
+        <exclude name="WordPress.Arrays.ArrayIndentation"/>
+        <exclude name="WordPress.Arrays.ArrayKeySpacingRestrictions"/>
+        <exclude name="Generic.Formatting.MultipleStatementAlignment"/>
+        <exclude name="WordPress.Arrays.MultipleStatementAlignment"/>
+        <!-- テンプレートの 1 行の PHP（<?php foo(); ?>）は、WordPress のテンプレートの慣例として認める -->
+        <exclude name="Squiz.PHP.EmbeddedPhp"/>
+        <!-- コメントは日本語で書くため、英語を前提にした句読点・大文字の規則を外す -->
+        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
+        <exclude name="Generic.Commenting.DocComment.LongNotCapital"/>
+        <exclude name="Squiz.Commenting.FunctionComment.ParamCommentFullStop"/>
+    </rule>
+
+    <!-- 外した規則の代わりに、スペースのインデントと [] の配列にそろえる -->
+    <rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
+
+    <rule ref="PHPCompatibilityWP"/>
+
+    <!-- 翻訳関数の Text Domain が、テーマの Text Domain と合っているかを見る -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="my-theme"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!--
+        接頭辞の規則（WordPress.NamingConventions.PrefixAllGlobals）は有効にしない。
+        テンプレートの中の変数にまで接頭辞を求め、誤った指摘が多くなるため。関数・定数の接頭辞は規約で守る。
+    -->
+</ruleset>

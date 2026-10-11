@@ -1,0 +1,8 @@
+# 自動で作るリリースノート（release.yml の gh release create --generate-notes）の設定。手順は docs/release.md
+# ワークフローの .github/workflows/release.yml とは別のファイル。この名前と場所は GitHub が決めている
+# Ref: https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+changelog:
+  exclude:
+    labels:
+      # リリースの PR（v<version> をリリース）は、中身の PR と重なるため一覧から外す
+      - release

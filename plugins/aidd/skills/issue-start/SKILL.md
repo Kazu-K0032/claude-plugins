@@ -3,7 +3,7 @@ name: issue-start
 description: 指定した Issue に着手し、実装と PR の下書きまで進める。Issue の記述を今のコード・引用元と突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする。関係する ADR を読み、計画モードで決めることを選択肢の質問で詰めて計画を作り、承認後に実装する。決めた仕様で Issue を更新し、決めたことを ADR にするかを聞き、実装したファイルをステージに置き、コミットメッセージを tmp.md に、PR 本文と検証コメントを tmp/ に書いて終わる。コミット・push はしない。Issue に取りかかる時に使用する
 argument-hint: "<Issue番号|URL>"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start_*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start/*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
 
 # Issue の着手
@@ -31,13 +31,15 @@ GitHub に書き込むのは次の 4 つだけ。ラベルと既存のコメン�
 
 ## 出力先
 
-`tmp/<ブランチ名>/` に書く。ブランチ名の `/` は `-` に置き換える（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。`<ts>` は `date +%Y%m%d_%H%M%S` で取る。
+`tmp/<ブランチ名>/` の下に書く。ブランチ名の `/` は `-` に置き換える（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。`<ts>` は `date +%Y%m%d_%H%M%S` で取る。
+
+Issue の本文と計画は、`issue-start/` にまとめる。PR 本文と検証コメントは `pr-create` の出力のため、`pr-create` と同じく直下に書く。
 
 | ファイル | 中身 |
 | --- | --- |
-| `issue-start_<ts>_issue_before.md` | 書き換える前の Issue の本文（Step 9・12 で、書き換えるたびに残す） |
-| `issue-start_<ts>_issue.md` | 反映する Issue の本文 |
-| `issue-start_<ts>_plan.md` | 計画モードに入れなかったときの計画（Step 7） |
+| `issue-start/<ts>_issue_before.md` | 書き換える前の Issue の本文（Step 9・12 で、書き換えるたびに残す） |
+| `issue-start/<ts>_issue.md` | 反映する Issue の本文 |
+| `issue-start/<ts>_plan.md` | 計画モードに入れなかったときの計画（Step 7） |
 | `pr-create_<ts>.md`・`pr-verify_<ts>.md` | PR 本文と検証コメント（Step 15） |
 
 コミットメッセージは、`commit` と同じくプロジェクトのルートの `tmp.md` に書く。
@@ -134,12 +136,33 @@ git switch <ブランチ名>
 
 紐づいたブランチが無ければ、ブランチ名を決めてから作る。名前は規約に従い、規約が無ければ `issues/<番号>-<説明>` にする。説明は Issue の要点を英語 2〜4 語の小文字・ハイフン区切りで書く（例: `issues/5-argument-hint`）。
 
+作る前に、起点のブランチに push していないコミットが無いかを確かめる。`--base` はリモートにある起点のブランチから作るため、手元にしかないコミットは入らない。紐づいたブランチへ移動するときは確かめない。起点のブランチから新しく作らないため。
+
+```bash
+git branch --list <起点のブランチ>
+git fetch origin <起点のブランチ>
+git log --oneline origin/<起点のブランチ>..<起点のブランチ>
+```
+
+- `git branch --list` に出力が無ければ、手元に起点のブランチが無い。確かめずに作る
+- `git fetch` を断られたら、手元にある `origin/<起点のブランチ>` と比べる
+- `origin/<起点のブランチ>` が無く `git log` が失敗したら、確かめずに作る
+
+`git log` に出力があれば、ブランチを作る前に止め、出たコミットを示して `AskUserQuestion` で扱いを聞く。「中止する」を先頭に置き、ラベルに「(Recommended)」を付ける。含めずに作ると、手元で済ませた変更が新しいブランチに入らないため。
+
+| 選択肢 | 次の動き |
+| --- | --- |
+| 中止する（push してから呼び直す） | ユーザーが起点のブランチを push してから、もう一度呼ぶよう案内して終わる |
+| 含めずに作る | 下のコマンドでブランチを作る。含めなかったコミットは、報告の「残っていること・未確認」に書く |
+
+出力が無ければ、そのまま作る。
+
 ```bash
 gh issue develop <番号> --name <ブランチ名> --base <起点のブランチ> --checkout
 ```
 
 - 起点のブランチは、規約か `defaultBranchRef` から決め、`main` などに決め打ちしない
-- `--base` はリモートにある起点のブランチの最新から作るため、手元のそのブランチを先に最新にしなくてよい
+- `--base` はリモートにある起点のブランチの最新から作る。手元の起点のブランチが遅れていても、先に最新にしなくてよい。進んでいるときは、上の確認で扱いを聞く
 - 失敗したら（同じ名前のブランチが既にある・書き込み権限が無い等）、エラーを報告して終わる
 
 ### Step 6: 自分を担当者に足す
@@ -157,7 +180,7 @@ gh issue edit <番号> --add-assignee @me
 
 ここまでの確認結果を短く示す（判定・チェックリストに無い修正箇所・食い違い・決めることの一覧）。続けて `EnterPlanMode` で計画モードに入る。計画モードでは計画ファイルしか編集できないため、Issue の更新と実装は、計画の承認の後に行う。
 
-計画モードに入るのを断られたら、計画モードを使わずに Step 8 を行い、計画を `issue-start_<ts>_plan.md` に書く。書いたら、承認を待たずに Step 9 へ進む。
+計画モードに入るのを断られたら、計画モードを使わずに Step 8 を行い、計画を `tmp/<ブランチ名>/issue-start/<ts>_plan.md` に書く。書いたら、承認を待たずに Step 9 へ進む。
 
 ### Step 8: 要件を詰めて計画を作る
 
@@ -168,6 +191,8 @@ gh issue edit <番号> --add-assignee @me
 1. 答えを受けて木を更新し、新しく聞けるようになった問いを次の回で聞く。答えで要らなくなった問いは消す
 1. 事実（ファイルの中身・既存の作り・使える仕組み）は、利用者に聞かずに自分で調べる（`Explore` エージェントなど）。調べている間も、その事実に依存しない問いは先に聞く
 1. Step 2 で見つけた関係する ADR は、前提として扱う。ADR に反する変更が要るときは、「ADR に合わせる・判断を変える（新しい ADR を足す）」を問いにする
+1. 木の問いが尽きる見込みの回（答えで新しい問いが出ない回）に、「他に要望などありますか？」という問いを足す。利用者が問いの外で伝えたいこと（追加の要望・気になっている点）を出せるようにするため。選択肢は「ありません」と「計画を見てから伝える」の 2 つにし、推奨は付けない。`AskUserQuestion` は選択肢が 2 つ以上要り、自由記述（Other）を自動で足すため、要望は自由記述で受ける。その回が 4 問で埋まっているときは、この問いだけの回を足す
+1. 自由記述で要望が返ったら、それを踏まえて木を更新し、新しく聞けるようになった問いを次の回で聞く。要望は計画に入れる。この問いは 1 度だけ聞き、その後の指摘は承認の画面で受ける
 1. 今聞ける問いが無くなったら、計画を書く。決めたこと・直すファイル・Issue をどう書き換えるか・確かめ方を書く。決めることが 1 つも無ければ、質問せずに計画を書く
 1. 承認の画面で「Yes, and use auto mode」を選ぶと、確認なしで実装から PR の下書きまで進むことを伝え、`ExitPlanMode` を呼ぶ。「No, keep planning」なら、指摘を受けて計画を直す
 
@@ -175,12 +200,12 @@ gh issue edit <番号> --add-assignee @me
 
 計画の承認の後、実装の前に行う。実装中に、Issue とコードが食い違わないようにするため。
 
-1. 今の本文を `issue-start_<ts>_issue_before.md` に書き出す
-1. 決めたことに合わせて書き換えた本文を `issue-start_<ts>_issue.md` に作る。「決めること」の節は、答えを書いた「決めたこと」にする。タスクは決めた内容に合わせて足す・書き換える。チェックリストに無い修正箇所もタスクに足す
+1. 今の本文を `tmp/<ブランチ名>/issue-start/<ts>_issue_before.md` に書き出す
+1. 決めたことに合わせて書き換えた本文を `tmp/<ブランチ名>/issue-start/<ts>_issue.md` に作る。「決めること」の節は、答えを書いた「決めたこと」にする。タスクは決めた内容に合わせて足す・書き換える。チェックリストに無い修正箇所もタスクに足す
 1. 反映する
 
 ```bash
-gh issue edit <番号> --body-file tmp/<ブランチ名>/issue-start_<ts>_issue.md
+gh issue edit <番号> --body-file tmp/<ブランチ名>/issue-start/<ts>_issue.md
 ```
 
 止められたら（許可を断られた・フックで止められた）、本文は `tmp/` に残したまま実装に進み、報告に理由と、手で反映する方法を書く。
@@ -247,7 +272,7 @@ Step 8 で決めたことのうち、ADR にできるもの（あとで同じこ
 
 ### Issue の更新
 
-- 本文：<反映した / 反映できなかった（理由）>。書き換える前の本文は `tmp/<ブランチ名>/issue-start_<ts>_issue_before.md`
+- 本文：<反映した / 反映できなかった（理由）>。書き換える前の本文は `tmp/<ブランチ名>/issue-start/<ts>_issue_before.md`
 
 ### 作ったもの
 
@@ -277,6 +302,7 @@ Step 8 で決めたことのうち、ADR にできるもの（あとで同じこ
 
 - ❌ 前提が崩れていると判定したのに、ブランチを作ること
 - ❌ 未コミットの変更があるのに、扱いを聞かずにブランチを作る・移動すること
+- ❌ 起点のブランチに push していないコミットがあるのに、扱いを聞かずにブランチを作ること
 - ❌ Issue のラベルや既存のコメントを変えること
 - ❌ 書き換える前の本文を `tmp/` に書き出さずに、Issue の本文を書き換えること
 - ❌ ユーザーが選んでいないのに、Issue にコメントすること
