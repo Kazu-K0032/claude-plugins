@@ -44,6 +44,7 @@ project/
     └── wordpress/
         ├── SKILL.md
         ├── README.md
+        ├── adr/            # 利用先の ADR の置き場所へ書く ADR の元
         └── files/
 ```
 

@@ -2,7 +2,7 @@
 name: wordpress
 description: WordPress のリポジトリに、wordpress/wp-content/ 配下のテーマ（クラシックテーマの最小構成）と mu-plugins の置き場所、Docker のローカル環境（MySQL・WordPress・WP-CLI。入れるかは実行時に聞く）、PHP の Lint（phpcs）の設定、置き場所・出力のエスケープ・入力の検証・国際化などをまとめた規約（.claude/rules/wordpress.md）を導入する。WordPress のプロジェクトを立ち上げる時、または既存の WordPress リポジトリへ規約と Lint を後から入れる時に使用する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*)
+allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(date:*)
 argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象で、Docker は実行時に聞く。例: 規約だけ / Lint だけ / Docker なし / 既存は置き換えない）]"
 ---
 
@@ -19,6 +19,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `${CLAUDE_PLUGIN_ROOT}/scripts/install.sh` | 状態判定（NEW / SAME / DIFF）とコピーの実行。project プラグインの全 Skill で共有するため、`--skill wordpress` で対象を指定する |
 | `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/files/` | コピー元のテンプレート一式 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/files/.claude/rules/wordpress.md` | 置き場所と実装の規約（既存の構成に合わせて書き換えるときの元にもする） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/adr/php-coding-standards.md` | Lint の規則（WPCS を使い、整形の規則だけ外す）を決めた理由の ADR。手順 9 で利用先の ADR の置き場所に書く |
 | `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/README.md` | 収録物の一覧・除外したものとその理由 |
 
 ## 前提条件
@@ -105,7 +106,7 @@ A・B の場合で、ローカル環境のファイルが無く、引数に `Doc
 
 ### 3. 導入計画を提示して承認を得る（必須）
 
-`--check` の結果を、新規作成するファイル（`NEW`）・既存のまま残すファイル（`SAME`）・衝突していて判断が要るファイル（`DIFF`）に分けて提示する。あわせて、手順 1 の状態（A・B・C）と入れないファイル、手順 2 で決めたローカル環境、手順 5 の置き換え後の名前、手順 8 でフックに PHP の Lint を足すかを示す。
+`--check` の結果を、新規作成するファイル（`NEW`）・既存のまま残すファイル（`SAME`）・衝突していて判断が要るファイル（`DIFF`）に分けて提示する。あわせて、手順 1 の状態（A・B・C）と入れないファイル、手順 2 で決めたローカル環境、手順 5 の置き換え後の名前、手順 8 でフックに PHP の Lint を足すか、手順 9 で ADR を足す場所を示す。
 
 ### 4. コピーする
 
@@ -200,9 +201,18 @@ esac
 | 上の行が無く、`# --- 言語別チェック` の区切りがある | 区切りのすぐ後ろ |
 | `report`・`finish` を使っていない（`init-repo` 以外の形） | 書き換えず、上のブロックを示して、利用者に足し方を決めてもらう |
 
-フックが無い場合は、手順 9 で、`/project:init-repo` で入れられることを伝える。
+フックが無い場合は、手順 10 で、`/project:init-repo` で入れられることを伝える。
 
-### 9. 導入後にやることを伝える
+### 9. Lint の規則を決めた理由を ADR に足す
+
+この実行で `phpcs.xml.dist` を入れた場合は、`${CLAUDE_PLUGIN_ROOT}/skills/wordpress/adr/php-coding-standards.md` を元に、規則を決めた理由を ADR として足す。あとから「なぜ整形の規則を外したか」を確かめられるようにするため。`phpcs.xml.dist` を入れていなければ飛ばす。
+
+1. ADR の置き場所を決める。`CLAUDE.md`・`.claude/rules/` に置き場所があればそこにする。無ければ `docs/adr/`・`doc/adr/`・`docs/decisions/`・`adr/` を Glob で探す。どれも無ければ、`AskUserQuestion` で「置き場所の候補・ADR を作らない」から選んでもらう。推測した場所には置かない
+1. 置き場所に `*-php-coding-standards.md` が既にあれば、足さない
+1. `date +%Y-%m-%d` で今日の日付を取る。元の ADR を Read し、`YYYY-MM-DD` を今日の日付に、仮の名前を「仮の名前」の表に従って置き換え、`<置き場所>/<日付>-php-coding-standards.md` に書く
+1. 置き場所の一覧（`README.md`）の表に 1 行足す。題は ADR の見出しの `# ADR <日付>:` より後ろにし、状態は `承認済み` にする。表の列が違えば、今の一覧の形に合わせる。一覧が無ければ作らず、手順 10 で伝える
+
+### 10. 導入後にやることを伝える
 
 コピーが終わったら、次を残作業としてユーザーに提示する。済んでいる項目は省く。コマンドは人が実行する。
 
@@ -224,6 +234,7 @@ esac
 1. Docker の雛形を入れなかった場合は、WordPress を動かす環境でテーマを有効にする。ローカル環境を作るときは、規約の「ローカル環境」に沿う
 1. `CLAUDE.md` があれば、「ディレクトリ」に `wordpress/` を足し、「反映されない」と判断する前の配信経路に、有効なテーマとマウント元（`wordpress/compose.yaml` など）を書く。ルートの `README.md` から `wordpress/README.md` へ案内する
 1. 手順 8 でフックに足さなかった場合は、PHP の Lint をフックで動かすかを決める
+1. 手順 9 で ADR の一覧が無かった場合は、足した ADR を一覧に載せるかを決める
 
 ## 禁止事項
 

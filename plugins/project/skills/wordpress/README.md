@@ -44,6 +44,8 @@ bash <plugin>/scripts/install.sh --skill wordpress --apply  # 未存在のファ
 | `files/wordpress/wp-content/mu-plugins/README.md` | mu-plugins の案内板 | ファイルを足したら行を足す |
 | `files/wordpress/wp-content/themes/my-theme/` | クラシックテーマの最小構成（`style.css`・`functions.php`・`inc/`・`header.php`・`footer.php`・`index.php`・`template-parts/`・案内板の `README.md`） | `style.css` の `Description` と版を書く |
 
+Lint の設定を入れたときは、規則を決めた理由の ADR（`adr/php-coding-standards.md`）も、利用先の ADR の置き場所に日付を付けて足す。置き場所はプロジェクトごとに違うため、`files/` には含めず、Skill が置き場所を探して書く（[P3](../../../../docs/policies/p03-check-placement.md)）。
+
 ## 前提と制約
 
 - クラシックテーマ（PHP のテンプレート）だけを対象にする。ブロックテーマ（`theme.json`・HTML のテンプレート）は、規約の前提（`get_template_part()`・PHP でのエスケープ）が合わないため対象外
