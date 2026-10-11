@@ -16,51 +16,9 @@ input=$(cat)
 command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 [ -z "$command" ] && exit 0
 
-# --- Terraform は「保存済み plan を必ず通す」規約を機械的に強制する ---
-# 規約: plan は -out=tfplan で保存し、apply はその保存済み plan ファイルだけを食わせる。
-# flag の付け忘れを口頭ルールに頼らず deny で物理的に止める。apply は下の patterns では扱わない。
-# Terraform を使わないリポジトリでは、この 2 ブロックごと削除してよい。
-
-# terraform plan: -out が無ければ deny（plan を保存しない実行を禁止）
-if printf '%s' "$command" | grep -qE 'terraform[[:space:]]+plan'; then
-  if ! printf '%s' "$command" | grep -qE '[[:space:]]-out(=|[[:space:]])'; then
-    jq -n --arg cmd "$command" '{
-    hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "deny",
-        permissionDecisionReason: ("terraform plan は -out=tfplan で plan を保存すること: " + $cmd + "\n例: terraform plan -out=tfplan")
-    }
-    }'
-    exit 0
-  fi
-  # -out 付きの plan はインフラを変更しないため素通りさせる
-  exit 0
-fi
-
-# terraform apply: 保存済み plan ファイル（非フラグの位置引数）が無ければ deny（直接 apply 禁止）
-if printf '%s' "$command" | grep -qE 'terraform[[:space:]]+apply'; then
-  if ! printf '%s' "$command" | grep -qE 'terraform[[:space:]]+apply([[:space:]]+-[^[:space:]]+)*[[:space:]]+[^-[:space:]][^[:space:]]*'; then
-    jq -n --arg cmd "$command" '{
-    hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "deny",
-        permissionDecisionReason: ("terraform apply は保存済み plan ファイルを渡すこと（直接 apply 禁止）: " + $cmd + "\n手順: terraform plan -out=tfplan → terraform apply tfplan")
-    }
-    }'
-    exit 0
-  fi
-  # plan ファイルを渡した apply は実インフラを変更するため、承認（ask）へエスカレーションする
-  jq -n --arg cmd "$command" '{
-  hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "ask",
-      permissionDecisionReason: ("破壊的操作の可能性: " + $cmd + "\n削除・変更される対象を列挙し、実データ（本番環境・tfstate 等）を含まないか確認してから承認すること。")
-  }
-  }'
-  exit 0
-fi
-
 patterns=(
+# 保存した plan を実インフラへ反映する。誤った plan や別環境の plan だと、本番のリソースが変わる・消える
+'terraform[[:space:]]+apply'
 # 全リソースを削除する。本番環境で実行するとインフラ構成がすべて失われる
 'terraform[[:space:]]+destroy'
 # state ファイルの強制上書き。古い state で push すると plan/apply が実態と乖離する
