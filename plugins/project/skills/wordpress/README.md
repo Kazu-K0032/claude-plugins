@@ -33,7 +33,7 @@ bash <plugin>/scripts/install.sh --skill wordpress --apply  # 未存在のファ
 
 | パス | 内容 | 導入後の調整 |
 | --- | --- | --- |
-| `files/.claude/rules/wordpress.md` | 置き場所（テーマ・mu-plugins・初期データ・ローカル環境）・出力のエスケープ・入力の検証・国際化・テンプレートパーツ・クエリ・PHPDoc・Lint の規約 | そのまま使える |
+| `files/.claude/rules/wordpress.md` | 置き場所（テーマ・mu-plugins・初期データ・ローカル環境）・出力のエスケープ・入力の検証・国際化・テンプレートパーツ・クエリ・PHPDoc・Lint の規約 | プラグインを Git で管理するなら、「置き場所」の表のプラグインの行を直す |
 | `files/wordpress/README.md` | `wordpress/` の案内板 | ファイルを足したら行を足す |
 | `files/wordpress/.gitignore` | WordPress 本体・アップロード・サードパーティのプラグイン・Composer の依存の除外 | プラグインを Git で管理するなら `/wp-content/plugins/` を外す |
 | `files/wordpress/composer.json` | Lint のツール（WordPress のコーディング規約・PHP の版の互換性）と、`composer lint`・`composer lint:fix` | そのまま使える |

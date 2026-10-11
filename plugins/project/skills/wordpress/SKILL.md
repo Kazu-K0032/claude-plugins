@@ -140,7 +140,7 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/wordpress/files/<同�
 | `.claude/rules/wordpress.md` | 既存の規約に足りない項目だけを、仮の名前を置き換えてから足す |
 | `wordpress/composer.json` | 既存を正とする。`require-dev` の 3 つのパッケージ、`config.allow-plugins`、`scripts` の `lint`・`lint:fix` のうち、無いものだけを足す。既にある版は変えない |
 | `wordpress/phpcs.xml.dist` | 既存を正とする。外している規則と対象のディレクトリは変えない。`WordPress.WP.I18n` の Text Domain が無ければ、足すことを提案する |
-| `wordpress/.gitignore` | 足りない行だけを足す。プラグインを Git で管理しているリポジトリには `/wp-content/plugins/` を足さない |
+| `wordpress/.gitignore` | 足りない行だけを足す。プラグインを Git で管理しているリポジトリには `/wp-content/plugins/` を足さず、規約の「置き場所」の表のプラグインの行も直す |
 | README（`wordpress/README.md` など） | 既存の一覧に、足したファイルの行だけを足す |
 | テーマのファイル | 上書きしない |
 
