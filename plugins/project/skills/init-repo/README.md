@@ -44,6 +44,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/rules/github-actions.md` | ワークフローの実装ルール（最小権限・SHA 固定・インジェクション対策） | そのまま使える |
 | `files/.claude/rules/adr.md` | 判断の前に ADR の一覧を見て、新しい判断を ADR に残すか聞く規約 | ADR の置き場所が `docs/adr/` でなければパスを直す |
 | `files/.claude/rules/readme.md` | README を案内板として運用するための規約 | README の種別表 |
+| `files/.claude/rules/permissions.md` | Claude に任せる操作と人が行う操作の線引きと、deny・フックを変えるときの規約。`settings.json`・フックを開いたときに読み込まれる | deny やフックの方針を変えたら表を合わせる |
 | `files/.claude/rules/branch.md` | ブランチ名を `issues/<Issue番号>-<説明>` にし、スキルの引数などに要る Issue 番号をブランチ名から取る規約 | 名前の形が違うリポジトリでは書き換える |
 | `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / リファクタ / リリース / AIDD 振り返り） | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[SKILL.md](SKILL.md) の手順 6） |
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト） | ローカル確認 URL・チェック項目 |
@@ -68,7 +69,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
-- deny は、コミット・push・削除・権限の変更と、間違えたときに深刻な外部操作（マージ・承認・リリース・ワークフローの実行など）を塞いでいる。線引きは [P1](../../../../docs/policies/p01-operation-boundary.md)。Issue・PR の作成・コメント・更新・クローズと、Issue に紐づくブランチの作成は Claude に任せる前提で塞いでいない。塞ぎたい場合は deny に足す。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る
+- deny は、コミット・push・削除・権限の変更と、間違えたときに深刻な外部操作（マージ・承認・リリース・ワークフローの実行など）を塞いでいる。線引きは [P1](../../../../docs/policies/p01-operation-boundary.md)。利用先には、線引きと理由を `.claude/rules/permissions.md` で配る。Issue・PR の作成・コメント・更新・クローズと、Issue に紐づくブランチの作成は Claude に任せる前提で塞いでいない。塞ぎたい場合は deny に足す。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る
 - ファイル・ブランチ・タグ・stash の削除（`rm`・`git branch -d`・PowerShell の `Remove-Item` など）も deny で塞いでいる。作業用の一時ファイルは `tmp/<ブランチ名>/` に置き、消さずに済むようにする。消すときは人が行う
 - `guard-git-write.sh` を配線すると、上記の Issue・PR の作成・更新・クローズ（`create` / `edit` / `close`）も止まる。`develop` と `comment` は止まらない。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る。配線するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない

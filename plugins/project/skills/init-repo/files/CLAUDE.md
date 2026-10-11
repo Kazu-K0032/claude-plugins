@@ -32,6 +32,10 @@
 - 既存の可能性があるファイルは必ず Read してから書く
 - 複数ファイルを編集する前に、どのファイルをなぜ変更するかを述べる。実装ファイルとテストファイルを取り違えない
 
+### 権限の設定を変える前
+
+- `.claude/settings.json` の deny・フックを足す・外す前に、[`.claude/rules/permissions.md`](.claude/rules/permissions.md) の線引き（Claude に任せる操作と人が行う操作）に当てる
+
 ### 実装がひと区切りついたとき
 
 1 つの目的の変更を終え、確かめ（テスト・lint など）が通ったら、次を踏む。
@@ -118,7 +122,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 <repository-name>/
 ├── .claude/
 │   ├── hooks/                            # Claude Code のフック（ガード・Lint・セッション通知）
-│   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions・ADR・ブランチ名）
+│   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions・ADR・ブランチ名・権限）
 │   └── settings.json                     # 権限・フックの設定（コミット対象）
 ├── .vscode/                              # エディタ設定（推奨拡張機能・保存時の整形）
 ├── .github/
