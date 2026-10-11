@@ -23,6 +23,7 @@
 | `plugins/project/skills/*/files/` にテンプレートを足す | [P6](../../docs/policies/p06-common-template.md)、そのスキルの README の「除外したもの」 |
 | `references/` など、ほかのプラグインと同じ内容のファイル | [P5](../../docs/policies/p05-standalone-plugin.md)、`.claude/rules/duplicated-files.md` |
 | ADR など、置き場所がプロジェクトで決まるファイルを作る手順 | [P3](../../docs/policies/p03-check-placement.md) |
+| `init-repo` の `README.md`・`docs/README.md`・`.claude/rules/readme.md`、README を作る手順 | [P7](../../docs/policies/p07-readme-guide.md) |
 
 ### 方針の一覧
 
@@ -34,6 +35,7 @@
 | [P4](../../docs/policies/p04-tmp-output.md) | スキルの下書きやレポートは tmp に出し、コミットに混ぜないこと | レポート・下書き・一時ファイルの置き場所を決めるとき |
 | [P5](../../docs/policies/p05-standalone-plugin.md) | どのプラグインも、単独で入れて動くようにすること | ほかのプラグインのファイルを使いたいとき |
 | [P6](../../docs/policies/p06-common-template.md) | 共通のテンプレートには、どのプロジェクトでも使うものだけを入れること | テンプレートにファイルを足すとき、`init-repo` が配らないファイルを別のスキルで作るとき |
+| [P7](../../docs/policies/p07-readme-guide.md) | README には本文を書かず、どこに何があるかの案内にとどめること | README のひな形・規約を直すとき、README を作るスキルを足すとき |
 
 ## 権限設定や、スキルが利用先で触れるものを変更する場合
 
