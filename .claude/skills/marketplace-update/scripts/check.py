@@ -8,7 +8,7 @@
   4. ${CLAUDE_PLUGIN_ROOT} 参照先のファイルが実在するか
   5. カタログの整合（スキル名・README の一覧・marketplace.json の source と登録漏れ）
   6. テンプレート（skills/<スキル名>/files/）の収録ファイルと、そのスキルの README の収録物表の一致
-  7. .claude/rules/duplicated-files.md に載っている重複ファイルの組の内容が一致しているか
+  7. .claude/rules/duplicated-files.md に載っている重複ファイルの組の内容が一致しているか（「意図的な差分」を書いた組は frontmatter を除いて比べる）
   8. 各スキル（plugins/ 配下と .claude/skills/）の argument-hint が .claude/rules/argument-hint.md の書き方に沿っているか
   9. 版（version）の書き方。全プラグインの plugin.json に同じ版があり、marketplace.json には書いていないか。
      --base を渡したときは、基準から plugins/ が変わっているのに版が上がっていないものも NG にする（main へのリリースの PR 用）
@@ -241,6 +241,15 @@ def read_bytes_normalized(path):
         return f.read().replace(b"\r\n", b"\n")
 
 
+def strip_frontmatter_bytes(data):
+    """先頭の frontmatter（--- で囲んだ部分）と、その後ろの空行を除いた本文を返す。"""
+    if data.startswith(b"---\n"):
+        end = data.find(b"\n---\n", 3)
+        if end != -1:
+            return data[end + len(b"\n---\n"):].lstrip(b"\n")
+    return data
+
+
 def check_duplicated_files(repo):
     """7: 重複ファイルの組（.claude/rules/duplicated-files.md の表）の内容が一致しているか。"""
     rule_path = os.path.join(repo, ".claude", "rules", "duplicated-files.md")
@@ -255,6 +264,8 @@ def check_duplicated_files(repo):
         if not m:
             continue
         pair = [m.group(1), m.group(2)]
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        intended = cells[3] if len(cells) > 3 else ""
         missing = [p for p in pair if not os.path.isfile(os.path.join(repo, p))]
         for p in missing:
             add("NG", "duplicated-files", "組に載っている %s が存在しない" % p)
@@ -266,10 +277,16 @@ def check_duplicated_files(repo):
             continue
         # 作業ツリーの改行コード（Windows の CRLF 変換）の違いは内容の差として扱わない
         a, b = (read_bytes_normalized(os.path.join(repo, p)) for p in pair)
-        if a != b:
+        if intended in ("", "なし"):
+            if a != b:
+                add("WARN", "duplicated-files",
+                    "%s と %s の内容が違う。片方の変更をもう片方に入れるか、"
+                    "意図的な差分なら duplicated-files.md の表に書く" % (pair[0], pair[1]))
+        # 「意図的な差分」を書いた組は frontmatter の違いだけを認め、本文がずれていないかを見る
+        elif strip_frontmatter_bytes(a) != strip_frontmatter_bytes(b):
             add("WARN", "duplicated-files",
-                "%s と %s の内容が違う。片方の変更をもう片方に入れるか、"
-                "意図的な差分なら duplicated-files.md の表に書く" % (pair[0], pair[1]))
+                "%s と %s の本文（frontmatter を除く）が違う。片方の変更をもう片方に入れる。"
+                "本文の差分も意図的なら、duplicated-files.md の表に理由を書いたうえで残す" % (pair[0], pair[1]))
 
 
 HINT_GROUP = re.compile(r"\[[^\[\]]*\]|<[^<>]*>")
