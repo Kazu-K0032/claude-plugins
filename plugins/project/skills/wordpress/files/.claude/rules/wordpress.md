@@ -51,9 +51,10 @@ docs-type: people-ai-doc
 
 ### ローカル環境
 
-- WordPress・PHP・DB の版は、本番に合わせる。版の違いで、本番だけで起きる不具合を見逃さないため
-- テーマと mu-plugins のディレクトリだけをコンテナにマウントし、WordPress 本体はコンテナ側に置く
-- 送信メールは外へ出さず、手元で受け取る仕組み（Mailpit など）に向ける。問い合わせフォームの確認で、実際にメールが届かないようにするため
+- Docker で動かすときは `wordpress/compose.yaml`（MySQL・WordPress・WP-CLI）を使う。値を変えるときは `.env.example` を `.env` にコピーして書き換え、`.env` はコミットしない
+- WordPress・PHP・DB の版（`compose.yaml` のイメージのタグ）は、本番に合わせる。版の違いで、本番だけで起きる不具合を見逃さないため
+- テーマと mu-plugins のディレクトリだけをコンテナにマウントし、WordPress 本体はコンテナ側に置く。テーマを足したら、`compose.yaml` のマウントにも足す
+- 送信メールを確かめるときは、外へ出さずに手元で受け取る仕組み（Mailpit など）を `compose.yaml` に足す。問い合わせフォームの確認で、実際にメールが届かないようにするため
 
 ## 出力のエスケープ
 

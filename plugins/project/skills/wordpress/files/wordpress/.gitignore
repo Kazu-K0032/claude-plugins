@@ -23,6 +23,9 @@ wp-config.php
 # 自分で書く処理は mu-plugins に置く
 /wp-content/plugins/
 
+# docker compose が読む値（雛形の .env.example はコミットする）
+.env
+
 # Composer で入れる Lint のツールと、Composer の認証情報
 /vendor/
 auth.json
