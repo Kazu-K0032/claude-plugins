@@ -2,7 +2,7 @@
 name: wordpress
 description: WordPress のリポジトリに、wordpress/wp-content/ 配下のテーマ（クラシックテーマの最小構成）と mu-plugins の置き場所、Docker のローカル環境（MySQL・WordPress・WP-CLI。入れるかは実行時に聞く）、PHP の Lint（phpcs）の設定、置き場所・出力のエスケープ・入力の検証・国際化などをまとめた規約（.claude/rules/wordpress.md）を導入する。WordPress のプロジェクトを立ち上げる時、または既存の WordPress リポジトリへ規約と Lint を後から入れる時に使用する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(date:*)
+allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(date:*), Bash(git ls-files:*)
 argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象で、Docker は実行時に聞く。例: 規約だけ / Lint だけ / Docker なし / 既存は置き換えない）]"
 ---
 
@@ -36,7 +36,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | 引数の例 | 対象・扱い |
 | --- | --- |
 | `規約だけ` | `.claude/rules/wordpress.md` だけ |
-| `Lint だけ` | `wordpress/composer.json`・`wordpress/phpcs.xml.dist` だけ（手順 8 のフックも対象） |
+| `Lint だけ` | `wordpress/composer.json`・`wordpress/phpcs.xml.dist` だけ（手順 8 のフックも対象）。`vendor/`・`auth.json` が Git の対象外になっていなければ、`.gitignore` に足す案を出す |
 | `Docker なし` | `wordpress/compose.yaml`・`wordpress/.env.example` を入れない。手順 2 で聞かない |
 | `既存は置き換えない` | `DIFF` はすべて据え置き、手順 6 を飛ばす |
 
@@ -44,15 +44,18 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 ## 仮の名前
 
-テンプレートは、テーマの名前を次の仮の名前で書いている。手順 5 で、利用者が決めたスラッグ（例：`acme-site`）から作った名前に置き換える。
+テンプレートは、テーマの名前を次の仮の名前で書いている。手順 5 で、手順 2 で決めた名前に置き換える。A ではすべてをスラッグ（例：`acme-site`）から作り、B・C では既存のテーマから取る。
 
-| 仮の名前 | 置き換え後 | 例 | 使っている場所 |
+| 仮の名前 | 置き換え後 | A の例 | 使っている場所 |
 | --- | --- | --- | --- |
-| `my-theme` | スラッグ | `acme-site` | テーマのディレクトリ名・Text Domain・`compose.yaml` のプロジェクト名とマウント・`phpcs.xml.dist`・README・規約 |
-| `my_theme` | スラッグの `-` を `_` にしたもの | `acme_site` | 関数名・規約 |
+| `themes/my-theme` | `themes/` とテーマのディレクトリ名 | `themes/acme-site` | テーマのディレクトリ・`compose.yaml` のマウント・`phpcs.xml.dist` の `<file>`・README のリンク・規約のパス |
+| `my-theme`（上以外） | Text Domain | `acme-site` | `style.css`・翻訳関数・`phpcs.xml.dist` の Text Domain・`compose.yaml` のプロジェクト名・規約 |
+| `my_theme` | 関数の接頭辞（末尾の `_` を除く） | `acme_site` | 関数名・規約 |
 | `MY_THEME` | 上を大文字にしたもの | `ACME_SITE` | 定数名・規約 |
-| `My_Theme` | 単語の先頭を大文字にし、`_` でつないだもの | `Acme_Site` | `@package`・規約 |
-| `My Theme` | テーマの表示名（利用者が指定しなければ、単語の先頭を大文字にし、空白でつないだもの） | `Acme Site` | `style.css` の `Theme Name`・`phpcs.xml.dist` の `ruleset` の名前 |
+| `My_Theme` | `@package` の名前 | `Acme_Site` | `@package`・規約 |
+| `My Theme` | テーマの表示名 | `Acme Site` | `style.css` の `Theme Name`・`phpcs.xml.dist` の `ruleset` の名前 |
+
+表の上から順に置き換える。`themes/my-theme` を先に置き換えないと、テーマのディレクトリ名と Text Domain が違うときに、パスを Text Domain で書き換えてしまうため。
 
 ## 手順
 
@@ -79,23 +82,38 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill wordpress --check
 | ローカル環境 | `**/compose.yaml`・`**/compose.yml`・`**/docker-compose.yaml`・`**/docker-compose.yml` |
 | Lint の設定 | `**/phpcs.xml`・`**/phpcs.xml.dist`・`**/.phpcs.xml.dist`・`**/composer.json` |
 
+あわせて、プラグインを Git で管理しているかを確かめる。`wp-content/plugins/` の下に追跡中のファイルがあれば、管理している。
+
+```bash
+git ls-files -- '*wp-content/plugins/*'
+```
+
 結果から、次のどれに当たるかを決める。
 
 | 状態 | 扱い |
 | --- | --- |
 | A：WordPress のファイルが無い | テンプレート全体を入れる。手順 2 でスラッグとローカル環境を決める |
-| B：`wordpress/wp-content/` に既存のテーマがある | テーマの雛形（`wordpress/wp-content/themes/my-theme/` 配下）は入れない。`themes/` に 2 つ目のテーマができるため。既存のテーマの `style.css` の `Text Domain` をスラッグとして使う。自作のテーマが複数あれば、どれを対象にするかを聞く |
-| C：別の場所に既存の構成がある（例：ルート直下の `wp-content/`） | ファイルを動かさない。デプロイ・Docker のマウント・CI が今のパスに依存しているため。`.claude/rules/wordpress.md` だけをコピーし、手順 7 で今の場所に合わせる。テーマの雛形・ローカル環境・README は入れない。スラッグは B と同じく既存のテーマから取る |
+| B：`wordpress/wp-content/` に既存のテーマがある | テーマの雛形（`wordpress/wp-content/themes/my-theme/` 配下）は入れない。`themes/` に 2 つ目のテーマができるため。名前は手順 2 で既存のテーマから調べる。自作のテーマが複数あれば、どれを対象にするかを聞く |
+| C：別の場所に既存の構成がある（例：ルート直下の `wp-content/`） | ファイルを動かさない。デプロイ・Docker のマウント・CI が今のパスに依存しているため。`.claude/rules/wordpress.md` だけをコピーし、手順 7 で今の場所に合わせる。テーマの雛形・ローカル環境・README は入れない。名前は B と同じく既存のテーマから調べる |
 
 ローカル環境のファイルが既にある場合は、状態にかかわらず Docker の雛形（`wordpress/compose.yaml`・`wordpress/.env.example`）を入れない。2 つ目の構成ができ、どちらで起動するかが分からなくなるため。
 
-### 2. テーマのスラッグとローカル環境を決める
+### 2. テーマの名前とローカル環境を決める
 
 A の場合は、利用者にテーマのスラッグと表示名を聞く。スラッグは、テーマのディレクトリ名・Text Domain・関数の接頭辞の元になる。リポジトリ名から作った候補を先に示す。
 
 - 英小文字・数字・ハイフンだけにし、英小文字で始める
 - `wp`・`wordpress`・`twenty` で始めない。WordPress 本体や標準のテーマと名前がぶつかるため
 - `wordpress/wp-content/themes/` に同じ名前のディレクトリがあれば、別の名前にしてもらう
+
+B・C の場合は、既存のテーマから次の名前を調べる。分からないものは利用者に聞き、推測で埋めない。ディレクトリ名と Text Domain は違ってよい。
+
+| 名前 | 調べ方 |
+| --- | --- |
+| テーマのディレクトリ名 | `wp-content/themes/` の下の、対象のテーマのディレクトリ名 |
+| Text Domain | `style.css` の `Text Domain`。無ければ、翻訳関数の第 2 引数を Grep する |
+| 関数の接頭辞 | `functions.php`・`inc/` の `function <接頭辞>_` を Grep する |
+| `@package` の名前・表示名 | 既存のファイルの `@package` と、`style.css` の `Theme Name` |
 
 A・B の場合で、ローカル環境のファイルが無く、引数に `Docker なし` も無ければ、Docker でローカル環境を作るかを `AskUserQuestion` で聞く。
 
@@ -141,9 +159,12 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill wordpress --apply --only
     mv wordpress/wp-content/themes/my-theme wordpress/wp-content/themes/<スラッグ>
     ```
 
-1. コピーしたファイルの仮の名前を、「仮の名前」の表に従って置き換える。B・C では、既存のテーマから取ったスラッグで置き換える
+1. コピーしたファイルの仮の名前を、「仮の名前」の表に従って置き換える
 1. `my-theme`・`my_theme`・`MY_THEME`・`My_Theme`・`My Theme` で Grep し、コピーしたファイルに残っていないことを確かめる
+1. `compose.yaml` の `name:` に、Compose のプロジェクト名に使えない文字（大文字など）があれば、小文字にする
+1. `phpcs.xml.dist` の `<file>` が指すディレクトリ（テーマ・mu-plugins）があるかを確かめる。無ければ、その行を消すか、ディレクトリを作るかを聞く。無いディレクトリを指すと、`composer lint` がエラーで止まるため
 1. Docker の雛形を入れなかった場合は、コピーした `wordpress/README.md` から `compose.yaml`・`.env.example` の行を消す
+1. プラグインを Git で管理している場合（手順 1）は、コピーした `wordpress/.gitignore` から `/wp-content/plugins/` の行とその上のコメントを消し、規約の「置き場所」の表のプラグインの行を「Git で管理する」に直す
 
 ### 6. 衝突したファイルを片付ける
 
@@ -162,7 +183,7 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/wordpress/files/<同�
 | `wordpress/.env.example` | 足りない変数だけを足す |
 | `wordpress/composer.json` | 既存を正とする。`require-dev` の 3 つのパッケージ、`config.allow-plugins`、`scripts` の `lint`・`lint:fix` のうち、無いものだけを足す。既にある版は変えない |
 | `wordpress/phpcs.xml.dist` | 既存を正とする。外している規則と対象のディレクトリは変えない。`WordPress.WP.I18n` の Text Domain が無ければ、足すことを提案する |
-| `wordpress/.gitignore` | 足りない行だけを足す。プラグインを Git で管理しているリポジトリには `/wp-content/plugins/` を足さず、規約の「置き場所」の表のプラグインの行も直す |
+| `wordpress/.gitignore` | 足りない行だけを足す。プラグインを Git で管理している場合（手順 1）は、`/wp-content/plugins/` を足さない |
 | README（`wordpress/README.md` など） | 既存の一覧に、足したファイルの行だけを足す |
 | テーマのファイル | 上書きしない |
 
@@ -235,6 +256,7 @@ esac
 1. `CLAUDE.md` があれば、「ディレクトリ」に `wordpress/` を足し、「反映されない」と判断する前の配信経路に、有効なテーマとマウント元（`wordpress/compose.yaml` など）を書く。ルートの `README.md` から `wordpress/README.md` へ案内する
 1. 手順 8 でフックに足さなかった場合は、PHP の Lint をフックで動かすかを決める
 1. 手順 9 で ADR の一覧が無かった場合は、足した ADR を一覧に載せるかを決める
+1. プラグインを Git で管理している場合は、`.gitignore` と規約のプラグインの行を、管理する前提に直したことを伝える
 
 ## 禁止事項
 
