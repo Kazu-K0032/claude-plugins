@@ -1,6 +1,6 @@
 <?php
 /**
- * Entry in the loop
+ * ループの中の 1 件分の表示
  *
  * @package My_Theme
  */

@@ -14,7 +14,8 @@ docs-type: people-ai-doc
 
 | 項目 | 値 |
 | --- | --- |
-| テーマのディレクトリ名・Text Domain | `my-theme` |
+| テーマのディレクトリ | `wordpress/wp-content/themes/my-theme/` |
+| Text Domain | `my-theme` |
 | 関数の接頭辞 | `my_theme_` |
 | 定数の接頭辞 | `MY_THEME_` |
 | `@package` | `My_Theme` |
@@ -66,9 +67,12 @@ docs-type: people-ai-doc
 | `href`・`src` | — | `echo esc_url($url)` |
 | そのほかの属性 | `esc_attr_e('文言', 'my-theme')` | `echo esc_attr($value)` |
 | HTML を含む本文 | — | `echo wp_kses_post($html)` |
+| `<script>` の中の値 | — | `echo wp_json_encode($value)` |
+| `onclick` などの JS の属性 | — | `echo esc_js($value)` |
 
 - `echo $value` と直接書かない。必ずエスケープの関数を通す
 - `get_post_meta()`・`get_option()` の戻り値はエスケープされていない
+- JavaScript へ値を渡すときは、`data-*` 属性（`esc_attr()`）か `wp_add_inline_script()` で渡す。`onclick` などの属性に値を埋め込むと、`esc_attr()` では JavaScript として安全にならないため。埋め込むときは `esc_js()` を使う。Ref: [esc_js()](https://developer.wordpress.org/reference/functions/esc_js/)
 - テンプレートタグは、出す場所で使い分ける
 
 | 出力する値 | タグの中身 | 属性 |
@@ -108,7 +112,7 @@ if (
     wp_die(esc_html__('この操作は許可されていません。', 'my-theme'));
 }
 
-$title = isset($_POST['title']) ? sanitize_text_field(wp_unslash($_POST['title'])) : '';
+$subject = isset($_POST['subject']) ? sanitize_text_field(wp_unslash($_POST['subject'])) : '';
 ```
 
 ## 国際化（i18n）
@@ -141,8 +145,8 @@ get_template_part('template-parts/section/hero', null, [
 ]);
 
 // パーツの側
-$title = isset($args['title']) ? (string) $args['title'] : '';
-$cta   = isset($args['cta']) && is_array($args['cta']) ? $args['cta'] : null;
+$heading = isset($args['title']) ? (string) $args['title'] : '';
+$cta     = isset($args['cta']) && is_array($args['cta']) ? $args['cta'] : null;
 ```
 
 | ディレクトリ | 置くもの |
@@ -213,7 +217,7 @@ wp_reset_postdata();
 ```php
 <?php
 /**
- * Page template: About (/about/)
+ * 固定ページ：会社概要（/about/）
  *
  * @package My_Theme
  */
@@ -244,19 +248,20 @@ get_footer();
 
 - テーマと mu-plugins で定義する関数には `my_theme_`、定数には `MY_THEME_` を付ける。WordPress 本体やプラグインと名前がぶつからないようにするため
 - Lint の接頭辞の規則は有効にしていない（理由は `phpcs.xml.dist`）。名前を付けるときに、このルールで守る
+- 変数に、WordPress のグローバル変数と同じ名前（`$post`・`$title` など）を使わない。テンプレートでは WordPress の値を上書きすることがあり、Lint（`WordPress.WP.GlobalVariablesOverride`）も止めるため
 
 ## PHPDoc
 
-[PHP Documentation Standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/) に従う。すべての PHP ファイルと関数に DocBlock を置く。
+[PHP Documentation Standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/) に従う（要約の言語を除く）。すべての PHP ファイルと関数に DocBlock を置く。
 
-- 要約は英語で書く。関数は三人称単数の動詞で始め（`Returns`・`Registers` など）、ピリオドで終える。ファイルの先頭の要約にはピリオドを付けない
+- 要約は、ほかのコメントと同じく日本語で書く。関数は「〜を返す。」「〜を登録する。」のように句点で終え、ファイルの先頭の要約には句点を付けない
 - `@package` は `My_Theme` にする
 - 戻り値の無い関数には `@return` を書かない。`@return void` は、WordPress 本体の標準テーマ以外では使わないため
 - タグの順は `@global` → `@param` → `@return`
 
 ```php
 /**
- * Returns the label of the given post type.
+ * 投稿タイプの表示名を返す。
  *
  * @param string $post_type 投稿タイプのスラッグ。
  * @return string 表示名。投稿タイプが無ければ空文字。
@@ -268,7 +273,7 @@ function my_theme_post_type_label($post_type) {
 
 ```php
 /**
- * Hero section
+ * ヒーローのセクション
  *
  * @package My_Theme
  *

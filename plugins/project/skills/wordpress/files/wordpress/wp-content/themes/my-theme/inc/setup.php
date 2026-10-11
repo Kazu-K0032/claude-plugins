@@ -1,6 +1,6 @@
 <?php
 /**
- * Theme setup
+ * テーマの初期設定
  *
  * @package My_Theme
  */
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Registers theme supports, menus and the text domain.
+ * テーマの機能・メニュー・翻訳ファイルを登録する。
  */
 function my_theme_setup() {
     load_theme_textdomain('my-theme', get_template_directory() . '/languages');

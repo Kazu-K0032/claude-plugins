@@ -1,6 +1,6 @@
 <?php
 /**
- * Site header
+ * 全ページ共通のヘッダー
  *
  * @package My_Theme
  */

@@ -1,6 +1,6 @@
 <?php
 /**
- * Message when no posts are found
+ * 記事が無いときの表示
  *
  * @package My_Theme
  */

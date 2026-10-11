@@ -1,8 +1,8 @@
 <?php
 /**
- * Fallback template
+ * ほかのテンプレートが無いページの表示
  *
- * ほかのテンプレート（single.php・page.php など）が無いページは、すべてこのファイルで表示される。
+ * single.php・page.php などを足すと、そのページはそちらで表示される。
  *
  * @package My_Theme
  */

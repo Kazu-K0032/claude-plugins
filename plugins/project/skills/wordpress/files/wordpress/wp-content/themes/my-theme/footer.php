@@ -1,6 +1,6 @@
 <?php
 /**
- * Site footer
+ * 全ページ共通のフッター
  *
  * @package My_Theme
  */
