@@ -3,7 +3,7 @@ name: issue-start
 description: 指定した Issue に着手し、実装と PR の下書きまで進める。Issue の記述を今のコード・引用元と突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする。関係する ADR を読み、計画モードで決めることを選択肢の質問で詰めて計画を作り、承認後に実装する。決めた仕様で Issue を更新し、決めたことを ADR にするかを聞き、実装したファイルをステージに置き、コミットメッセージを tmp.md に、PR 本文と検証コメントを tmp/ に書いて終わる。コミット・push はしない。Issue に取りかかる時に使用する
 argument-hint: "<Issue番号|URL>"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start_*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start/*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
 
 # Issue の着手
@@ -31,13 +31,15 @@ GitHub に書き込むのは次の 4 つだけ。ラベルと既存のコメン�
 
 ## 出力先
 
-`tmp/<ブランチ名>/` に書く。ブランチ名の `/` は `-` に置き換える（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。`<ts>` は `date +%Y%m%d_%H%M%S` で取る。
+`tmp/<ブランチ名>/` の下に書く。ブランチ名の `/` は `-` に置き換える（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。`<ts>` は `date +%Y%m%d_%H%M%S` で取る。
+
+Issue の本文と計画は、`issue-start/` にまとめる。PR 本文と検証コメントは `pr-create` の出力のため、`pr-create` と同じく直下に書く。
 
 | ファイル | 中身 |
 | --- | --- |
-| `issue-start_<ts>_issue_before.md` | 書き換える前の Issue の本文（Step 9・12 で、書き換えるたびに残す） |
-| `issue-start_<ts>_issue.md` | 反映する Issue の本文 |
-| `issue-start_<ts>_plan.md` | 計画モードに入れなかったときの計画（Step 7） |
+| `issue-start/<ts>_issue_before.md` | 書き換える前の Issue の本文（Step 9・12 で、書き換えるたびに残す） |
+| `issue-start/<ts>_issue.md` | 反映する Issue の本文 |
+| `issue-start/<ts>_plan.md` | 計画モードに入れなかったときの計画（Step 7） |
 | `pr-create_<ts>.md`・`pr-verify_<ts>.md` | PR 本文と検証コメント（Step 15） |
 
 コミットメッセージは、`commit` と同じくプロジェクトのルートの `tmp.md` に書く。
@@ -157,7 +159,7 @@ gh issue edit <番号> --add-assignee @me
 
 ここまでの確認結果を短く示す（判定・チェックリストに無い修正箇所・食い違い・決めることの一覧）。続けて `EnterPlanMode` で計画モードに入る。計画モードでは計画ファイルしか編集できないため、Issue の更新と実装は、計画の承認の後に行う。
 
-計画モードに入るのを断られたら、計画モードを使わずに Step 8 を行い、計画を `issue-start_<ts>_plan.md` に書く。書いたら、承認を待たずに Step 9 へ進む。
+計画モードに入るのを断られたら、計画モードを使わずに Step 8 を行い、計画を `tmp/<ブランチ名>/issue-start/<ts>_plan.md` に書く。書いたら、承認を待たずに Step 9 へ進む。
 
 ### Step 8: 要件を詰めて計画を作る
 
@@ -177,12 +179,12 @@ gh issue edit <番号> --add-assignee @me
 
 計画の承認の後、実装の前に行う。実装中に、Issue とコードが食い違わないようにするため。
 
-1. 今の本文を `issue-start_<ts>_issue_before.md` に書き出す
-1. 決めたことに合わせて書き換えた本文を `issue-start_<ts>_issue.md` に作る。「決めること」の節は、答えを書いた「決めたこと」にする。タスクは決めた内容に合わせて足す・書き換える。チェックリストに無い修正箇所もタスクに足す
+1. 今の本文を `tmp/<ブランチ名>/issue-start/<ts>_issue_before.md` に書き出す
+1. 決めたことに合わせて書き換えた本文を `tmp/<ブランチ名>/issue-start/<ts>_issue.md` に作る。「決めること」の節は、答えを書いた「決めたこと」にする。タスクは決めた内容に合わせて足す・書き換える。チェックリストに無い修正箇所もタスクに足す
 1. 反映する
 
 ```bash
-gh issue edit <番号> --body-file tmp/<ブランチ名>/issue-start_<ts>_issue.md
+gh issue edit <番号> --body-file tmp/<ブランチ名>/issue-start/<ts>_issue.md
 ```
 
 止められたら（許可を断られた・フックで止められた）、本文は `tmp/` に残したまま実装に進み、報告に理由と、手で反映する方法を書く。
@@ -249,7 +251,7 @@ Step 8 で決めたことのうち、ADR にできるもの（あとで同じこ
 
 ### Issue の更新
 
-- 本文：<反映した / 反映できなかった（理由）>。書き換える前の本文は `tmp/<ブランチ名>/issue-start_<ts>_issue_before.md`
+- 本文：<反映した / 反映できなかった（理由）>。書き換える前の本文は `tmp/<ブランチ名>/issue-start/<ts>_issue_before.md`
 
 ### 作ったもの
 
