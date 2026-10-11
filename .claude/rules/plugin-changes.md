@@ -19,10 +19,11 @@
 | 新しいスキルを `plugins/<プラグイン>/skills/` に足す | [P2](../../docs/policies/p02-settings-scope.md) |
 | `SKILL.md` の `allowed-tools` | [P1](../../docs/policies/p01-operation-boundary.md) の「確認なしで任せる操作」 |
 | `SKILL.md` の手順で、コマンドを実行する・ファイルを書き出す・GitHub に書き込む | [P1](../../docs/policies/p01-operation-boundary.md)、[P4](../../docs/policies/p04-tmp-output.md)、[permissions.md](../../docs/policies/permissions.md) |
-| `init-repo` の `files/.claude/settings.json`・`files/.claude/hooks/`・`files/.gitignore` | [P1](../../docs/policies/p01-operation-boundary.md)、[permissions.md](../../docs/policies/permissions.md) |
+| `init-repo` の `files/.claude/settings.json`・`files/.claude/hooks/`・`files/.claude/rules/permissions.md`・`files/.gitignore` | [P1](../../docs/policies/p01-operation-boundary.md)、[permissions.md](../../docs/policies/permissions.md) |
 | `plugins/project/skills/*/files/` にテンプレートを足す | [P6](../../docs/policies/p06-common-template.md)、そのスキルの README の「除外したもの」 |
 | `references/` など、ほかのプラグインと同じ内容のファイル | [P5](../../docs/policies/p05-standalone-plugin.md)、`.claude/rules/duplicated-files.md` |
 | ADR など、置き場所がプロジェクトで決まるファイルを作る手順 | [P3](../../docs/policies/p03-check-placement.md) |
+| `init-repo` の `README.md`・`docs/README.md`・`.claude/rules/readme.md`、README を作る手順 | [P7](../../docs/policies/p07-readme-guide.md) |
 
 ### 方針の一覧
 
@@ -34,10 +35,11 @@
 | [P4](../../docs/policies/p04-tmp-output.md) | スキルの下書きやレポートは tmp に出し、コミットに混ぜないこと | レポート・下書き・一時ファイルの置き場所を決めるとき |
 | [P5](../../docs/policies/p05-standalone-plugin.md) | どのプラグインも、単独で入れて動くようにすること | ほかのプラグインのファイルを使いたいとき |
 | [P6](../../docs/policies/p06-common-template.md) | 共通のテンプレートには、どのプロジェクトでも使うものだけを入れること | テンプレートにファイルを足すとき、`init-repo` が配らないファイルを別のスキルで作るとき |
+| [P7](../../docs/policies/p07-readme-guide.md) | README には本文を書かず、どこに何があるかの案内にとどめること | README のひな形・規約を直すとき、README を作るスキルを足すとき |
 
 ## 権限設定や、スキルが利用先で触れるものを変更する場合
 
-次のどちらかを変えたら、[docs/policies/permissions.md](../../docs/policies/permissions.md) の対応表を直す。
+次のどちらかを変えたら、[docs/policies/permissions.md](../../docs/policies/permissions.md) の対応表を直す。deny・フックの線引きを変えたら、`init-repo` が配る `files/.claude/rules/permissions.md` も直す。
 
 - `init-repo` の `settings.json`（deny）・フック・`.gitignore`
 - スキルが利用先で触れるもの（`tmp/` 以外への書き込み・設定ファイル・`gh` や `git` での書き込み・環境変数）

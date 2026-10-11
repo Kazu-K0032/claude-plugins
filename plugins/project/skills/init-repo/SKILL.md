@@ -78,6 +78,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `.claude/rules/github-actions.md` | ワークフローの安全な書き方 | `.github/workflows/` がある、または入れる | 同等の規約 |
 | `.claude/rules/readme.md` | README を案内板として運用する | `README.md` を入れる、またはドキュメントが複数ある | 同等の規約 |
 | `.claude/rules/adr.md` | 判断の前に ADR の一覧を見る・判断を ADR に残すか聞く | `docs/adr/README.md` を入れる | `CLAUDE.md`・`.claude/rules/` 内の ADR の規約 |
+| `.claude/rules/permissions.md` | 権限の線引き（Claude に任せる操作と人が行う操作）と、deny・フックを変えるときの決まり | `settings.json` を入れる | `CLAUDE.md`・`.claude/rules/` 内の権限の規約 |
 | `.claude/rules/branch.md` | ブランチ名を Issue 番号と作業の要点にそろえる | GitHub で Issue を使う | `CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md` 内のブランチ名の規約 |
 | `.github/ISSUE_TEMPLATE/` | Issue の起票形式 | GitHub で Issue を使う | `.github/ISSUE_TEMPLATE/`・`.github/issue_template.md` |
 | `.github/PULL_REQUEST_TEMPLATE.md` | PR 本文の形式 | GitHub で PR を使う | `.github/pull_request_template.md`・`docs/pull_request_template.md`・ルートの `PULL_REQUEST_TEMPLATE.md` |
@@ -174,7 +175,7 @@ README は「どこに何があるか」を示す案内板として扱う（`.cl
 
 1. 既存 README の見出しごとに、移動先の候補を表で提示する（例：環境構築 → `docs/runbook/environment-setup.md`、設計 → `docs/architecture/architecture.md`）。移動先は `docs/README.md` の振り分け表に従う
 2. ユーザーの承認を得てから、本文を移動先へそのまま移す（要約・削除しない）。移動先のサブディレクトリを新しく作る場合は、同時にその `README.md`（案内板）も置く
-3. ルートの `README.md` はテンプレートの構成に合わせ、移した本文の代わりにリンクを置く。概要（1〜2 行）・各環境のリンク・外部リンクなど、リンク集として残せる情報はそのまま残す
+3. ルートの `README.md` はテンプレートの構成に合わせる。移した本文へのリンクは、ルートではなく移動先の案内板（`docs/README.md` やサブディレクトリの `README.md`）に置き、ルートからは `docs/README.md` だけを案内する。概要（1〜2 行）・各環境のリンク・外部リンクなど、リンク集として残せる情報はそのまま残す
 
 ### 5. エディタ設定とスペルチェックの除外語を調整する
 
