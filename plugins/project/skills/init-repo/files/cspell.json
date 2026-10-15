@@ -17,6 +17,8 @@
     "envrc",
     "frontmatter",
     "ghaction",
+    "pycache",
+    "pythondontwritebytecode",
     "segs",
     "shellcheck",
     "ssot",
