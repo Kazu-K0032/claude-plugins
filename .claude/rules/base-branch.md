@@ -11,7 +11,7 @@
 
 - マージ先は `develop` にする。`main` に向けてよいのは `release/`・`hotfix/` のブランチだけ
 - 差分やコミットの一覧は、マージ先のブランチと比べる（例：`git diff origin/develop...HEAD`）
-- `develop` に向けた PR の `Closes #<番号>` では Issue が閉じない。マージ後に手で閉じるよう、利用者に伝える
+- `develop` に向けた PR をマージすると、`.github/workflows/close-linked-issues.yml` が本文の `Closes #<番号>` の Issue を閉じる。手で閉じるよう伝えるのは、このワークフローが失敗したときだけ
 
 ## リリース・hotfix を頼まれた場合
 

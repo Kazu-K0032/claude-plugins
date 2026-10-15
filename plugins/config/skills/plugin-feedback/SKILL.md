@@ -112,7 +112,7 @@ gh issue list --repo Kazu-K0032/claude-plugins --state all --search "<語>" --js
 gh issue view <番号> --repo Kazu-K0032/claude-plugins --json number,title,body,comments,state,stateReason,labels,assignees,updatedAt,url
 ```
 
-紐づく PR は、番号で検索して探す。このリポジトリの PR は `develop` に向けるため、`Closes #<番号>` があっても Issue と PR が自動ではつながらない。
+紐づく PR は、番号で検索して探す。このリポジトリの PR は `develop` に向けるため、`Closes #<番号>` があっても Issue と PR が自動ではつながらないことがある。
 
 ```bash
 gh pr list --repo Kazu-K0032/claude-plugins --state all --search "#<番号>" --json number,title,state,baseRefName,mergedAt,url
