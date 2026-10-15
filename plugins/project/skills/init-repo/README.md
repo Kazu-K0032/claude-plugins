@@ -72,7 +72,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
 - deny は、コミット・push・削除・権限の変更と、間違えたときに深刻な外部操作（マージ・承認・リリース・ワークフローの実行など）を塞いでいる。線引きは [P1](../../../../docs/policies/p01-operation-boundary.md)。利用先には、線引きと理由を `.claude/rules/permissions.md` で配る。Issue・PR の作成・コメント・更新・クローズと、Issue に紐づくブランチの作成は Claude に任せる前提で塞いでいない。塞ぎたい場合は deny に足す。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る
 - ファイル・ブランチ・タグ・stash の削除（`rm`・`git branch -d`・PowerShell の `Remove-Item` など）も deny で塞いでいる。作業用の一時ファイルは `tmp/<ブランチ名>/work/<目的>/` に置き、消さずに済むようにする。消すときは人が行う
-- `settings.json` の `env` に `PYTHONDONTWRITEBYTECODE=1` を入れている。Claude が `tmp/` に置いたスクリプトを Python が読み込むと、削除できない `__pycache__` ができるため。Python 専用の設定だが、Claude の作業スクリプトはリポジトリの言語に関係なく Python で書かれやすく、入れても害が無いため配る（[P6](../../../../docs/policies/p06-common-template.md) の例外）。既存の `settings.json` は上書きしないので、既存のリポジトリでは `env` に手で足す。足さなくても、`tmp-output.md` が `python -B` での実行を Claude に伝える
+- `settings.json` の `env` に `PYTHONDONTWRITEBYTECODE=1` を入れ、Python のキャッシュ（`__pycache__`）を作らない。理由は [P4](../../../../docs/policies/p04-tmp-output.md)、Python 専用の設定を配る理由は [P6](../../../../docs/policies/p06-common-template.md) を見る。既存の `settings.json` は上書きしないので、既存のリポジトリでは `env` に手で足す。足さなくても、`tmp-output.md` が `python -B` での実行を Claude に伝える
 - `guard-git-write.sh` を配線すると、上記の Issue・PR の作成・更新・クローズ（`create` / `edit` / `close`）も止まる。`develop` と `comment` は止まらない。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る。配線するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
 - `.gitignore`・`.vscode/`・`cspell.json` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする

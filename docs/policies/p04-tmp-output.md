@@ -43,7 +43,7 @@
 
 ### Q. Python のスクリプトを実行すると、`__pycache__` ができる
 
-`python -B` で実行する。読み込んだファイルの `.pyc` を書かなくなる。`init-repo` の `settings.json` は、環境変数 `PYTHONDONTWRITEBYTECODE=1` も入れている。ただし、`settings.json` は既存の利用先に自動では入らないため、手順にも `-B` を書いている。
+`python -B` で実行する。環境変数 `PYTHONDONTWRITEBYTECODE=1` は、既存の利用先の `settings.json` に自動では入らない。そのため、手順にも `-B` を書いている。
 
 ### Q. ほかのスキルの手順で、そのスキルの出力を書く
 

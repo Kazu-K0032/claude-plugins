@@ -170,6 +170,7 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/<同�
 | `.gitignore` | 既存の行は残し、テンプレートにあって既存に無い行だけを末尾へ追記する |
 | `.vscode/settings.json` / `.vscode/extensions.json` | 既存のキー・配列要素は残し、無いものだけを足す。JSONC（コメント・末尾カンマ）を壊さない。既存の `cSpell.words` は cspell の CLI が読まないため、`cspell.json` の `words` へ移すことを提案する |
 | `cspell.json` | 既存のキー・`words` の語は残し、無いものだけを足す |
+| `.claude/settings.json` | 既存のキー・配列要素は残し、無いものだけを足す。`env` の `PYTHONDONTWRITEBYTECODE` も足す |
 
 #### README.md を案内板にする
 
