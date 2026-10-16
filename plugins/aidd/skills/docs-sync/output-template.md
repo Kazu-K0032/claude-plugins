@@ -1,6 +1,6 @@
 # 出力テンプレート
 
-`docs-sync` Skill が `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` に書き出すレポート構造を定義する。構成は `pr-review`・`docs-consistency-audit` のレポートと同じ（見出し・冒頭の文・high・medium・low・推奨アクション）。
+`docs-sync` Skill が `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` に書き出すレポート構造を定義する。構成は `pr-review`・`harness-audit` のレポートと同じ（見出し・冒頭の文・high・medium・low・推奨アクション）。
 
 ````markdown
 # docs-sync 実行結果

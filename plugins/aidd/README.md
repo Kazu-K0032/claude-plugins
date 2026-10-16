@@ -16,6 +16,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
+| `/aidd:harness-audit` | リポジトリのファイルが規約・方針・価値に合うかと、ファイル間の矛盾・重複を監査する。実行前に件数とエージェント数の見込みを示して聞く |
 
 同梱エージェント。
 
@@ -28,9 +29,9 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | Workflow | 用途 |
 | --- | --- |
 | `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証して、直す箇所を high・medium・low に分け、推奨アクションを添えて出力 |
-| `docs-consistency-audit` | ドキュメント間の値の矛盾・重複記述・参照方向違反を横断監査 |
+| `harness-audit-run` | `/aidd:harness-audit` の本体。規約への適合と、ファイル間の値の矛盾・重複記述・参照方向違反を監査する。対象の一覧を `args` で受け取るため、スキルから呼ぶ |
 
-収録は上記 8 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
+収録は上記 9 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
 
 ## ディレクトリ構成
 
@@ -49,7 +50,7 @@ aidd/
 │   └── research.md
 ├── workflows/           # 複数エージェントを束ねるスクリプト
 │   ├── pr-review.js
-│   └── docs-consistency-audit.js
+│   └── harness-audit-run.js
 ├── scripts/             # 複数の Skill が使うスクリプト
 │   └── body_length.js   # Issue・PR の本文の文字数を数える
 └── references/          # Skill が実行時に読む共通規約
@@ -157,9 +158,9 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ワークフロー（`.js`）にはこの README を読ませにくい。そのため、各スキル・ワークフローにも同じ 1 文を書いている。規約を変えるときは、次の箇所もそろえて直す。
 
-- `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
+- `skills/` の `ai-report`・`docs-sync`・`harness-audit`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
-- `workflows/` の `pr-review.js`・`docs-consistency-audit.js`
+- `workflows/` の `pr-review.js`・`harness-audit-run.js`
 - `project` の `init-repo` が配る `.claude/rules/tmp-output.md`（このリポジトリの `.claude/rules/tmp-output.md` と組）。サブディレクトリに書くスキルを増やす・改名するときも直す
 
 ### Issue 番号を省いたら、ブランチ名から取る
@@ -175,3 +176,9 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 ### Issue・PR の本文は 500 文字以内にする
 
 `pr-create`・`issue-start`・`issue-pr-sync` は、本文を 500 文字以内、1 文・1 項目を 50 文字以内で書く。書いたら `scripts/body_length.js` で数える。長い本文は読まれないため（[P8](../../docs/policies/p08-short-body.md)）。上限と数え方は `references/short-body.md` にある。
+
+### 監査は、実行前に見込みを示してから走らせる
+
+`harness-audit` は、ファイル数ぶんのエージェントを動かすため、費用が大きい。そのため、スキルが対象を数え、件数・総量・エージェント数を示して続けるかを聞く。Workflow は利用者に質問できないため、入口をスキルにしている。
+
+段ごとのモデルは、`workflows/harness-audit-run.js` の `MODELS` で固定する。呼ぶ人のモデルで費用が変わらないようにするため。規約の整理・横断の突合・検証は opus にし、判断の質を落とさない（[V1](../../docs/values/v01-quality-over-speed.md)）。ファイル数ぶん走る検査は sonnet にし、誤検出は検証の段で落とす。

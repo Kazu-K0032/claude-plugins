@@ -452,7 +452,7 @@ log(
 
 // 4. Report: 直す箇所を high / medium / low に分け、直す順の推奨アクションを添えて tmp へ保存する。PR へは投稿しない。
 //    読み手が見るのは直す箇所と直す順だけのため、要約・良かった点・総合評価・判定は出さない。
-//    構成は docs-sync・docs-consistency-audit のレポートとそろえる（見出し・冒頭の文・high・medium・low・推奨アクション）。
+//    構成は docs-sync・harness-audit のレポートとそろえる（見出し・冒頭の文・high・medium・low・推奨アクション）。
 //    workflow スクリプト内では時刻取得が禁止（Date.now/new Date は throw）のため、
 //    ブランチ名とタイムスタンプの算出・パス組み立てはエージェントに Bash で行わせる。
 //    ブランチ名の / を - に置換する規約は aidd の README.md の「ブランチ名の / は - に置き換える」。

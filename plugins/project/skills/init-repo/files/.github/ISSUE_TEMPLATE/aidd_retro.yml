@@ -22,7 +22,7 @@ body:
       label: 振り返りで行うチェックと修正
       description: 振り返り前後に実行して修正可能な箇所を確認&修正すること
       options:
-        - label: "`/aidd:docs-consistency-audit` を実行し、指摘を確認した"
+        - label: "`/aidd:harness-audit` を実行し、指摘を確認した"
         - label: "`/aidd:ai-report` を実行し、指摘を確認した"
         - label: "`/doctor` を実行し、ツールの正常性を確認&修正した"
 

@@ -2,7 +2,7 @@
 
 | 区分 | 内容 |
 | --- | --- |
-| 対象 | `aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create`・`ai-report`・`pr-review`・`docs-consistency-audit`。スキルを使わない作業で Claude が作る作業ファイルも含む |
+| 対象 | `aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create`・`ai-report`・`pr-review`・`harness-audit`。スキルを使わない作業で Claude が作る作業ファイルも含む |
 | 価値 | [V2](../values/v02-understand-before-accept.md)・[V3](../values/v03-human-judgment.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
 レポートや下書きは `tmp/<ブランチ名>/` と `tmp.md` に書き、`.gitignore` でコミットから外す。

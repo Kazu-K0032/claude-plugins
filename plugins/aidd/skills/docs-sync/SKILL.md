@@ -115,7 +115,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
 
 ## 補完関係
 
-- 全ドキュメントの横断的な重複記述・値の矛盾を網羅監査するなら `docs-consistency-audit` workflow を使う（差分ではなく全ドキュメントが対象）
+- リポジトリ全体の規約への適合と、横断的な重複記述・値の矛盾を網羅監査するなら `/aidd:harness-audit` を使う（差分ではなく全ファイルが対象）
 - 本 Skill は「このブランチの変更にドキュメントが追従しているか」に特化する
 
 ## 保守
