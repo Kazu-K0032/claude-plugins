@@ -156,6 +156,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
 - `workflows/` の `pr-review.js`・`docs-consistency-audit.js`
+- `project` の `init-repo` が配る `.claude/rules/tmp-output.md`（このリポジトリの `.claude/rules/tmp-output.md` と組）。サブディレクトリに書くスキルを増やす・改名するときも直す
 
 ### Issue 番号を省いたら、ブランチ名から取る
 
