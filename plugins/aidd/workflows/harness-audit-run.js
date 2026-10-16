@@ -9,6 +9,7 @@ export const meta = {
   name: 'harness-audit-run',
   description:
     'リポジトリ全体がマーケットプレイスの設計思想と規約に合うか（規約違反・価値に反する・規約のずれ・仕組みの欠け）と、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。通常は /aidd:harness-audit から呼ぶ（args で { files, principles } を渡す）',
+  // phases の model は進み具合の表示に使う。下の MODELS とそろえる（meta は純粋なリテラルのため、定数を参照できない）
   phases: [
     { title: 'Rubric', detail: '設計思想の要約とリポジトリの規約から、当てるファイル付きのチェックリストと規約のずれの候補を作る', model: 'opus' },
     { title: 'Presence', detail: 'init-repo の印があれば、土台の仕組みの欠けを判定して反証する', model: 'opus' },
@@ -23,6 +24,7 @@ export const meta = {
 // 呼び出し元のモデルに任せると、費用が呼ぶ人のモデルで変わるため固定する。
 // 規約の整理・欠けの判定・横断の突合・検証は判断の質が結果を決めるため、opus / high で質を落とさない（V1）。
 // 各ファイルの検査は数が多いため sonnet にし、規約への適合の判断が入るぶん effort を上げる。誤検出は検証の段で落とす。
+// モデルを変えたら、meta.phases の model も合わせて直す。
 const MODELS = {
   rubric: { model: 'opus', effort: 'high' },
   presence: { model: 'opus', effort: 'high' },
@@ -520,7 +522,7 @@ const rubricNote = rubrics.length
 // 2. Presence: init-repo の土台の仕組みの欠けを見る。ファイルごとの検査と関係しないため、並行して走らせる。
 //    欠けがあれば、別の 1 体が「別の形で役割を果たしていないか」を探して反証する。
 const presencePromise = (async () => {
-  if (!principles) return { installed: false, skipped: true, marks: [], verdicts: [] }
+  if (!principles) return { installed: false, skipped: true, marks: [], verdicts: [], unchecked: [] }
   const found = await agent(
     [
       '次の設計思想の要約の「init-repo の印」と「土台の仕組み」に従い、このリポジトリの土台の欠けを判定せよ。',
@@ -538,10 +540,10 @@ const presencePromise = (async () => {
     ].join('\n'),
     { label: 'presence', phase: 'Presence', schema: PRESENCE_SCHEMA, ...MODELS.presence }
   )
-  if (!found) return { installed: false, skipped: true, marks: [], verdicts: [] }
+  if (!found) return { installed: false, skipped: true, marks: [], verdicts: [], unchecked: [] }
   const missing = found.missing || []
   if (!found.harnessInstalled || missing.length === 0) {
-    return { installed: !!found.harnessInstalled, skipped: false, marks: found.marks || [], verdicts: [] }
+    return { installed: !!found.harnessInstalled, skipped: false, marks: found.marks || [], verdicts: [], unchecked: [] }
   }
   const checked = await agent(
     [
@@ -556,20 +558,24 @@ const presencePromise = (async () => {
       '手順:',
       '1. 候補ごとに、同じ役割を果たす別の設定・フック・CI・規約が無いかを Glob / Grep / Read で探す。',
       '2. 見つかれば isReal=false。見つからなければ isReal=true にする。',
-      '3. severity は表の重大度を使う。low・medium の欠けは、reason の最後に「意図して入れていないなら無視してよい」と添える。',
+      '3. severity は表の重大度を使う。low の欠けは、reason の最後に「意図して入れていないなら無視してよい」と添える。',
       '',
       '候補ごとに 1 件の verdict を返す（mechanism・detail は候補のまま写す）。',
     ].join('\n'),
     { label: 'verify:presence', phase: 'Verify', schema: PRESENCE_VERDICT_SCHEMA, ...MODELS.verify }
   )
-  const verdicts = ((checked && checked.verdicts) || []).map((v) => ({
+  if (!checked) {
+    // 反証の段が止まったときは、欠けを黙って落とさず、確かめられなかったものとしてレポートに出す
+    return { installed: true, skipped: false, marks: found.marks || [], verdicts: [], unchecked: missing }
+  }
+  const verdicts = (checked.verdicts || []).map((v) => ({
     ...v,
     kind: 'missing',
     files: [],
     topic: v.mechanism,
     source: '設計思想の要約の「土台の仕組み」',
   }))
-  return { installed: true, skipped: false, marks: found.marks || [], verdicts }
+  return { installed: true, skipped: false, marks: found.marks || [], verdicts, unchecked: [] }
 })()
 
 // 3. Inspect → Verify（束ごと）: pipeline。小さいファイルは束ねて 1 体で精読し、
@@ -609,7 +615,7 @@ const perBatch = await pipeline(
     }
     const results = [...byFile.values()]
     const candidates = results.flatMap((r) => (r.violations || []).map((v) => ({ file: r.file, ...v })))
-    if (candidates.length === 0) return { results, verdicts: [] }
+    if (candidates.length === 0) return { results, verdicts: [], failed: 0 }
     const items = [...new Set(candidates.map((c) => c.ruleId))].map((id) => itemsById.get(id)).filter(Boolean)
     const checked = await agent(
       [
@@ -642,7 +648,9 @@ const perBatch = await pipeline(
       ].join('\n'),
       { label: `verify:rules:${batch[0]}${batch.length > 1 ? ` +${batch.length - 1}` : ''}`, phase: 'Verify', schema: BATCH_VERDICT_SCHEMA, ...MODELS.verify }
     )
-    const verdicts = ((checked && checked.verdicts) || []).map((v) => {
+    // 検証の段が止まったときは、候補を黙って落とさず、検証できなかった件数として数える
+    if (!checked) return { results, verdicts: [], failed: candidates.length }
+    const verdicts = (checked.verdicts || []).map((v) => {
       const item = itemsById.get(v.ruleId)
       return {
         ...v,
@@ -652,16 +660,18 @@ const perBatch = await pipeline(
         source: item ? item.source : '',
       }
     })
-    return { results, verdicts }
+    return { results, verdicts, failed: 0 }
   }
 )
 
 const done = perBatch.filter(Boolean)
 const inspections = done.flatMap((b) => b.results)
 const ruleVerdicts = done.flatMap((b) => b.verdicts)
+const ruleFailed = done.reduce((n, b) => n + b.failed, 0)
+const notInspected = files.length - inspections.length
 const ruleCandidates = inspections.reduce((n, x) => n + (x.violations || []).length, 0)
-if (inspections.length < files.length) {
-  log(`検査できなかったファイル: ${files.length - inspections.length} 件（エージェントの失敗・スキップ・結果の欠け）`)
+if (notInspected > 0) {
+  log(`検査できなかったファイル: ${notInspected} 件（エージェントの失敗・スキップ・結果の欠け）`)
 }
 log(`規約・思想への違反の候補: ${ruleCandidates} 件 / 確定 ${ruleVerdicts.filter((v) => v.isReal).length} 件`)
 
@@ -693,6 +703,8 @@ const ssotLine = ssotTableFile ? `情報と唯一の情報源の対応表は ${s
 const inspectedByFile = new Map(inspections.map((x) => [x.file, x]))
 
 let crossCandidates = []
+// 突合の段が止まったとき、横断の候補が 0 件に見えないよう、止まった数を数えてレポートに出す
+let detectFailed = 0
 if (groups.length === 1) {
   const detect = await agent(
     [
@@ -712,6 +724,7 @@ if (groups.length === 1) {
       .join('\n'),
     { label: 'detect', phase: 'Detect', schema: DETECT_SCHEMA, ...MODELS.detect }
   )
+  if (!detect) detectFailed = 1
   crossCandidates = (detect && detect.candidates) || []
 } else {
   const perGroup = (
@@ -740,9 +753,7 @@ if (groups.length === 1) {
       )
     )
   ).filter(Boolean)
-  if (perGroup.length < groups.length) {
-    log(`横断の突合ができなかった群: ${groups.length - perGroup.length} 群（エージェントの失敗・スキップ）`)
-  }
+  detectFailed = groups.length - perGroup.length
   const keyFacts = perGroup.map((r, i) => ({ group: i + 1, keyFacts: r.keyFacts || [] }))
   const global = await agent(
     [
@@ -762,7 +773,11 @@ if (groups.length === 1) {
       .join('\n'),
     { label: 'detect:global', phase: 'Detect', schema: DETECT_SCHEMA, ...MODELS.detect }
   )
+  if (!global) detectFailed += 1
   crossCandidates = [...perGroup.flatMap((r) => r.candidates || []), ...((global && global.candidates) || [])]
+}
+if (detectFailed > 0) {
+  log(`横断の突合が止まった段: ${detectFailed} 体（エージェントの失敗・スキップ）。その分の矛盾・重複は見ていない`)
 }
 log(`横断の指摘候補: ${crossCandidates.length} 件 / 規約のずれの候補: ${driftCandidates.length} 件`)
 
@@ -829,6 +844,7 @@ const crossVerdicts = (
     )
   )
 ).filter(Boolean)
+const crossFailed = toVerify.length - crossVerdicts.length
 
 const presence = await presencePromise
 if (presence.skipped) {
@@ -838,9 +854,19 @@ if (presence.skipped) {
 } else {
   log(`仕組みの欠け: 確定 ${presence.verdicts.filter((v) => v.isReal).length} 件`)
 }
+const uncheckedMissing = presence.unchecked.map((m) => `${m.mechanism}（${m.severity}）`)
+if (uncheckedMissing.length > 0) {
+  log(`反証できなかった仕組みの欠け: ${uncheckedMissing.join('、')}（レポートに書く）`)
+}
+
+// 途中のエージェントが止まって検証できなかった候補を数える。黙って落とすと、全件見たように読めるため
+const failedCount = ruleFailed + crossFailed
+if (failedCount > 0) {
+  log(`検証の段が止まり、検証できなかった候補: ${failedCount} 件（レポートに件数を書く）`)
+}
 
 const confirmed = [...presence.verdicts, ...ruleVerdicts, ...crossVerdicts].filter((v) => v.isReal)
-const candidateCount = ruleCandidates + allCross.length + presence.verdicts.length
+const candidateCount = ruleCandidates + allCross.length + presence.verdicts.length + presence.unchecked.length
 log(`確定指摘: ${confirmed.length} / 候補 ${candidateCount}`)
 
 // 6. Report: 確定指摘を重大度別に分け、直す順の推奨アクションを添えた Markdown に整形し、tmp/<branch>/harness-audit_<timestamp>.md へ追記する。
@@ -874,6 +900,10 @@ const report = await agent(
     `- 仕組みの欠け: ${presenceNote}`,
     `- 参照方向の観点: ${hasRefRule ? '有効' : '規約が無いためスキップ'}`,
     `- 検証していない候補数（エージェント数の上限のため）: ${unverified.length}`,
+    `- 検証できなかった候補数（検証の段が止まったため）: ${failedCount}`,
+    `- 検査できなかったファイル数（検査の段が止まったため）: ${notInspected}`,
+    `- 止まった横断の突合の段: ${detectFailed}`,
+    `- 反証できなかった仕組みの欠け: ${uncheckedMissing.length ? uncheckedMissing.join('、') : 'なし'}`,
     `- 指摘候補数: ${candidateCount}`,
     `- 確定指摘数: ${confirmed.length}`,
     '',
@@ -889,6 +919,8 @@ const report = await agent(
     '  - 「仕組みの欠け：…」（上の「仕組みの欠け」が「見た」なら、この行は書かない）',
     '  - 「規約を当てなかったファイル：…件」（上の件数が 0 なら、この行は書かない）',
     '  - 「検証していない候補：…件。対象を分けて再実行する」（上の件数が 0 なら、この行は書かない）',
+    '  - 「途中で止まった段：検証できなかった候補 …件・検査できなかったファイル …件・横断の突合 …体。再実行する」（3 つとも 0 なら、この行は書かない。0 の項目は省く）',
+    '  - 「反証できなかった仕組みの欠け：…。欠けているかを人が確かめる」（「なし」なら、この行は書かない）',
     '  - 「スキップした観点：…」（参照方向の観点が有効なら、この行は書かない）',
     '  - 「範囲：リンク切れ・markdown 規約などの機械チェックは Lint の担当。この監査は設計思想・規約への適合と横断的な意味の整合を扱う」',
     '- 注記の後に、次の見出しをこの順で置く: 「### high」「### medium」「### low」「### 推奨アクション」。severity ごとに指摘を分ける。',
@@ -905,8 +937,10 @@ const report = await agent(
   { label: 'report', phase: 'Report', schema: REPORT_SCHEMA, ...MODELS.report }
 )
 
+// レポートの段が止まっても、件数は呼び出し元に返す
+if (!report) log('レポートを書けなかった（エージェントの失敗・スキップ）。件数は戻り値で確かめる')
 return {
-  file: report.path,
+  file: report ? report.path : null,
   files: files.length,
   batches: batches.length,
   groups: groups.length,
@@ -918,5 +952,9 @@ return {
   referenceDirectionChecked: hasRefRule,
   candidates: candidateCount,
   unverified: unverified.length,
+  failed: failedCount,
+  notInspected,
+  detectFailed,
+  uncheckedMissing: uncheckedMissing.length,
   confirmed: confirmed.length,
 }

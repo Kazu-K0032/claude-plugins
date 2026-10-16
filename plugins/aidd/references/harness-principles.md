@@ -38,18 +38,18 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | 秘匿ファイルの読み取りを止める | `permissions.deny` の `Read(./.env)` など | high |
 | 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など） | high |
 | コミット・PR に Claude の署名を付けない | `settings.json` の `attribution` が空 | low |
-| 操作の線引きと理由を、利用先の Claude に伝える | `.claude/rules/permissions.md` など | medium |
-| 作業ファイルをコミットから外す | `.gitignore` の `tmp/`・`tmp.md` | medium |
+| 秘密の混入を CI で止める | シークレットスキャン（gitleaks など）の CI | high |
+| 操作の線引きと理由を、利用先の Claude に伝える | `.claude/rules/permissions.md` など | low |
+| 作業ファイルをコミットから外す | `.gitignore` の `tmp/`・`tmp.md` | low |
 | `tmp/` の置き方を伝える | `.claude/rules/tmp-output.md` など | low |
-| 判断を残し、毎回読む | ADR の一覧（`docs/adr/README.md` など）と、`CLAUDE.md` での読み込み、ADR の規約 | medium |
-| Claude への指示の入口 | `CLAUDE.md`（禁止事項・手順・唯一の情報源の一覧） | medium |
+| 判断を残し、毎回読む | ADR の一覧（`docs/adr/README.md` など）と、`CLAUDE.md` での読み込み、ADR の規約 | low |
+| Claude への指示の入口 | `CLAUDE.md`（禁止事項・手順・唯一の情報源の一覧） | low |
 | README を案内板にする | `.claude/rules/readme.md` などと `docs/README.md` | low |
-| 秘密の混入を CI で止める | シークレットスキャン（gitleaks など）の CI | medium |
 | Issue・PR の定型 | Issue・PR のテンプレート（本文の長さの上限を示す） | low |
 | 編集後に Lint・整形を動かす | PostToolUse のフックと、その定義（`lefthook.yml` など） | low |
 | コミット規約を検証する（Node のプロジェクトだけ） | `commitlint.config.*` など | low |
 
-重大度が low・medium の欠けは、意図して入れていないなら無視してよい。`init-repo` は、一部だけ入れることもできるため。
+重大度は 2 段にする。安全に関わる仕組み（操作を止める deny・秘匿ファイルの deny・破壊的な操作のガード・秘密の混入を止める CI）は high、ほかは low。low の欠けは、意図して入れていないなら無視してよい。`init-repo` は、一部だけ入れることもできるため。
 
 ## init-repo の印
 

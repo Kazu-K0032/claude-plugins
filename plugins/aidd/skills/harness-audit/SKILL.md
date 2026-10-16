@@ -2,7 +2,7 @@
 name: harness-audit
 description: リポジトリ全体が、本マーケットプレイスの設計思想（aidd × DocDD）とそのリポジトリの規約に合うかを監査する。規約違反・価値に反する箇所・規約のずれ・土台の仕組みの欠けと、ファイル間の値の矛盾・重複記述・参照方向違反を見る。実行前に対象の件数・総量・エージェント数の見込みを示して続けるかを聞き、Workflow（harness-audit-run）で各指摘を敵対的に検証して tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md に出力する。init-repo から作り直した後や、統合ブランチ（develop・stg・main）へのマージ前の最終チェックに使用する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git ls-files:*), AskUserQuestion
+allowed-tools: Read, Glob, Grep, Bash(git grep:*), AskUserQuestion
 argument-hint: "[対象のパス（任意。省略時は追跡中の全テキストファイル。例: plugins/aidd docs）]"
 ---
 
@@ -42,15 +42,18 @@ argument-hint: "[対象のパス（任意。省略時は追跡中の全テキス
 
 ### Step 1: 対象を列挙する
 
-リポジトリのルートで、追跡中のテキストファイルを列挙する。引数があれば、`git ls-files` の後ろにそのパスを並べて絞る。
+リポジトリのルートで、追跡中のテキストファイルを列挙する。引数があれば、`--` の後ろにそのパスを並べて絞る。
 
 ```bash
-git ls-files -- <引数のパス（無ければ省く）> \
+git grep -I -z --name-only -e '' -- <引数のパス（無ければ省く）> \
+  | tr '\0' '\n' \
   | grep -vE '(^|/)(node_modules|vendor|dist|build|tmp)/' \
-  | grep -viE '\.(png|jpe?g|gif|ico|svg|webp|bmp|pdf|zip|gz|tar|tgz|woff2?|ttf|otf|eot|mp3|mp4|mov|webm|map)$|\.min\.(js|css)$|(^|/)(package-lock\.json|pnpm-lock\.yaml|[^/]*\.lock)$'
+  | grep -viE '\.(svg|map)$|\.min\.(js|css)$|(^|/)(package-lock\.json|pnpm-lock\.yaml|[^/]*\.lock)$'
 ```
 
-- 依存・生成物・`tmp/`・画像などのバイナリ・lock ファイルを除く。人が書いたテキストではなく、規約を当てても意味が無いため
+- テキストかどうかは、拡張子ではなく中身で決める（`-I` はバイナリのファイルを飛ばす）。画像・Excel などを、拡張子の一覧に頼らずに除くため。中身が空のファイルも出ない
+- `-z` を付けて、日本語などのファイル名をそのまま出す。付けないと、`"\350\250\255..."` のような記号付きの形になり、後の段で開けないため
+- 依存・生成物・`tmp/`・圧縮済みのファイル・lock ファイルも除く。人が書いたテキストではなく、規約を当てても意味が無いため
 - 一覧の各ファイルの大きさ（バイト）を `wc -c` で取る。Workflow が、小さいファイルを束ねるのに使う
 - 0 件なら、その旨を伝えて終わる
 
