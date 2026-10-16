@@ -1,0 +1,28 @@
+{
+  "description": "スキルを実行するとき、そのスキルの SKILL.md への GitHub のリンクを 1 行で表示する。利用者が /プラグイン名:スキル名 と入力したとき（UserPromptExpansion）と、Claude が Skill ツールで呼んだとき（PreToolUse）の両方で動く",
+  "hooks": {
+    "UserPromptExpansion": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-link.js\" || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-link.js\" || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

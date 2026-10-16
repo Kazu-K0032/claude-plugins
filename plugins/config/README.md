@@ -55,9 +55,10 @@ config/
 ├── .claude-plugin/
 │   └── plugin.json          # プラグインのマニフェスト
 ├── hooks/
-│   ├── hooks.json           # SessionStart で plugin-feedback.js を実行する（Node.js が無ければ何もしない）
+│   ├── hooks.json           # SessionStart で plugin-feedback.js を、スキルの実行時に skill-link.js を実行する（Node.js が無ければ何もしない）
 │   ├── plugin-feedback.js   # 起票の提案の文面と、初回だけのお知らせを出す（CLAUDE_PLUGIN_FEEDBACK=off なら出さない）
-│   └── plugin-feedback.md   # 起票の提案の文面
+│   ├── plugin-feedback.md   # 起票の提案の文面
+│   └── skill-link.js        # スキルの実行時に SKILL.md へのリンクを出す（ルートの README の「スキルの手順へのリンク」）
 └── skills/
     ├── setup-global/
     │   ├── SKILL.md

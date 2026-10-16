@@ -12,6 +12,21 @@
 
 プラグイン由来の Skill は必ず `/プラグイン名:スキル名` の形で呼び出す。
 
+## スキルの手順へのリンク
+
+スキルを実行すると、その `SKILL.md` への GitHub のリンクが 1 行、画面に出る。スキルの中で何をしているかを、すぐ確かめられる。
+
+```text
+aidd:commit の手順（SKILL.md）: https://github.com/Kazu-K0032/claude-plugins/blob/v1.1.0/plugins/aidd/skills/commit/SKILL.md
+```
+
+- 利用者が `/aidd:commit` と入力したときも、Claude がスキルを呼んだときも出る。Claude の作業は増えない
+- リンク先は、入れている版のタグ（`v<版>`）。`main` ではなく、手元と同じ中身が開く
+- 各プラグインの `hooks/skill-link.js` が出す。Node.js が無い環境では出ない
+- `SKILL.md` が無い workflow（`aidd` の `pr-review`・`docs-consistency-audit`）では出ない
+- 止める設定は無い。要らなければ、プラグインを外す
+- リリース前のローカル作業では、タグがまだ無く、リンクを開くと 404 になる
+
 プラグインが何をして何をしないか（コミットしない・外部へ書き込まないなど）と、その理由は [設計の方針](docs/policies/README.md) にまとめている。方針の土台になる考え方は [AI駆動開発の価値](docs/values/README.md) にある。
 
 ## 導入
