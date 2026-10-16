@@ -32,5 +32,5 @@
 
 - merge commit でマージする。squash と rebase は使わない
 - `develop` へのマージでは、GitHub は `Closes #<番号>` で Issue を閉じない。代わりに `.github/workflows/close-linked-issues.yml` が、PR 本文の `Closes #<番号>` などを読んで閉じる
-- 閉じたくない Issue は、`Closes` でなく `Ref: Issue #<番号>` と書く
+- 閉じたくない Issue は、`Closes` でなく `Ref: Issue #<番号>` と書く。PR の画面で Issue を紐づけているときは、その紐づけも外す
 - 閉じられなかったとき（fork からの PR など）は、マージした人が手で閉じる
