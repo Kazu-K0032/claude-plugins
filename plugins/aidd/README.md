@@ -50,10 +50,13 @@ aidd/
 ├── workflows/           # 複数エージェントを束ねるスクリプト
 │   ├── pr-review.js
 │   └── docs-consistency-audit.js
+├── scripts/             # 複数の Skill が使うスクリプト
+│   └── body_length.js   # Issue・PR の本文の文字数を数える
 └── references/          # Skill が実行時に読む共通規約
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
+    ├── short-body.md    # Issue・PR の本文の長さ
     └── ai-research.md   # AI 出力を引用として扱わないための規約
 ```
 
@@ -84,7 +87,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `references/` の内容は、元になったプロジェクトの `.claude/rules/` と重複する。**汎用ルールはこのプラグイン側を正**とし、規約を直すときは両方を直す。
 
-`references/markdown.md` は [project](../project/README.md) プラグインにも同じ内容のコピーがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。
+`references/markdown.md` は [project](../project/README.md) プラグインにも同じ内容のコピーがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。`references/short-body.md` と `scripts/body_length.js` も、[config](../config/README.md) の `plugin-feedback` に同じコピーがある。
 
 ## 設計上の決めごと
 
@@ -106,7 +109,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `${CLAUDE_PLUGIN_ROOT}` が frontmatter の `allowed-tools` で展開されるかは公式に記載が無い。プラグインの実体パスはインストール先で変わるため、当てにせず通常の許可プロンプトを通す（[P1](../../docs/policies/p01-operation-boundary.md)）。
 
-`ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。
+`ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。`pr-create`・`issue-start`・`issue-pr-sync` が本文を数える `scripts/body_length.js` も載せていない。
 
 ### エージェント名にプラグイン名を付けない
 
@@ -168,3 +171,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `skills/` の `issue-start`・`pr-create`・`issue-pr-sync` の `SKILL.md`
 - `workflows/` の `pr-review.js`
 - `project` の `init-repo` が配る `.claude/rules/branch.md`（このリポジトリの `.claude/rules/branch.md` と組）
+
+### Issue・PR の本文は 500 文字以内にする
+
+`pr-create`・`issue-start`・`issue-pr-sync` は、本文を 500 文字以内、1 文・1 項目を 50 文字以内で書く。書いたら `scripts/body_length.js` で数える。長い本文は読まれないため（[P8](../../docs/policies/p08-short-body.md)）。上限と数え方は `references/short-body.md` にある。

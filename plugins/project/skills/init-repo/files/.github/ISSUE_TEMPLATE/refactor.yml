@@ -3,6 +3,11 @@ description: "外部から見た振る舞いを基本変えずにコードの構
 title: "[Refactor] "
 labels: ["refactor"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        本文全体は 500 文字以内、1 文・1 項目は 50 文字以内で書いてください。詳細は書かず、技術的な内容は引用かリンクで示してください。
+
   - type: input
     id: summary
     attributes:
