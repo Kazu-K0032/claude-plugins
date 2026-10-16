@@ -12,7 +12,7 @@
 - 定型の節（見出しに「チェックリスト」か「関連 Issue」を含む節）は数えない
 - 詳細は書かず、処理の流れを平易に書く。技術的な内容は、引用かリンクで示す
 - 判断の理由は、短くても残す
-- 書いたら、同梱のスクリプト（`body_length.py`）で数える
+- 書いたら、同梱のスクリプト（`body_length.js`）で数える
 
 ## 理由
 
@@ -48,7 +48,7 @@
 
 次をすべて同じ数に直す。直したら `git grep -n -e "500 文字" -e "50 文字"` で漏れを確かめる。`commit-rule.md` の件名の目安は、別の決まりのため直さない。
 
-- 決まりとスクリプト：`references/short-body.md` と、`body_length.py` の `TOTAL_LIMIT`・`ITEM_LIMIT`（`aidd` と `config:plugin-feedback` に 1 つずつ）
+- 決まりとスクリプト：`references/short-body.md` と、`body_length.js` の `TOTAL_LIMIT`・`ITEM_LIMIT`（`aidd` と `config:plugin-feedback` に 1 つずつ）
 - `aidd`：`pr-create` の `SKILL.md`・`verify-comment-template.md`、`issue-start` の `SKILL.md`・`comment-template.md`、`issue-pr-sync` の `SKILL.md`、`README.md`
 - `config:plugin-feedback`：`references/issue-format.md`
 - mod：`hooks/register.tsx` の `DOC_CONCISE_TEXT` と、`tests/emphasis.test.tsx`

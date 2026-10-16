@@ -33,7 +33,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 本文を書くときの markdown 書式規約 |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 本文の長さの上限・数え方・書き方 |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py` | 本文の文字数を数えるスクリプト |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 本文の文字数を数えるスクリプト |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/SKILL.md` の「AI を使った確認の書き方」 | PR 本文の「AI を使った確認」のコマンドに入れる番号の形 |
 
 ## バリデーション
@@ -78,8 +78,8 @@ git diff <baseRefName>...HEAD
 先に、今の本文を数える。500 文字を超えている対象は、ほかに直す箇所が無くても、縮める変更を作る。
 
 ```bash
-gh issue view <Issue> --json body -q .body | python -B "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py" -
-gh pr view <PR> --json body -q .body | python -B "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py" -
+gh issue view <Issue> --json body -q .body | node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" -
+gh pr view <PR> --json body -q .body | node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" -
 ```
 
 次の 4 つを組み立てる。
@@ -94,8 +94,8 @@ gh pr view <PR> --json body -q .body | python -B "${CLAUDE_PLUGIN_ROOT}/scripts/
 書き出した本文を数える。超えていたら縮めて書き直し、もう一度数える。
 
 ```bash
-python -B "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py" tmp/<ブランチ名>/issue-pr-sync/<ts>_issue.md
-python -B "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py" tmp/<ブランチ名>/issue-pr-sync/<ts>_pr.md
+node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/issue-pr-sync/<ts>_issue.md
+node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/issue-pr-sync/<ts>_pr.md
 ```
 
 本文を変える対象は、Step 1 で取った反映前の本文を `<ts>_issue_before.md` / `<ts>_pr_before.md` に書き出す。承認なしで反映した変更も、ここから戻せるようにするため。

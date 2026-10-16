@@ -25,7 +25,7 @@ argument-hint: "[起票したい内容（任意。省略時はこのセッショ
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/issue-format.md` | Issue・コメントの本文の型と、公開前の点検項目 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/short-body.md` | 本文の長さの上限・数え方・書き方 |
-| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.py` | 本文の文字数を数えるスクリプト |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.js` | 本文の文字数を数えるスクリプト |
 
 ## 引数の解釈
 
@@ -182,7 +182,7 @@ gh repo view --json nameWithOwner,isPrivate
 点検を終えたら、下書きの本文を数える。下書きのファイルは作らず、標準入力から渡す。超えていたら縮め、もう一度数える。
 
 ```bash
-python -B "${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.py" - <<'__ISSUE_BODY__'
+node "${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.js" - <<'__ISSUE_BODY__'
 <本文>
 __ISSUE_BODY__
 ```

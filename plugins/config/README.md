@@ -69,8 +69,11 @@ config/
     │       └── conflicts.js   # 衝突・重複・書き方の誤りを JSON で出力する点検スクリプト
     ├── plugin-feedback/
     │   ├── SKILL.md
-    │   └── references/
-    │       └── issue-format.md  # Issue・コメントの本文の型と、公開前の点検項目
+    │   ├── references/
+    │   │   ├── issue-format.md  # Issue・コメントの本文の型と、公開前の点検項目
+    │   │   └── short-body.md    # 本文の長さの上限と数え方（aidd と同じ写し）
+    │   └── scripts/
+    │       └── body_length.js   # 本文の文字数を数える（aidd と同じ写し）
     └── mod-output-customize/
         ├── SKILL.md
         ├── README.md            # 使い方と収録物

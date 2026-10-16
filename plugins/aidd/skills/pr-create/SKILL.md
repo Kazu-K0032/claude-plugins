@@ -19,7 +19,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` | 検証コメントの出力フォーマットと書き方 |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 本文の長さの上限・数え方・書き方 |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py` | 本文の文字数を数えるスクリプト |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 本文の文字数を数えるスクリプト |
 
 ## PR テンプレートの解決
 
@@ -51,8 +51,8 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 11. 2 つのファイルを数える。超えていたら縮めて書き直し、もう一度数える。3 回直しても収まらなければ、超えた箇所を報告に書く
 
     ```bash
-    python -B "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py" tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md
-    python -B "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py" --item-only tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md
+    node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md
+    node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" --item-only tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md
     ```
 
 12. 2 つの出力パス、数えた結果、**別途 PR タイトル案（Issue のタイトルと同じ文字列。`/aidd:issue-pr-sync` の基準と揃える）**をユーザーに報告する

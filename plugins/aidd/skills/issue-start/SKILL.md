@@ -26,7 +26,7 @@ GitHub に書き込むのは次の 4 つだけ。ラベルと既存のコメン�
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-research.md` | 引用元を確かめた結果の扱い（確かめられなかった引用を「確認済み」としない） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/comment-template.md` | 着手を見送ったときに Issue に投稿するコメントの形 |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | Issue の本文とコメントの長さの上限・数え方・書き方（Step 3・9・12） |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py` | 本文の文字数を数えるスクリプト |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 本文の文字数を数えるスクリプト |
 | `${CLAUDE_PLUGIN_ROOT}/skills/adr/SKILL.md` | ADR の一覧の置き場所（「出力先の決定」）と、ADR の作り方（Step 13） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/commit/SKILL.md` | コミットメッセージの作り方（Step 14） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/SKILL.md` | PR 本文と検証コメントの作り方（Step 15） |
@@ -110,7 +110,7 @@ Step 16 の形のうち「判定」と「確認の結果」の節で確認結果
 本文は、投稿する前に標準入力から数える。超えていたら縮め、もう一度数える。
 
 ```bash
-python -B "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py" - <<'__ISSUE_BODY__'
+node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" - <<'__ISSUE_BODY__'
 <テンプレートで作った本文>
 __ISSUE_BODY__
 gh issue comment <番号> --body-file - <<'__ISSUE_BODY__'
@@ -213,7 +213,7 @@ gh issue edit <番号> --add-assignee @me
 1. 数える。超えていたら縮めて作り直し、もう一度数える
 
    ```bash
-   python -B "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.py" tmp/<ブランチ名>/issue-start/<ts>_issue.md
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/issue-start/<ts>_issue.md
    ```
 
 1. 反映する
