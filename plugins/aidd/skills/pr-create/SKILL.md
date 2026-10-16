@@ -48,14 +48,14 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 8. `git diff <base>...HEAD` で差分本体を読み、「[チェック項目の洗い出し](#チェック項目の洗い出し)」の表を上から全て当てて条件分岐を列挙する
 9. `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` に従って検証コメントを作成する。PR があれば、手順 4 で取った番号を埋める
 10. `tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md`（PR本文）と `tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md`（検証コメント）を**常に両方**出力する
-11. 2 つのファイルを数える。超えていたら縮めて書き直し、もう一度数える。3 回直しても収まらなければ、超えた箇所を報告に書く
+11. 2 つのファイルを数える。超えていたら縮めて書き直し、もう一度数える。3 回直しても収まらなければ、超えた箇所を報告に書く。Node.js が無い・実行を断られたときは、数えずに進み、報告に書く
 
     ```bash
     node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md
     node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" --item-only tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md
     ```
 
-12. 2 つの出力パス、数えた結果、**別途 PR タイトル案（Issue のタイトルと同じ文字列。`/aidd:issue-pr-sync` の基準と揃える）**をユーザーに報告する
+12. 2 つの出力パス、数えた結果（数えられなかったときは、その理由）、**別途 PR タイトル案（Issue のタイトルと同じ文字列。`/aidd:issue-pr-sync` の基準と揃える）**をユーザーに報告する
 
 ## PR本文の作成方針
 
@@ -149,6 +149,6 @@ PR テンプレートに「AI を使った確認」の欄があるときだけ�
 - ❌ テンプレートに無いセクションを足すこと
 - ❌ ガード節・条件分岐を触った差分で「そうでない場合」の項目が無いまま出力すること
 - ❌ チェックボックスを埋めた状態で出力すること（埋めるのはレビュワー）
-- ❌ 手順 11 で数えずに報告すること（AI は文字数を正確に数えられない）
+- ❌ 手順 11 で数えずに報告すること（AI は文字数を正確に数えられない）。Node.js が無い・実行を断られたときを除く
 
 $ARGUMENTS
