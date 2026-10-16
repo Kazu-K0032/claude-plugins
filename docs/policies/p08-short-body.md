@@ -46,9 +46,11 @@
 
 ### Q. 上限の数を変えたい
 
-次をすべて同じ数に直す。
+次をすべて同じ数に直す。直したら `git grep -n -e "500 文字" -e "50 文字"` で漏れを確かめる。`commit-rule.md` の件名の目安は、別の決まりのため直さない。
 
-- `references/short-body.md`（`aidd` と `config:plugin-feedback` の 2 つ）
-- `body_length.py` の `TOTAL_LIMIT`・`ITEM_LIMIT`（同じく 2 つ）
-- mod の `hooks/register.tsx` の `DOC_CONCISE_TEXT`
-- `init-repo` の PR・Issue のテンプレートと、このリポジトリの `.github/PULL_REQUEST_TEMPLATE.md`
+- 決まりとスクリプト：`references/short-body.md` と、`body_length.py` の `TOTAL_LIMIT`・`ITEM_LIMIT`（`aidd` と `config:plugin-feedback` に 1 つずつ）
+- `aidd`：`pr-create` の `SKILL.md`・`verify-comment-template.md`、`issue-start` の `SKILL.md`・`comment-template.md`、`issue-pr-sync` の `SKILL.md`、`README.md`
+- `config:plugin-feedback`：`references/issue-format.md`
+- mod：`hooks/register.tsx` の `DOC_CONCISE_TEXT` と、`tests/emphasis.test.tsx`
+- テンプレート：`init-repo` の PR テンプレートと Issue フォーム 5 つ、このリポジトリの `.github/PULL_REQUEST_TEMPLATE.md`
+- この方針のファイル
