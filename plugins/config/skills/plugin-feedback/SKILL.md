@@ -24,6 +24,8 @@ argument-hint: "[起票したい内容（任意。省略時はこのセッショ
 | ファイル | 役割 |
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/issue-format.md` | Issue・コメントの本文の型と、公開前の点検項目 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/short-body.md` | 本文の長さの上限・数え方・書き方 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.py` | 本文の文字数を数えるスクリプト |
 
 ## 引数の解釈
 
@@ -177,6 +179,14 @@ gh repo view --json nameWithOwner,isPrivate
 
 どちらも失敗した場合（Git の管理外など）は、作業ディレクトリ名を利用先の名前として扱う。今いるのが `Kazu-K0032/claude-plugins` 自身なら、リポジトリ名は言い換えなくてよい。
 
+点検を終えたら、下書きの本文を数える。下書きのファイルは作らず、標準入力から渡す。超えていたら縮め、もう一度数える。
+
+```bash
+python -B "${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.py" - <<'__ISSUE_BODY__'
+<本文>
+__ISSUE_BODY__
+```
+
 ### 9. 承認を取る
 
 1. ラベルを付けられるかを確かめる（新しい Issue の場合だけ）。リポジトリ名は必ず付ける。付けないと、今いる利用先のリポジトリの権限が返る
@@ -255,6 +265,7 @@ __ISSUE_BODY__
 - 書き込み権限が無いのに `--label` を付けて、ラベルが付いたように報告しない
 - 対応しないと決めて閉じた件・方針とずれる件を、ユーザーに聞かずに起票しない
 - 裏の取れない原因・再現手順を書かない
+- 手順 8 で数えずに、承認を取る・作成する
 - 利用先の非公開の情報（リポジトリ名・メールアドレス・トークン・業務のファイルの中身）を書かない
 
 $ARGUMENTS
