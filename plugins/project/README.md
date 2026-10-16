@@ -13,7 +13,7 @@
 | [`/project:wordpress`](skills/wordpress/README.md) | WordPress の `wordpress/wp-content/` 構成（クラシックテーマの最小構成・mu-plugins）と Docker のローカル環境・PHP の Lint（phpcs）の設定、WordPress の実装規約を導入 |
 | [`/project:terraform`](skills/terraform/README.md) | Terraform の `infra/` 構成（環境ごとの設定 `stg`・`prod` と `modules/`）、Claude に apply などをさせないフック、Terraform の実装規約を導入 |
 
-技術スタック別の Skill は、土台を入れた後に重ねて使う想定。たとえば GAS のリポジトリでは `/project:init-repo` → `/project:gas` の順に実行する。どの Skill も手動でのみ呼ぶ（`disable-model-invocation: true`）ため、使わない技術スタックの Skill が入っていてもコンテキストを消費しない。
+技術スタック別の Skill は、土台を入れた後に重ねて使う想定。たとえば GAS のリポジトリでは `/project:init-repo` → `/project:gas` の順に実行する。`init-repo` は最後に、続けて使う Skill を聞く。技術スタック別の Skill は、土台（`.claude/settings.json`）が無ければ、先に `init-repo` を実行するかを聞く。どの Skill も手動でのみ呼ぶ（`disable-model-invocation: true`）ため、使わない技術スタックの Skill が入っていてもコンテキストを消費しない。
 
 ## 導入
 
@@ -54,6 +54,10 @@ project/
 ```
 
 ## 設計上の決めごと
+
+### 土台と技術スタック別の Skill の役割を分ける
+
+`init-repo`（土台）はハーネスの設計思想だけを配り、言語・ツールに依るものは技術スタック別の Skill が土台の差し込み口に足す。何を土台に入れ、どこに足してよいかは [P6](../../docs/policies/p06-common-template.md) にある。
 
 ### 規約はリポジトリへコピーして配る
 

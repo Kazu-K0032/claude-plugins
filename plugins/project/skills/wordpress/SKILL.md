@@ -27,7 +27,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 - リポジトリの**ルート**で実行すること（サブディレクトリで実行するとスクリプトが停止する）
 - `git` / `bash` が利用可能であること
 - 導入後の Lint には PHP と Composer が、Docker のローカル環境には Docker と Docker Compose が要る（このスキル自体はどちらも使わない）
-- `.claude/settings.json`・`CLAUDE.md` などの土台も要るなら、先に `/project:init-repo` を実行しておく（必須ではない）。土台の `.claude/hooks/post-edit-lint.sh` があれば、手順 8 で PHP の Lint を足す
+- `.claude/settings.json`・`CLAUDE.md` などの土台（`/project:init-repo`）は必須ではない。無ければ手順 1 で、先に入れるかを聞く。土台の `lefthook.yml`（古い形では `.claude/hooks/post-edit-lint.sh`）があれば手順 8 で PHP の Lint を、`.claude/hooks/guard-destructive.sh` があれば Docker の検出を足す
 
 ## 引数の解釈
 
@@ -60,6 +60,13 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 ## 手順
 
 ### 1. 現状を確認する
+
+最初に、土台の `.claude/settings.json` があるかを Glob で確かめる。無ければ、`AskUserQuestion` で聞く。
+
+| 選択肢 | 次の動き |
+| --- | --- |
+| 先に init-repo を実行する（推奨） | ここで止め、`/project:init-repo` を実行してから `/project:wordpress` を呼び直すよう案内する。どちらも Claude からは呼べないため、利用者が実行する |
+| このまま進める | 次の影響を伝えて続ける。`lefthook.yml` も無ければ、PHP の Lint をフックで動かせない（Lint の設定と規約は入る）。`guard-destructive.sh` も無ければ、`docker compose down -v` を止められない。秘匿ファイルの deny も入らない |
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill wordpress --check
@@ -124,7 +131,9 @@ A・B の場合で、ローカル環境のファイルが無く、引数に `Doc
 
 ### 3. 導入計画を提示して承認を得る（必須）
 
-`--check` の結果を、新規作成するファイル（`NEW`）・既存のまま残すファイル（`SAME`）・衝突していて判断が要るファイル（`DIFF`）に分けて提示する。あわせて、手順 1 の状態（A・B・C）と入れないファイル、手順 2 で決めたローカル環境、手順 5 の置き換え後の名前、手順 8 でフックに PHP の Lint を足すか、手順 9 で ADR を足す場所を示す。
+`--check` の結果を、新規作成するファイル（`NEW`）・既存のまま残すファイル（`SAME`）・衝突していて判断が要るファイル（`DIFF`）に分けて提示する。あわせて、手順 1 の状態（A・B・C）と入れないファイル、手順 2 で決めたローカル環境、手順 5 の置き換え後の名前、手順 8 でフックに PHP の Lint と Docker の検出を足すか、手順 9 で ADR を足す場所を示す。
+
+テンプレートの中身を確かめられるよう、`https://github.com/Kazu-K0032/claude-plugins/tree/v<版>/plugins/project/skills/wordpress/files` も示す。`<版>` は `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` にする。入れている版と同じ中身を見せるため。リリース前の版ではタグが無く、開けない。
 
 ### 4. コピーする
 
@@ -193,9 +202,37 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/wordpress/files/<同�
 
 Lint の設定（`composer.json`・`phpcs.xml.dist`）と `.gitignore` は、テンプレートを Read し、今の構成の WordPress のルート（`wp-content/` を持つディレクトリ）に作る案を出す。`phpcs.xml.dist` の `<file>` は、今のテーマと mu-plugins のディレクトリにする。既にあるファイルには、手順 6 の方針で足りない分だけを足す。
 
-### 8. Lint のフックに PHP を足す
+### 8. フックに PHP の Lint と Docker の検出を足す
 
-`.claude/hooks/post-edit-lint.sh` があり、`phpcs` を呼ぶブロックが無ければ、次のブロックを足す案を差分で示し、承認を得てから足す。C の場合は `PHP_LINT_DIR` と `case` のパスを今の場所に合わせる。
+#### PHP の Lint
+
+`phpcs` を動かす定義が無ければ、フックの形に合わせて足す案を差分で示し、承認を得てから足す。C の場合は、パスを今の場所に合わせる。
+
+| フックの形 | 足すもの・場所 |
+| --- | --- |
+| `post-edit-lint.sh` が `lefthook run claude-edit` を呼ぶ（今の `init-repo` の形） | lefthook の設定（`lefthook.yml`・`.lefthook.yml` など）の `claude-edit` の `commands` に、下の YAML を足す。`claude-edit` が無ければ、`piped: true` と一緒に定義ごと足す |
+| `post-edit-lint.sh` に `[ -d "$LINT_DIR/node_modules/.bin" ] \|\| finish` の行がある（古い `init-repo` の形） | 下の bash のブロックを、その行より前に足す。後ろに足すと、Node を使わないリポジトリでブロックまで届かないため |
+| 上の行が無く、`post-edit-lint.sh` に `# --- 言語別チェック` の区切りがある | 下の bash のブロックを、区切りのすぐ後ろに足す |
+| `report`・`finish` を使っていない（`init-repo` 以外の形） | 書き換えず、下の bash のブロックを示して、利用者に足し方を決めてもらう |
+
+フックが古い形のまま `lefthook.yml` もある（`init-repo` を入れ直し、フックを据え置いた）ときは、`lefthook.yml` に足しても動かない。`AskUserQuestion` で、次のどちらにするかを聞く。
+
+| 選択肢 | 扱い |
+| --- | --- |
+| `lefthook.yml` に足す（推奨） | 下の YAML を足す。フックを今の形にするため、手順 10 で `/project:init-repo` を実行し、`post-edit-lint.sh` を上書きするよう伝える |
+| 古い形のフックに足す | 下の bash のブロックを、上の表の古い形の行に従って足す |
+
+`lefthook.yml` に足す定義。検査するのは、`phpcs.xml.dist` の `<file>` と同じく、テーマと mu-plugins だけにする。`{staged_files}` は `root` からの相対パスになり、`glob` はリポジトリのルートから数える。
+
+```yaml
+phpcs:
+  priority: 2
+  root: "wordpress/"
+  glob: "wordpress/wp-content/{themes,mu-plugins}/*.php"
+  run: '[ -x vendor/bin/phpcs ] || exit 0; ./vendor/bin/phpcs -q {staged_files}'
+```
+
+古い形の `post-edit-lint.sh` に足すブロック。
 
 ```bash
 # PHP: phpcs（WordPress のコーディング規約）。設定は PHP_LINT_DIR の phpcs.xml.dist
@@ -214,15 +251,17 @@ case "$file_path" in
 esac
 ```
 
-足す場所は、フックの形で決める。
+#### Docker の検出
 
-| フックの形 | 足す場所 |
-| --- | --- |
-| `[ -d "$LINT_DIR/node_modules/.bin" ] \|\| finish` の行がある（古い `init-repo` の形） | その行より前。後ろに足すと、Node を使わないリポジトリでブロックまで届かないため |
-| 上の行が無く、`# --- 言語別チェック` の区切りがある | 区切りのすぐ後ろ |
-| `report`・`finish` を使っていない（`init-repo` 以外の形） | 書き換えず、上のブロックを示して、利用者に足し方を決めてもらう |
+Docker の雛形を入れた、またはローカル環境のファイルがあり（手順 1）、`.claude/hooks/guard-destructive.sh` の `patterns` に `docker compose down` の行が無ければ、次の行を `patterns` に足す案を差分で示し、承認を得てから足す。`docker compose down -v` は、DB のデータを入れた volume まで消すため。
 
-フックが無い場合は、手順 10 で、`/project:init-repo` で入れられることを伝える。
+```bash
+# コンテナと named volume を削除する。DB のデータが消えると、サイトの全コンテンツが失われる
+'docker[[:space:]]+compose[[:space:]]+down[[:space:]].*-v'
+'docker-compose[[:space:]]+down[[:space:]].*-v'
+```
+
+`lefthook.yml`・`post-edit-lint.sh`・`guard-destructive.sh` が無い場合は、手順 10 で、`/project:init-repo` で入れられることを伝える。
 
 ### 9. Lint の規則を決めた理由を ADR に足す
 
@@ -235,7 +274,7 @@ esac
 
 ### 10. 導入後にやることを伝える
 
-コピーが終わったら、次を残作業としてユーザーに提示する。済んでいる項目は省く。コマンドは人が実行する。
+コピーが終わったら、次を残作業としてユーザーに提示する。済んでいる項目は省く。コマンドは人が実行する。最後に、手順 3 と同じテンプレートのリンクを添える。
 
 1. `wordpress/` で `composer install` を実行し、`composer lint` で検査できることを確かめる
 1. `style.css` の `Description`・`Requires at least`・`Requires PHP`、`phpcs.xml.dist` の `testVersion`・`minimum_wp_version`、`compose.yaml` のイメージのタグを、本番の WordPress・PHP・DB の版に合わせる
@@ -254,7 +293,8 @@ esac
 
 1. Docker の雛形を入れなかった場合は、WordPress を動かす環境でテーマを有効にする。ローカル環境を作るときは、規約の「ローカル環境」に沿う
 1. `CLAUDE.md` があれば、「ディレクトリ」に `wordpress/` を足し、「反映されない」と判断する前の配信経路に、有効なテーマとマウント元（`wordpress/compose.yaml` など）を書く。ルートの `README.md` から `wordpress/README.md` へ案内する
-1. 手順 8 でフックに足さなかった場合は、PHP の Lint をフックで動かすかを決める
+1. 手順 8 でフックに足さなかった場合は、PHP の Lint と Docker の検出をフックで動かすかを決める
+1. 手順 8 で、古い形のフックのまま `lefthook.yml` に足した場合は、`/project:init-repo` を実行して `post-edit-lint.sh` を上書きする。上書きするまで、足した定義は動かない
 1. 手順 9 で ADR の一覧が無かった場合は、足した ADR を一覧に載せるかを決める
 1. プラグインを Git で管理している場合は、`.gitignore` と規約のプラグインの行を、管理する前提に直したことを伝える
 

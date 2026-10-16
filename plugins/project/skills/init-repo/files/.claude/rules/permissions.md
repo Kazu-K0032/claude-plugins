@@ -47,6 +47,7 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 - 外すと、Claude もその操作をできるようになる。削除・コミット・push の deny を外す前に、利用者に確かめる
 - 実行前の確認（許可プロンプト）を減らしたいだけなら、deny は変えず、`.claude/settings.local.json` の `permissions.allow` に足す
 - 秘匿ファイルの deny（`Read(./.env)` など）は、このリポジトリの秘匿ファイルの置き場所に合わせて足す
+- Terraform の秘匿ファイル（変数の値・state など）の deny は、`/project:terraform` が足す
 - deny は、ルールの形に当たるコマンドしか止められない（例：`bash -c 'rm …'` は止まらない）。deny で止まらない操作も、この線引きに従う
 
 ## フックを配線する場合
@@ -54,4 +55,5 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 - `guard-git-write.sh` は、`git commit`・`git push` と、`gh` での Issue・PR などの作成・更新・クローズ・マージ・削除を止める。既定では `settings.json` に登録していない
 - 登録すると、Issue・PR の作成・更新も止まり、それを使うスキル（`/aidd:issue-start` など）が途中で止まる。登録するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - `guard-destructive.sh` は、破壊的なコマンドを見つけて承認を求める。このプロジェクト固有の破壊的な操作は、`patterns` に足す
+- `post-edit-lint.sh` は、編集したファイルに `lefthook.yml` の `claude-edit` をかける。`lefthook run` は既定で `.git/` の下を書き換えるため、`--no-auto-install` を付けて呼ぶ。外さない
 - `guard-terraform.sh`（`/project:terraform` が配る）は、Claude が Terraform でインフラや state を変えるコマンドを止める。反映は人が行うため

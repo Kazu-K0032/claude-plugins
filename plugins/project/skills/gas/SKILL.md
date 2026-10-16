@@ -26,7 +26,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 - リポジトリの**ルート**で実行すること（サブディレクトリで実行するとスクリプトが停止する）
 - `git` / `bash` が利用可能であること
 - 導入後の push には Node.js と [clasp](https://github.com/google/clasp) が要る（このスキル自体は clasp を使わない）
-- `.claude/settings.json`・`CLAUDE.md` などの土台も要るなら、先に `/project:init-repo` を実行しておく（必須ではない）
+- `.claude/settings.json`・`CLAUDE.md` などの土台（`/project:init-repo`）は必須ではない。無ければ手順 1 で、先に入れるかを聞く
 - 既存の Apps Script プロジェクトにつながっている場合は、手元のコードがスクリプトエディタ側と揃っていること。エディタで直接直した内容が手元に無いまま構成を変えて `clasp push` すると、エディタ側の変更が消える。揃っているか分からなければ、始める前に `clasp pull` で取り込んでおく（このスキルは clasp を実行しないため、ユーザーが行う）
 
 ## 引数の解釈
@@ -44,6 +44,13 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 ## 手順
 
 ### 1. 現状を確認する
+
+最初に、土台の `.claude/settings.json` があるかを Glob で確かめる。無ければ、`AskUserQuestion` で聞く。
+
+| 選択肢 | 次の動き |
+| --- | --- |
+| 先に init-repo を実行する（推奨） | ここで止め、`/project:init-repo` を実行してから `/project:gas` を呼び直すよう案内する。どちらも Claude からは呼べないため、利用者が実行する |
+| このまま進める | 次の影響を伝えて続ける。このスキルの動きは変わらないが、秘匿ファイルの deny・破壊的な操作を止めるフック・`CLAUDE.md` などの土台は入らない |
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill gas --check
@@ -71,6 +78,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill gas --check
 ### 2. 導入計画を提示して承認を得る（必須）
 
 `--check` の結果を、新規作成するファイル（`NEW`）・既存のまま残すファイル（`SAME`）・衝突していて判断が要るファイル（`DIFF`）に分けて提示する。既存の GAS コードがある場合は、手順 1 で選んでもらった方針と、手順 6 で振り分けを行うことも併せて示す。方針 A では、移すファイルの一覧も示す。
+
+テンプレートの中身を確かめられるよう、`https://github.com/Kazu-K0032/claude-plugins/tree/v<版>/plugins/project/skills/gas/files` も示す。`<版>` は `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` にする。入れている版と同じ中身を見せるため。リリース前の版ではタグが無く、開けない。
 
 `.clasp.json` に `scriptId` が入っている（既存の Apps Script プロジェクトにつながっている）場合は、承認を求める前に、手元のコードがスクリプトエディタ側と揃っているか（前提条件）をユーザーに確認する。揃っているか分からない場合は、`clasp pull` で取り込んでもらってから手順 1 をやり直す。
 
@@ -169,7 +178,7 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/gas/files/<同じ相�
 
 ### 8. 導入後にやることを伝える
 
-コピーが終わったら、次を残作業としてユーザーに提示する。既存のプロジェクトで済んでいる項目は省く。
+コピーが終わったら、次を残作業としてユーザーに提示する。既存のプロジェクトで済んでいる項目は省く。最後に、手順 2 と同じテンプレートのリンクを添える。
 
 1. clasp を入れてログインする（`npm install -g @google/clasp` → `clasp login`）。初回は [Apps Script のユーザー設定](https://script.google.com/home/usersettings) で Google Apps Script API を有効にする
 1. Apps Script のプロジェクトを用意し、エディタの「プロジェクトの設定」にあるスクリプト ID を `.clasp.json` の `scriptId` に書き込む

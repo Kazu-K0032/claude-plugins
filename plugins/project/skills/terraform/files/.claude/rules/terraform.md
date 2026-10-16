@@ -69,7 +69,8 @@ docs-type: people-ai-doc
 | 操作 | 誰が行うか |
 | --- | --- |
 | `terraform fmt`・`terraform validate`・`terraform init`・`terraform plan -out=tfplan` | Claude も行ってよい |
-| `terraform apply tfplan`・`destroy`・`import`・`refresh`・`taint`・`untaint`・`force-unlock`・`test`（本物のリソースを作る）・`state` の書き換え（`push`・`rm`・`mv`・`replace-provider`）・state を移す `init`（`-migrate-state`・`-force-copy`） | 人が行う |
+| `terraform workspace select`（workspace で環境を分けている既存の構成） | Claude も行ってよい。切り替える前に承認を得る |
+| `terraform apply tfplan`・`destroy`・`import`・`refresh`・`taint`・`untaint`・`force-unlock`・`test`（本物のリソースを作る）・`state` の書き換え（`push`・`rm`・`mv`・`replace-provider`）・`workspace delete`・state を移す `init`（`-migrate-state`・`-force-copy`） | 人が行う |
 
 - plan は `-out=tfplan` で保存し、apply は保存した plan ファイルだけを渡す。人が確かめた内容だけを反映するため
 - Claude は plan の結果（作る・変える・消すリソース）を示して、人に apply を頼む。消える・作り直されるリソースは、特に目立たせる

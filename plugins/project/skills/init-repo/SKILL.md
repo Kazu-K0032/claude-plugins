@@ -1,9 +1,9 @@
 ---
 name: init-repo
-description: リポジトリに Claude Code のハーネス設定（.claude/settings.json・hooks・rules）と GitHub の定型ファイル（.github/）、エディタ設定（.vscode/）・スペルチェックの設定（cspell.json）・.gitignore、CLAUDE.md / README.md の骨組みを導入する。新しいリポジトリを立ち上げる時、または既存リポジトリへ規約一式を後から入れる時に使用する
+description: リポジトリに Claude Code のハーネス設定（.claude/settings.json・hooks・rules）と GitHub の定型ファイル（.github/）、エディタ設定（.vscode/）・スペルチェックの設定（cspell.json）・Lint と整形のツールの定義（lefthook.yml）・.gitignore、CLAUDE.md / README.md の骨組みを導入する。新しいリポジトリを立ち上げる時、または既存リポジトリへ規約一式を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(gh issue view:*), Bash(gh pr view:*)
-argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象。例: .github だけ / 必要なものだけ / 既存は置き換えない / docs/spec.md の要件を満たす最小限）]"
+argument-hint: "[導入する範囲・既存ファイルの扱い・Lint と整形のツール（任意。省略時はテンプレート全体が対象で、ツールは既存の設定を探し、無ければ聞く。例: .github だけ / 必要なものだけ / 既存は置き換えない / 整形は oxfmt）]"
 ---
 
 # リポジトリ初期セットアップ（init-repo）
@@ -25,13 +25,15 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 - リポジトリの**ルート**で実行すること（サブディレクトリで実行するとスクリプトが停止する）
 - `git` / `bash` が利用可能であること
 - 導入するフックは実行時に [`jq`](https://jqlang.org/) を使う。未インストールの環境ではフックが失敗する
+- 編集後の Lint・整形は [lefthook](https://lefthook.dev/)（1.6.11 以降）で動かす。未インストールの環境では、フックは何もしない
 
 ## 引数の解釈
 
-引数は「どのファイルを入れるか」の指定として読む。省略時はテンプレート全体が対象。指定は次の 2 種類を組み合わせられる（例：`必要なものだけ・既存は置き換えない`）。
+引数は「どのファイルを入れるか」の指定として読む。省略時はテンプレート全体が対象。指定は次の 3 種類を組み合わせられる（例：`必要なものだけ・既存は置き換えない`）。
 
 - **範囲の指定**：どのファイルを候補にするか（パス指定・必要性の判定・要件からの逆算）
 - **既存物の扱い**：既にあるものをどうするか
+- **ツールの指定**：Lint・整形に使うツール（例：`整形は oxfmt`）。手順 5 で使う
 
 迷う指定は、対象ファイルの一覧を見せて確認する。
 
@@ -70,7 +72,8 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | --- | --- | --- | --- |
 | `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・コミット / push・削除・権限の変更・深刻な外部操作の deny）・フックの配線と、Python のキャッシュを作らない環境変数 | Claude Code を使う（常に該当） | `.claude/settings.json` |
 | `.claude/hooks/guard-destructive.sh` | 破壊的コマンドの承認エスカレーション | `settings.json` を入れる | 既存の PreToolUse フック |
-| `.claude/hooks/post-edit-lint.sh` | 編集後の Lint | Lint ツールがある（`package.json` の `lint` スクリプト・`ruff`・`golangci-lint` 等） | 既存の PostToolUse フック・lint-staged |
+| `.claude/hooks/post-edit-lint.sh` | 編集後の Lint・整形（推論と機械の検査の分担） | ソースコードがある | 既存の PostToolUse フック |
+| `lefthook.yml` | Lint・整形のツールの定義（`post-edit-lint.sh` が使う） | `post-edit-lint.sh` を入れる | `lefthook.yml`・`lefthook.yaml`・`.lefthook.yml`・`.lefthook.yaml`（`claude-edit` を足す） |
 | `.claude/hooks/session-start.sh` | セッション開始時の運用ルール通知 | `settings.json` を入れる | 既存の SessionStart フック |
 | `.claude/hooks/guard-git-write.sh` | ラッパー経由まで含めた git / gh 書き込みの遮断 | 要件に明記がある場合のみ（既定では未配線） | 同等の PreToolUse フック |
 | `.claude/rules/comment.md` | コメントの書き方の規約 | ソースコードがある | `CLAUDE.md`・`.claude/rules/` 内のコメント規約 |
@@ -100,10 +103,11 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 一方だけ入れると動かない組み合わせ。範囲を絞ったときも、片方を入れるならもう片方も入れる（既にあればよい）。
 
 - `.claude/settings.json` は `guard-destructive.sh`・`post-edit-lint.sh`・`session-start.sh` を呼ぶ。フックを外す場合は、`settings.json` の該当の `hooks` 定義も外す必要があるため、計画で明示する
+- `.claude/hooks/post-edit-lint.sh` は `lefthook.yml` の `claude-edit` を動かす。`lefthook.yml` が無いと、何もしない
 - `.github/workflows/sync-labels.yml` は `.github/labels.yml` を読む
 - `.claude/rules/tmp-output.md` は、`.gitignore` の `tmp/` を前提にする。`tmp/` が除外されていないと、作業ファイルがコミットに混ざる
 - `CLAUDE.md` の `@docs/adr/README.md` と `.claude/rules/adr.md` は、`docs/adr/README.md` を読む。入れないときは、取り込みの行と `adr.md` も外す。ADR を別の場所（`doc/adr/`・`docs/decisions/` など）に置いているときは、取り込みの行と `adr.md` のパスをその場所に直す
-- `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`tfstate` 等）も誤字として出て、PR のチェックが落ちる
+- `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`ssot` 等）も誤字として出て、PR のチェックが落ちる
 - Issue テンプレートの `labels:` は `labels.yml` のラベルを前提にしている
 
 ## 手順
@@ -136,7 +140,11 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --check
 
 `commitlint.config.mjs` は `NEW` でも、ほかの commitlint の設定（`commitlint.config.*`・`.commitlintrc*`・`package.json` の `commitlint` キー）があれば入れない。前の版の `init-repo` が配った `commitlint.config.js` もこれに当たる。設定が 2 つあると、どちらが読まれるか分かりにくいため。手順 3 では `--only` でこのファイルを外してコピーする。
 
+`lefthook.yml` も `NEW` でも、別名の設定（`lefthook.yaml`・`.lefthook.yml`・`.lefthook.yaml`）があれば入れない。両方あると lefthook は `lefthook.yml` だけを読み、既存の設定の検査が黙って止まるため。手順 3 では `--only` でこのファイルを外してコピーし、手順 5 で既存の設定に `claude-edit` を足す。
+
 ユーザーが一部だけを希望した場合は、`--only` で対象を絞る（手順 3）。
+
+テンプレートの中身を確かめられるよう、`https://github.com/Kazu-K0032/claude-plugins/tree/v<版>/plugins/project/skills/init-repo/files` も示す。`<版>` は `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` にする。入れている版と同じ中身を見せるため。リリース前の版ではタグが無く、開けない。
 
 ### 3. コピーする
 
@@ -171,6 +179,7 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/<同�
 | `.vscode/settings.json` / `.vscode/extensions.json` | 既存のキー・配列要素は残し、無いものだけを足す。JSONC（コメント・末尾カンマ）を壊さない。既存の `cSpell.words` は cspell の CLI が読まないため、`cspell.json` の `words` へ移すことを提案する |
 | `cspell.json` | 既存のキー・`words` の語は残し、無いものだけを足す |
 | `.claude/settings.json` | 既存のキー・配列要素は残し、無いものだけを足す。`env` の `PYTHONDONTWRITEBYTECODE` も足す |
+| `lefthook.yml` | 既存のフック（`pre-commit` など）は残し、`claude-edit` が無ければ足す。名前の違う設定（`.lefthook.yml` など）があれば、そちらに足す |
 
 #### README.md を案内板にする
 
@@ -180,9 +189,9 @@ README は「どこに何があるか」を示す案内板として扱う（`.cl
 2. ユーザーの承認を得てから、本文を移動先へそのまま移す（要約・削除しない）。移動先のサブディレクトリを新しく作る場合は、同時にその `README.md`（案内板）も置く
 3. ルートの `README.md` はテンプレートの構成に合わせる。移した本文へのリンクは、ルートではなく移動先の案内板（`docs/README.md` やサブディレクトリの `README.md`）に置き、ルートからは `docs/README.md` だけを案内する。概要（1〜2 行）・各環境のリンク・外部リンクなど、リンク集として残せる情報はそのまま残す
 
-### 5. エディタ設定とスペルチェックの除外語を調整する
+### 5. エディタ設定・Lint と整形のツール・スペルチェックの除外語を調整する
 
-`.vscode/` や `cspell.json` を導入した（または既にある）場合は、プロジェクトに合わせて中身を提案する。どちらも**一覧を見せて承認を得てから**書き込む。
+`.vscode/`・`cspell.json`・`lefthook.yml` を導入した（または既にある）場合は、プロジェクトに合わせて中身を提案する。どれも**一覧を見せて承認を得てから**書き込む。
 
 #### 推奨拡張機能（`.vscode/extensions.json`）
 
@@ -199,15 +208,47 @@ README は「どこに何があるか」を示す案内板として扱う（`.cl
 
 表にない技術は、公式に推奨されている拡張機能を調べてから提案する。拡張機能 ID の推測で書かない。
 
+#### Lint と整形のツール（`lefthook.yml` の `claude-edit`）
+
+土台が持つのは、推論（Claude）と機械の検査を分ける仕組みだけである。どのツールを使うかはプロジェクトが決めるため、次の順で決めて `claude-edit` の `commands` に足す。別名の設定（`.lefthook.yml` など）を使っているときは、そのファイルに足す。`claude-edit` が無ければ、`piped: true` と一緒に定義ごと足す。
+
+1. 引数でツールを指定されていれば、それを使う
+1. 指定が無ければ、既存の設定を Glob で探す（例：`biome.json`・`.oxlintrc.json`・`eslint.config.*`・`.prettierrc*`・`ruff.toml`・`pyproject.toml`・`.golangci.*`、`package.json` の `scripts` の `lint`・`format`）。あれば、それを使う
+1. どちらも無ければ、`AskUserQuestion` で候補を出す。「使わない」も選択肢に入れる。候補は、公式の文書で今の状態（安定版か・最新の版）を確かめてから出す。状態や版を推測で書かない。JS/TS の例：整形は oxfmt（ベータ）、Lint は oxlint、両方を 1 つで扱う Biome
+
+`commands` は次の決まりで書く。
+
+- 整形のツールはファイルを書き換える形にし、`priority: 1` にする。Lint のツールは、警告でも 0 以外で終える形（例：oxlint の `--deny-warnings`）にし、`priority: 2` にする。失敗した結果だけが Claude に返る
+- ツールが入っていないときは黙って飛ばす。`npm` で入れたツールは PATH に無いため、`node_modules/.bin/` の下を指す
+- `run` に二重引用符を書かない。Windows では、二重引用符を含むコマンドが崩れる。全体を単一引用符で囲む
+- ツールの置き場所がルートでないときは、`root` にそのディレクトリを書く。`{staged_files}` は `root` からの相対パスになる。`glob` は `root` に関係なく、リポジトリのルートから数える
+
+```yaml
+claude-edit:
+  piped: true
+  commands:
+    format:
+      priority: 1
+      glob: "*.{js,jsx,ts,tsx}"
+      run: '[ -x node_modules/.bin/oxfmt ] || exit 0; node_modules/.bin/oxfmt {staged_files}'
+    lint:
+      priority: 2
+      glob: "*.{js,jsx,ts,tsx}"
+      run: '[ -x node_modules/.bin/oxlint ] || exit 0; node_modules/.bin/oxlint --deny-warnings {staged_files}'
+```
+
+ツールの導入（`npm install` など）は人が行う。手順 6 で伝える。
+
 #### スペルチェックの除外語（`cspell.json` の `words`）
 
-除外語は `.vscode/settings.json` の `cSpell.words` ではなく `cspell.json` に置く。VS Code の拡張機能と cspell の CLI（`pr-checks.yml` のスペルチェック）の両方が読むのは `cspell.json` だけのため。テンプレート自身が使う語（`aidd`・`tfstate` 等）は登録済み。
+除外語は `.vscode/settings.json` の `cSpell.words` ではなく `cspell.json` に置く。VS Code の拡張機能と cspell の CLI（`pr-checks.yml` のスペルチェック）の両方が読むのは `cspell.json` だけのため。テンプレート自身が使う語（`aidd`・`ssot` 等）は登録済み。
 
 次から固有名詞・技術用語の候補を集め、重複を除いて小文字で並べる。
 
 - `package.json` などの依存パッケージ名・プロジェクト名
 - ルート直下のディレクトリ名・主要なファイル名
 - `README.md` / `CLAUDE.md` / `docs/` に出てくるサービス名・製品名・略語
+- 上の小節で `lefthook.yml` に書いたツール名・オプション（PR のスペルチェックは `lefthook.yml` も検査する）
 
 `npx` が使える環境では、次の結果も候補に加えてよい（初回はパッケージの取得が走る）。
 
@@ -222,17 +263,26 @@ npx --yes cspell@9.8.0 lint --no-progress --words-only --unique --dot --gitignor
 
 ### 6. 導入後にやることを伝える
 
-コピーが終わったら、次を残作業としてユーザーに提示する。
+コピーが終わったら、次を残作業としてユーザーに提示する。最後に、手順 2 と同じテンプレートのリンクを添える。
 
 1. `CLAUDE.md` / `README.md` / `.claude/rules/env.md` の `TODO:` 行を、このリポジトリの実態に書き換える（埋めたら行ごと削除する）
 2. `.claude/settings.json` の `permissions.deny` を、このリポジトリの秘匿ファイル配置に合わせる
-3. `.claude/hooks/post-edit-lint.sh` 冒頭の `LINT_DIR` / `TARGET_PREFIX` を、lint ツールの置き場所に合わせる
+3. lefthook（1.6.11 以降）と、手順 5 で `lefthook.yml` に書いたツールを入れる。lefthook は npm・Homebrew・winget などで入る（[導入の方法](https://lefthook.dev/install/)）。npm で入れると、Git のフックも入る。検査の対象を絞るときは、`.claude/hooks/post-edit-lint.sh` 冒頭の `TARGET_PREFIX` を直す
 4. `.claude/hooks/guard-destructive.sh` の `patterns` に、このプロジェクト固有の破壊的操作（クラウド CLI の削除系・本番ホストへの接続等）を追記する
-5. `commitlint.config.mjs` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`commit-msg` フックから呼ぶ
+5. `commitlint.config.mjs` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`commit-msg` フックから呼ぶ（`lefthook.yml` の `commit-msg` に書ける）
 6. `.github/workflows/` には「シークレットスキャン」「スペルチェック」「ラベル同期」しか入っていない。ビルド・テストの CI はプロジェクト側で作る
 7. Issue テンプレートを入れたら、`.github/ISSUE_TEMPLATE/release.yml` の「事前確認」と「リリース手順」を、このリポジトリのデプロイの方式に合わせる。テンプレートは、検証環境があり、リリース用ブランチへのマージでデプロイワークフローが動く構成を前提にしている（例：`main` へのマージでホスティングが自動でデプロイするなら、リリース用ブランチとデプロイワークフローの行をその方式の手順に置き換える）
 
 `guard-git-write.sh` は配線していない。`git commit` / `git push` をラッパースクリプト経由まで含めて塞ぎたい場合のみ、`settings.json` の `PreToolUse` に追加するよう案内する。
+
+### 7. 続けて使うスキルを聞く
+
+ここまでは技術に依らない土台である。言語・インフラの構成と規約は、技術スタック別のスキル（このプラグインの `init-repo` 以外のスキル）が入れる。そのため、続けて使うスキルを聞く。引数がパス指定（`.github だけ` など）のときは、土台の一部を足す実行のため、聞かずに終える。
+
+1. `${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md` を Glob し、`init-repo` 以外の frontmatter の `name`・`description` を読む。スキルの一覧はこの本文に書かない。スキルが増えても古くならないようにするため
+1. `description` が対象にする技術と、リポジトリのファイル（例：`*.tf`・`.clasp.json`・`wp-content/`）から、当てはまるスキルを判定する
+1. `AskUserQuestion`（`multiSelect: true`）で聞く。選択肢はスキルと「使わない」にし、当てはまるスキルを先頭に置いてラベルに「（推奨）」を付ける。1 問の選択肢は 4 つまでのため、スキルが 3 つを超えたら問いを分ける
+1. 選ばれたスキルのコマンド（`/project:<name>`）を、貼れる形で並べて示す。技術スタック別のスキルは手動でのみ呼ぶ設計（`disable-model-invocation: true`）のため、Claude は実行しない
 
 ## 禁止事項
 

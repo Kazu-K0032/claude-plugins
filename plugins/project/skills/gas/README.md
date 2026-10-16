@@ -6,7 +6,7 @@ Google Apps Script（GAS）のリポジトリへ「clasp で push する `src/` 
 
 ## 使い方
 
-導入先のリポジトリのルートで Claude Code を開き、次を実行する。`.claude/settings.json`・`CLAUDE.md` などの土台も要るなら、先に `/project:init-repo` を実行しておく。
+導入先のリポジトリのルートで Claude Code を開き、次を実行する。`.claude/settings.json`（土台）が無ければ、先に `/project:init-repo` を実行するかを Skill が聞く。
 
 ```text
 /project:gas
