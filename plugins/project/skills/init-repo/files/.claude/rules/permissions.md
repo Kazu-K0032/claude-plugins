@@ -55,4 +55,5 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 - `guard-git-write.sh` は、`git commit`・`git push` と、`gh` での Issue・PR などの作成・更新・クローズ・マージ・削除を止める。既定では `settings.json` に登録していない
 - 登録すると、Issue・PR の作成・更新も止まり、それを使うスキル（`/aidd:issue-start` など）が途中で止まる。登録するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - `guard-destructive.sh` は、破壊的なコマンドを見つけて承認を求める。このプロジェクト固有の破壊的な操作は、`patterns` に足す
+- `post-edit-lint.sh` は、編集したファイルに `lefthook.yml` の `claude-edit` をかける。`lefthook run` は既定で `.git/` の下を書き換えるため、`--no-auto-install` を付けて呼ぶ。外さない
 - `guard-terraform.sh`（`/project:terraform` が配る）は、Claude が Terraform でインフラや state を変えるコマンドを止める。反映は人が行うため
