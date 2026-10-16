@@ -82,6 +82,7 @@ config/
 
 - **スクリプトは Node.js で書き、外部パッケージを使わない**。ステータスラインは描画のたびに実行されるため、`jq` のような追加ツールに頼らず、Windows・macOS・Linux で同じように動くようにする。mod だけは例外で、Claude Code 自身の環境（Node.js も DOM も無い）で動く TypeScript で書く
 - **mod は config から直接読み込まず、スキルでコピーして入れる**。config を入れた全員に、既定で ON の指示がプロンプトのたびに足されるのを避け、使いたい人だけが入れられるようにする。読み込みは `~/.claude/settings.json` の `env.CLAUDE_CODE_PLUGIN_DIRS` で行い、プラグインの更新後は `/config:mod-output-customize` を再実行してコピーし直す（ステータスラインと同じ）
+- **スキルの手順書へのリンクは、mod で出す**。フックの `systemMessage` はリンクの書式を受け付けず、長い URL がそのまま出るため、mod の `ui.render` でテキストリンクとして描く。リンク先は、入れているプラグインの版のタグ（`~/.claude/plugins/installed_plugins.json` の版から作る）。タグはリリースで作られるため、版を上げてもリリース前は開けない。同じプラグインの記録が複数あって動いている版を選べないとき、手元に `SKILL.md` が無い workflow（`pr-review` など）は、リンクを出さない。止めるボタンは付けない（要らなければ mod を外す）
 - **ステータスラインのスクリプトは `~/.claude/` へコピーして使う**。プラグインは `statusLine` を設定できず、ユーザーの `settings.json` では `${CLAUDE_PLUGIN_ROOT}` が展開されないため。プラグインの更新後は `/config:setup-global` を再実行してコピーし直す
 - **既存の設定は承認なしに上書きしない**（[P1](../../docs/policies/p01-operation-boundary.md)）。`setup-global` は変更前後の値を表で見せてから書き込む
 - **`conflicts` は読み取り専用**。修正案は出すが、設定ファイルは書き換えない。`~/.claude.json` は認証情報を含むため、スクリプトが MCP の起動方法だけを抜き出して渡す

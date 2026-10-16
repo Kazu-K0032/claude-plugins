@@ -1,4 +1,5 @@
 import { expect, test } from 'claude-code/testing'
+import type { TestBody } from 'claude-code/testing'
 
 import { calledSkillName, parseInstalls, skillLink, typedSkillName } from '../hooks/skill-link'
 
@@ -24,8 +25,11 @@ const INSTALLED = JSON.stringify({
 /** 印の無い、Claude の返事の行 */
 const REPLY = { text: '何を調べますか？', isFirstOfReply: true } as const
 
-type Engine = Parameters<Parameters<typeof test>[1]>[0]
-type Hooks = Parameters<Parameters<typeof test>[1]>[1]
+type Engine = Parameters<TestBody>[0]
+type Hooks = Parameters<TestBody>[1]
+
+/** セッションの作業ディレクトリ */
+const CWD = 'C:\\work\\repo'
 
 /**
  * エンジンの描く行・版の記録の読み取り・端末への描画を、テストの側で用意する。手元の SKILL.md は、workflow の pr-review にだけ無い
@@ -38,6 +42,7 @@ function stand(on: Hooks, installed: string | null = INSTALLED) {
     return <Text>engine row</Text>
   })
   on('session.surfaces', () => ({ value: ['terminal'] }))
+  on('session.cwd', () => ({ value: CWD }))
   on('env.get', () => ({ value: 'C:\\Users\\tester' }))
   on('fs.read', () => (installed === null ? { deny: 'no file' } : { value: installed }))
   on('fs.exists', (_$, e) => ({ value: /[\\/]SKILL\.md$/.test(e.path) && !/[\\/]pr-review[\\/]/.test(e.path) }))
@@ -64,15 +69,39 @@ function typed(text: string) {
 }
 
 test('版の記録から、このマーケットプレイスのプラグインの版と置き場所だけを読む', () => {
-  expect(parseInstalls(INSTALLED)).toEqual({
+  expect(parseInstalls(INSTALLED, CWD)).toEqual({
     aidd: { version: '1.1.0', path: AIDD_PATH },
     config: { version: '1.1.0', path: 'C:\\config' },
   })
-  expect(parseInstalls('{}')).toEqual({})
+  expect(parseInstalls('{}', CWD)).toEqual({})
+})
+
+test('同じプラグインの記録が複数あるとき、動いている版を選べなければ選ばない', () => {
+  const record = (scope: string, version: string, projectPath?: string) => ({
+    scope,
+    version,
+    installPath: `C:\\cache\\aidd\\${version}`,
+    ...(projectPath === undefined ? {} : { projectPath }),
+  })
+  const read = (records: object[], cwd = CWD) =>
+    parseInstalls(JSON.stringify({ plugins: { 'aidd@kazu': records } }), cwd).aidd?.version
+
+  // 版が同じなら、記録が 2 件でも 1 通り。場所の書き方が違っても同じ
+  expect(read([record('project', '1.1.0', 'C:/work/repo'), record('project', '1.1.0', 'C:\\work\\repo\\')])).toBe('1.1.0')
+  // 版が違うとき、作業ディレクトリが別のプロジェクトの記録は除く
+  expect(read([record('user', '1.1.0'), record('project', '1.0.0', 'C:\\other')])).toBe('1.1.0')
+  // 作業ディレクトリがプロジェクトの中でも、同じ。大文字・小文字は区別しない
+  expect(read([record('project', '1.0.0', 'c:\\WORK'), record('project', '1.1.0', 'C:\\other')], 'C:\\work\\repo')).toBe('1.0.0')
+  // 全体向けと、今のプロジェクト向けで版が違うときは、選べない
+  expect(read([record('user', '1.1.0'), record('project', '1.0.0', 'C:\\work\\repo')])).toBeUndefined()
+  // どこのものか分からない記録（projectPath が無い project・local）しか無いときも、選べない
+  expect(read([record('project', '1.0.0'), record('local', '1.1.0')])).toBeUndefined()
+  // 部分的に同じ名前のフォルダは、含まれるとみなさない
+  expect(read([record('user', '1.1.0'), record('local', '1.0.0', 'C:\\work\\rep')])).toBe('1.1.0')
 })
 
 test('このマーケットプレイスのスキルで、版が分かるときだけリンクを作る', () => {
-  const installs = parseInstalls(INSTALLED)
+  const installs = parseInstalls(INSTALLED, CWD)
 
   expect(skillLink('aidd:commit', installs)).toEqual({
     name: 'aidd:commit',
@@ -90,6 +119,8 @@ test('打った行と Skill ツールの入力から、スキルの名前を取�
   expect(typedSkillName('/compact')).toBe(undefined)
   expect(typedSkillName('aidd:commit を実行して')).toBe(undefined)
   expect(calledSkillName('Skill', { skill: 'aidd:adr', args: '' })).toBe('aidd:adr')
+  expect(calledSkillName('Skill', { skill: '/aidd:adr' })).toBe('aidd:adr')
+  expect(calledSkillName('Skill', null)).toBe(undefined)
   expect(calledSkillName('Bash', { skill: 'aidd:adr' })).toBe(undefined)
 })
 
@@ -187,12 +218,29 @@ test('印のある返事でも、色分けした行の上にリンクを付け�
   await row.unmount()
 })
 
-test('版の記録を読めないときは、何も付けず、行はそのまま描く', async ($, on) => {
-  stand(on, null)
-  await $.prompt.submit(typed('/aidd:research'))
+test('Skill ツールの入力の先頭に / が付いていても、同じスキルとして付ける', async ($, on) => {
+  stand(on)
+  const skill = { tool_use_id: 't1', tool: 'Skill', input: { skill: '/aidd:research' }, isRunning: false, isErrored: false, isInterrupted: false }
 
-  const row = await $.ui.mount({ plugin: 'mod-output-customize', surface: 'terminal', component: 'AssistantMessage', requestId: 'a1', props: REPLY })
-  expect(await row.findAll({ type: 'Link' })).toHaveLength(0)
-  expect(await row.find({ type: 'Text', text: 'engine row' })).not.toBeNull()
-  await row.unmount()
+  expect(await linksOf($, 'ToolUse', 't1', skill)).toEqual([RESEARCH])
 })
+
+/** 版の記録が使えないときの、記録の中身。null は読めない */
+const UNUSABLE_RECORDS: [string, string | null][] = [
+  ['読めない', null],
+  ['壊れている', '{ 壊れた記録'],
+  ['空の', '{}'],
+  ['形が違う', '{"plugins":{"aidd@kazu":"x"}}'],
+]
+
+for (const [label, installed] of UNUSABLE_RECORDS) {
+  test(`版の記録が${label}ときは、何も付けず、行はそのまま描く`, async ($, on) => {
+    stand(on, installed)
+    await $.prompt.submit(typed('/aidd:research'))
+
+    const row = await $.ui.mount({ plugin: 'mod-output-customize', surface: 'terminal', component: 'AssistantMessage', requestId: 'a1', props: REPLY })
+    expect(await row.findAll({ type: 'Link' })).toHaveLength(0)
+    expect(await row.find({ type: 'Text', text: 'engine row' })).not.toBeNull()
+    await row.unmount()
+  })
+}

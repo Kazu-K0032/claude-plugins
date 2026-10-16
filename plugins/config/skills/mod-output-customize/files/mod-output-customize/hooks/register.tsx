@@ -195,13 +195,13 @@ type LinkLookup = {
  * @param $ - フックが受け取った engine のインターフェース
  * @returns プラグイン名から版と置き場所への対応。記録を読めなければ null（次にスキルを実行したときに読み直す）
  */
-async function readInstalls($: Pick<CoreEngineInterface, 'env' | 'fs'>): Promise<Record<string, Install> | null> {
+async function readInstalls($: Pick<CoreEngineInterface, 'env' | 'fs' | 'session'>): Promise<Record<string, Install> | null> {
   try {
     const home = (await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME'))
     if (home === undefined) {
       return null
     }
-    return parseInstalls(await $.fs.read(`${home}/.claude/plugins/installed_plugins.json`))
+    return parseInstalls(await $.fs.read(`${home}/.claude/plugins/installed_plugins.json`), await $.session.cwd())
   } catch {
     return null
   }
@@ -215,7 +215,7 @@ async function readInstalls($: Pick<CoreEngineInterface, 'env' | 'fs'>): Promise
  * @returns リンク。このマーケットプレイスのスキルでないか、SKILL.md が無ければ null
  */
 async function lookUpSkillLink(
-  $: Pick<CoreEngineInterface, 'env' | 'fs'>,
+  $: Pick<CoreEngineInterface, 'env' | 'fs' | 'session'>,
   lookup: LinkLookup,
   name: string | undefined,
 ): Promise<SkillLink | null> {

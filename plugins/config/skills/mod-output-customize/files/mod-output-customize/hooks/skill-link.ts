@@ -19,18 +19,84 @@ export type Install = { version: string; path: string }
 /** スキルの名前と、その SKILL.md への GitHub のリンクと、手元の SKILL.md のパス */
 export type SkillLink = { name: string; url: string; file: string }
 
+/** installed_plugins.json の、1 つの入れ方の記録。projectPath は公式の文書に無いため、あれば使う */
+type InstallRecord = { scope?: unknown; installPath?: unknown; version?: unknown; projectPath?: unknown }
+
+/**
+ * パスを比べられる形にする。区切りを / にそろえ、末尾の / を外し、Windows のドライブ付きの名前は小文字にする
+ * @param path - 元のパス
+ * @returns そろえたパス
+ */
+function normalizePath(path: string): string {
+  const slashed = path.replace(/\\/g, '/').replace(/\/+$/, '')
+
+  return /^[A-Za-z]:/.test(slashed) ? slashed.toLowerCase() : slashed
+}
+
+/**
+ * 記録が、今の作業ディレクトリで効くものか。user は全体向けで、project・local は projectPath が作業ディレクトリを含むものだけ
+ * @param record - 入れ方の記録
+ * @param cwd - セッションの作業ディレクトリ
+ * @returns 効くなら true。project・local で projectPath が無ければ、どこのものか分からないので false
+ */
+function appliesTo(record: InstallRecord, cwd: string): boolean {
+  if (record.scope === 'user') {
+    return true
+  }
+  if (typeof record.projectPath !== 'string') {
+    return false
+  }
+  const root = normalizePath(record.projectPath)
+  const here = normalizePath(cwd)
+
+  return here === root || here.startsWith(`${root}/`)
+}
+
+/**
+ * 記録を、版と置き場所が同じものを 1 つにまとめた一覧にする
+ * @param records - 入れ方の記録
+ * @returns 版と置き場所が読める記録を、重ねずに並べた一覧
+ */
+function distinctInstalls(records: readonly InstallRecord[]): Install[] {
+  const found = new Map<string, Install>()
+  for (const { version, installPath } of records) {
+    if (typeof version === 'string' && typeof installPath === 'string') {
+      found.set(`${version}\n${installPath}`, { version, path: installPath })
+    }
+  }
+
+  return [...found.values()]
+}
+
+/**
+ * 同じプラグインの入れ方の記録から、動いているものを 1 つ選ぶ
+ * @param records - 入れ方の記録（user・project・local の範囲ごとに複数ありうる）
+ * @param cwd - セッションの作業ディレクトリ
+ * @returns 読める記録が 1 通りならそれ。複数あれば、今の作業ディレクトリで効くものが 1 通りのときだけそれ。選べなければ null
+ */
+function pickInstall(records: readonly InstallRecord[], cwd: string): Install | null {
+  const all = distinctInstalls(records)
+  if (all.length === 1) {
+    return all[0] ?? null
+  }
+  const applicable = distinctInstalls(records.filter(record => appliesTo(record, cwd)))
+
+  return applicable.length === 1 ? (applicable[0] ?? null) : null
+}
+
 /**
  * 入れたプラグインの記録から、aidd・config・project の版と置き場所を読む
  * @param json - ~/.claude/plugins/installed_plugins.json の中身
- * @returns プラグイン名から版と置き場所への対応。入っていないプラグインは含めない
+ * @param cwd - セッションの作業ディレクトリ。同じプラグインの記録が複数あるときに、どれが効くかを選ぶのに使う
+ * @returns プラグイン名から版と置き場所への対応。入っていないプラグインと、動いている版を選べないプラグインは含めない
  */
-export function parseInstalls(json: string): Record<string, Install> {
-  const records = (JSON.parse(json) as { plugins?: Record<string, { version?: unknown; installPath?: unknown }[]> }).plugins ?? {}
+export function parseInstalls(json: string, cwd: string): Record<string, Install> {
+  const records = (JSON.parse(json) as { plugins?: Record<string, InstallRecord[]> }).plugins ?? {}
   const installs: Record<string, Install> = {}
   for (const plugin of PLUGINS) {
-    const record = records[`${plugin}@${MARKETPLACE}`]?.[0]
-    if (typeof record?.version === 'string' && typeof record.installPath === 'string') {
-      installs[plugin] = { version: record.version, path: record.installPath }
+    const install = pickInstall(records[`${plugin}@${MARKETPLACE}`] ?? [], cwd)
+    if (install !== null) {
+      installs[plugin] = install
     }
   }
 
