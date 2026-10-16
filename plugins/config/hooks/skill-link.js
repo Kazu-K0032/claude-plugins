@@ -3,6 +3,7 @@
 //   利用者が /プラグイン名:スキル名 と入力したとき（UserPromptExpansion）と、Claude が Skill ツールで呼んだとき（PreToolUse）の両方で動く
 //   リンク先は、入れている版のタグ。plugin.json の version から v<版> を作る
 //   自分のプラグインのスキルでなければ、何も出さない（aidd・config・project に同じ内容を置き、それぞれが自分のスキルだけ扱う）
+//   <プラグイン名>:<スキル名> の形で呼ばれたものだけ扱う。接頭辞の無い名前は、利用者が自分で作ったスキルと見分けられないため
 // 仕様: https://code.claude.com/docs/ja/hooks
 // このファイルは 3 つのプラグインで同じ内容にする（.claude/rules/duplicated-files.md）。
 
@@ -41,15 +42,13 @@ function readInput() {
   }
 }
 
-// 呼ばれたスキルの名前と、その出どころ（分かるときだけ）を返す。スキルの呼び出しでなければ null
+// 呼ばれたスキルの名前を返す。スキルの呼び出しでなければ null
 function requestedSkill(input) {
   if (input.hook_event_name === 'UserPromptExpansion') {
-    if (input.expansion_type !== 'slash_command') return null;
-    return { name: String(input.command_name || ''), source: input.command_source };
+    return input.expansion_type === 'slash_command' ? String(input.command_name || '') : null;
   }
   if (input.hook_event_name === 'PreToolUse') {
-    if (input.tool_name !== 'Skill') return null;
-    return { name: String((input.tool_input && input.tool_input.skill) || ''), source: undefined };
+    return input.tool_name === 'Skill' ? String((input.tool_input && input.tool_input.skill) || '') : null;
   }
   return null;
 }
@@ -66,16 +65,10 @@ function readManifest(pluginRoot) {
 
 // 自分のプラグインのスキル名を返す。ほかのプラグイン・自分で作ったスキル・SKILL.md が無いもの（workflow など）は null
 function ownSkill(requested, pluginName, pluginRoot) {
-  const name = requested.name.replace(/^\//, '');
+  const name = requested.replace(/^\//, '');
   const colon = name.indexOf(':');
-  let skill = name;
-  if (colon >= 0) {
-    if (name.slice(0, colon) !== pluginName) return null;
-    skill = name.slice(colon + 1);
-  } else if (requested.source && requested.source !== 'plugin') {
-    // 接頭辞の無い名前は、利用者が自分で作ったスキルと重なりうる
-    return null;
-  }
+  if (colon < 0 || name.slice(0, colon) !== pluginName) return null;
+  const skill = name.slice(colon + 1);
   // 名前をパスに使うため、決まった形でなければ使わない
   if (!SKILL_NAME.test(skill)) return null;
   if (!fs.existsSync(path.join(pluginRoot, 'skills', skill, 'SKILL.md'))) return null;
