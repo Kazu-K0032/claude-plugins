@@ -17,9 +17,6 @@ command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 [ -z "$command" ] && exit 0
 
 patterns=(
-# コンテナと named volume を削除する。DB データが消えるとアプリの全コンテンツが失われる
-'docker[[:space:]]+compose[[:space:]]+down[[:space:]].*-v'
-'docker-compose[[:space:]]+down[[:space:]].*-v'
 # -r・-R・-f（--recursive・--force）のどれかが付いた rm。再帰削除・強制削除はファイル復元ができない
 # オプションはファイル名の後ろにも置けるため、同じコマンドの中（; & | の手前まで）を探す
 '(^|[^[:alnum:]_-])rm[[:space:]]+([^;&|]*[[:space:]])?(-[a-zA-Z]*[rRf][a-zA-Z]*|--recursive|--force)([[:space:]]|$)'

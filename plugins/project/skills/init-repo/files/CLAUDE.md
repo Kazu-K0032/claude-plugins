@@ -141,6 +141,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 │   └── knowledge/                        # ツール・プラグインの入門知識
 ├── .gitignore
 ├── cspell.json                           # スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有）
+├── lefthook.yml                          # Lint・整形のツールの定義（編集後のフックが使う）
 └── README.md
 ```
 

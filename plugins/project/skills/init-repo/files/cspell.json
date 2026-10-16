@@ -17,6 +17,7 @@
     "envrc",
     "frontmatter",
     "ghaction",
+    "lefthook",
     "pycache",
     "pythondontwritebytecode",
     "segs",

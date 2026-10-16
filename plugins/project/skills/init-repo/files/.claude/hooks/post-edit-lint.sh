@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
-# PostToolUse hook: Edit / Write 後に編集ファイルの lint を自動実行する。
-# 問題があれば、結果を JSON の additionalContext で返して Claude へフィードバックする（ブロックしない）。
+# PostToolUse hook: Edit / Write 後に、編集したファイルへプロジェクトの Lint・整形をかける。
+# どのツールを使うかは lefthook.yml の claude-edit に書き、このフックは lefthook を呼ぶだけにする。
+# ツールはプロジェクトごとに違うため、フックにはツール名を書かない。
+# 整形のツールはファイルを書き換え、Lint のツールは問題があれば失敗で終える。失敗した結果だけを Claude へ返す（ブロックしない）。
 # PostToolUse では、exit 0 の素の stdout・stderr は Claude に渡らない（debug ログに残るだけ）ため、JSON で返す。
 #
 # カスタマイズ方針:
-#   - LINT_DIR に node_modules（lint ツール）を持つディレクトリを指定する。リポジトリ直下なら "." のまま。
+#   - ツールは lefthook.yml の claude-edit に足す。このフックは変えない。
 #   - TARGET_PREFIX に検査対象のパス接頭辞を指定する。全体を対象にするなら "" のまま。
-#   - PHP・Python 等を追加する場合は末尾の「言語別チェック」に同じ形でブロックを足す。
-#     結果は report に足し、exit 0 ではなく finish で終える（exit 0 で終えると結果が Claude に届かない）。
-#     ツールの置き場所が LINT_DIR と違うときは、ブロックの中で置き場所からの相対パスを作る。
 
 set -euo pipefail
 
 # --- プロジェクト固有の設定 ---------------------------------------------
-LINT_DIR="."
 TARGET_PREFIX=""
 # ------------------------------------------------------------------------
 
@@ -51,36 +49,31 @@ if printf '%s' "$file_path" | grep -qE '(^|/)(node_modules|vendor|dist|build)/';
   exit 0
 fi
 
-# lint ツールが未インストールの場合は、各ブロックの実行ファイルの確認で黙って飛ばす（環境差で毎回警告を出さない）。
-# ここで node_modules の有無を見て終えると、Node を使わないリポジトリで PHP 等のブロックまで届かないため
-if [ "$LINT_DIR" = "." ]; then
-  rel_path="$file_path"
+# --- lefthook（プロジェクトの Lint・整形） --------------------------------
+
+# 設定・claude-edit の定義・lefthook のどれかが無ければ、黙って終える（環境差で毎回警告を出さない）
+config=""
+for name in lefthook.yml lefthook.yaml .lefthook.yml .lefthook.yaml; do
+  if [ -f "$repo_root/$name" ]; then
+    config="$repo_root/$name"
+    break
+  fi
+done
+[ -n "$config" ] || exit 0
+grep -q '^claude-edit:' "$config" || exit 0
+
+if command -v lefthook >/dev/null 2>&1; then
+  lefthook="lefthook"
+elif [ -x "$repo_root/node_modules/.bin/lefthook" ]; then
+  lefthook="$repo_root/node_modules/.bin/lefthook"
 else
-  rel_path="${file_path#"$LINT_DIR"/}"
+  exit 0
 fi
 
-# --- 言語別チェック -----------------------------------------------------
-
-# JS / TS: ESLint
-if printf '%s' "$file_path" | grep -qE '\.(js|jsx|ts|tsx|mjs|cjs)$'; then
-  if [ -x "$LINT_DIR/node_modules/.bin/eslint" ]; then
-    result=$((cd "$LINT_DIR" && ./node_modules/.bin/eslint "$rel_path" 2>&1) || true)
-    if [ -n "$result" ]; then
-      report+="⚠️  eslint: $rel_path"$'\n'"$result"$'\n'
-    fi
-  fi
-  finish
-fi
-
-# CSS: Stylelint
-if printf '%s' "$file_path" | grep -qE '\.(css|scss)$'; then
-  if [ -x "$LINT_DIR/node_modules/.bin/stylelint" ]; then
-    result=$((cd "$LINT_DIR" && ./node_modules/.bin/stylelint "$rel_path" 2>&1) || true)
-    if [ -n "$result" ]; then
-      report+="⚠️  stylelint: $rel_path"$'\n'"$result"$'\n'
-    fi
-  fi
-  finish
+# lefthook run は既定で、設定の変化を見て .git/ の下を書き換える（フックの入れ直し）。
+# .git/ の書き換えは人が行うため、--no-auto-install で止める。出力は、失敗したコマンドとその出力だけにする
+if ! result=$(cd "$repo_root" && LEFTHOOK_OUTPUT=failure,execution_out "$lefthook" run claude-edit --no-auto-install --file "$file_path" 2>&1); then
+  report+="⚠️  lefthook claude-edit: $file_path"$'\n'"$result"$'\n'
 fi
 
 finish

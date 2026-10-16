@@ -27,7 +27,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 - リポジトリの**ルート**で実行すること（サブディレクトリで実行するとスクリプトが停止する）
 - `git` / `bash` が利用可能であること
 - フックは `bash` と [`jq`](https://jqlang.org/) を使う。導入後の実行には Terraform が要る（このスキル自体はどちらも使わない）
-- `.claude/settings.json`・`CLAUDE.md` などの土台（`/project:init-repo`）は必須ではない。無ければ手順 1 で、先に入れるかを聞く。土台の `.claude/settings.json` があれば手順 6 でフックと deny を登録し、`.claude/hooks/post-edit-lint.sh` があれば手順 7 で `terraform fmt` を足す
+- `.claude/settings.json`・`CLAUDE.md` などの土台（`/project:init-repo`）は必須ではない。無ければ手順 1 で、先に入れるかを聞く。土台の `.claude/settings.json` があれば手順 6 でフックと deny を登録し、`lefthook.yml`（古い形では `.claude/hooks/post-edit-lint.sh`）があれば手順 7 で `terraform fmt` を足す
 
 ## 引数の解釈
 
@@ -50,7 +50,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | 選択肢 | 次の動き |
 | --- | --- |
 | 先に init-repo を実行する（推奨） | ここで止め、`/project:init-repo` を実行してから `/project:terraform` を呼び直すよう案内する。どちらも Claude からは呼べないため、利用者が実行する |
-| このまま進める | 次の影響を伝えて続ける。フック（`guard-terraform.sh`）と秘匿ファイルの deny を登録できない。`.claude/hooks/post-edit-lint.sh` も無ければ、`terraform fmt` をフックで動かせない |
+| このまま進める | 次の影響を伝えて続ける。フック（`guard-terraform.sh`）と秘匿ファイルの deny を登録できない。`lefthook.yml` も無ければ、`terraform fmt` をフックで動かせない |
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill terraform --check
@@ -71,7 +71,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill terraform --check
 | A：`.tf` が無い | テンプレート全体を入れる |
 | B：`.tf` がある | ファイルを動かさない。CI・手順書・手元の state が今のパスに依存しているため。`.claude/rules/terraform.md` と `.claude/hooks/guard-terraform.sh` だけをコピーし、手順 4 で規約を今の構成に合わせる。`infra/` の雛形は入れない |
 
-あわせて、`.claude/settings.json`・`.claude/hooks/guard-destructive.sh`・`.claude/hooks/post-edit-lint.sh` があるかを確かめる。手順 6・7 で使う。
+あわせて、`.claude/settings.json`・`.claude/hooks/guard-destructive.sh`・`.claude/hooks/post-edit-lint.sh`・`lefthook.yml` があるかを確かめる。手順 6・7 で使う。
 
 ### 2. 導入計画を提示して承認を得る（必須）
 
@@ -153,7 +153,25 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/terraform/files/<同�
 
 ### 7. Lint のフックに terraform fmt を足す
 
-`.claude/hooks/post-edit-lint.sh` があり、`terraform fmt` を呼ぶブロックが無ければ、次のブロックを足す案を差分で示し、承認を得てから足す。`.tfvars` を対象にしないのは、秘匿値を含むことがあり、差分が Claude に渡るため。
+`terraform fmt` を動かす定義が無ければ、フックの形に合わせて足す案を差分で示し、承認を得てから足す。`.tfvars` を対象にしないのは、秘匿値を含むことがあり、差分が Claude に渡るため。
+
+| フックの形 | 足すもの・場所 |
+| --- | --- |
+| `lefthook.yml` に `claude-edit` がある（今の `init-repo` の形） | `claude-edit` の `commands` に、下の YAML を足す。`post-edit-lint.sh` は変えない |
+| `post-edit-lint.sh` に `[ -d "$LINT_DIR/node_modules/.bin" ] \|\| finish` の行がある（古い `init-repo` の形） | 下の bash のブロックを、その行より前に足す。後ろに足すと、Node を使わないリポジトリでブロックまで届かないため |
+| 上の行が無く、`post-edit-lint.sh` に `# --- 言語別チェック` の区切りがある | 下の bash のブロックを、区切りのすぐ後ろに足す |
+| `report`・`finish` を使っていない（`init-repo` 以外の形） | 書き換えず、下の bash のブロックを示して、利用者に足し方を決めてもらう |
+
+`lefthook.yml` に足す定義。整形はファイルを書き換える。`*.tf` は `.tfvars` に一致しない。
+
+```yaml
+terraform-fmt:
+  priority: 1
+  glob: "*.tf"
+  run: 'command -v terraform >/dev/null 2>&1 || exit 0; terraform fmt {staged_files}'
+```
+
+古い形の `post-edit-lint.sh` に足すブロック（整形は確かめるだけ）。
 
 ```bash
 # Terraform: terraform fmt（整形の確認）
@@ -171,15 +189,7 @@ case "$file_path" in
 esac
 ```
 
-足す場所は、フックの形で決める。
-
-| フックの形 | 足す場所 |
-| --- | --- |
-| `[ -d "$LINT_DIR/node_modules/.bin" ] \|\| finish` の行がある（古い `init-repo` の形） | その行より前。後ろに足すと、Node を使わないリポジトリでブロックまで届かないため |
-| 上の行が無く、`# --- 言語別チェック` の区切りがある | 区切りのすぐ後ろ |
-| `report`・`finish` を使っていない（`init-repo` 以外の形） | 書き換えず、上のブロックを示して、利用者に足し方を決めてもらう |
-
-フックが無い場合は、手順 9 で、`/project:init-repo` で入れられることを伝える。
+`lefthook.yml`・`post-edit-lint.sh` が無い場合は、手順 9 で、`/project:init-repo` で入れられることを伝える。
 
 ### 8. スペルチェックの除外語を足す
 
