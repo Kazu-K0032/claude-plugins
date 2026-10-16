@@ -19,7 +19,7 @@
 スキルを実行すると、その `SKILL.md` への GitHub のリンクが 1 行、画面に出る。スキルの中で何をしているかを、すぐ確かめられる。
 
 ```text
-aidd:commit の手順（SKILL.md）: https://github.com/Kazu-K0032/claude-plugins/blob/v1.1.0/plugins/aidd/skills/commit/SKILL.md
+aidd:commit の手順: https://github.com/Kazu-K0032/claude-plugins/blob/v1.1.0/plugins/aidd/skills/commit/SKILL.md
 ```
 
 - 利用者が `/aidd:commit` と入力したときも、Claude がスキルを呼んだときも出る。Claude の作業は増えない

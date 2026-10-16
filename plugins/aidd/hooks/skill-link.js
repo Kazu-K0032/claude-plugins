@@ -31,7 +31,7 @@ function main() {
 
   const url = `${REPO_URL}/blob/v${manifest.version}/plugins/${manifest.name}/skills/${skill}/SKILL.md`;
   // JSON で返す場合、標準出力は JSON だけにする必要がある
-  process.stdout.write(JSON.stringify({ systemMessage: `${manifest.name}:${skill} の手順（SKILL.md）: ${url}` }));
+  process.stdout.write(JSON.stringify({ systemMessage: `${manifest.name}:${skill} の手順: ${url}` }));
 }
 
 function readInput() {
