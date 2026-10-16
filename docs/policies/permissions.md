@@ -17,6 +17,7 @@
 | `aidd:adr` | `<ADR_DIR>`（`docs/adr/` など）への ADR の作成と、一覧（`README.md`）の作成・更新 | deny にこのディレクトリへの書き込み（`Edit`）を入れない | 止まらない |
 | `aidd:issue-pr-sync` | `gh issue edit`・`gh pr edit` | deny に入れない | 反映が止まり、下書きを出すところまでになる |
 | `config` のフック・`config:plugin-feedback` | 環境変数 `CLAUDE_PLUGIN_FEEDBACK`・`CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` を読む | `settings.json` の `env` に入れない（利用者が決める値のため） | 関係しない |
+| `config:mod-output-customize` が入れる mod | 環境変数 `USERPROFILE`・`HOME` と、`~/.claude/plugins/installed_plugins.json` を読む（リンク先の版を知るため） | なし（どちらもリポジトリの外） | 関係しない |
 
 `config:plugin-feedback` が書き込みを止められたときは、書かずに `off` として続ける。
 
