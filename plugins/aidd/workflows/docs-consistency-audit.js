@@ -12,7 +12,7 @@ export const meta = {
     { title: 'Extract', detail: '1ファイル=1エージェントで事実・SSOT所有情報・参照を抽出' },
     { title: 'Detect', detail: '圧縮済み事実集合を横断突合し矛盾・重複・参照方向違反の候補を生成' },
     { title: 'Verify', detail: '候補ごとに規約へ照らして敵対的検証し誤検出を除去' },
-    { title: 'Report', detail: '確定指摘を重大度別に tmp/<branch>/docs-report_<timestamp>.md へ追記' },
+    { title: 'Report', detail: '確定指摘を重大度別に分け、推奨アクションを添えて tmp/<branch>/docs-report_<timestamp>.md へ追記' },
   ],
 }
 
@@ -280,7 +280,8 @@ const verified = (
 const confirmed = verified.filter((v) => v.isReal)
 log(`確定指摘: ${confirmed.length} / 候補 ${detect.candidates.length}`)
 
-// 5. Report: 確定指摘を重大度別の Markdown に整形し、tmp/<branch>/docs-report_<timestamp>.md へ追記する。
+// 5. Report: 確定指摘を重大度別に分け、直す順の推奨アクションを添えた Markdown に整形し、tmp/<branch>/docs-report_<timestamp>.md へ追記する。
+//    実行ごとの塊の構成は docs-sync・pr-review のレポートとそろえる（冒頭の文・high・medium・low・推奨アクション）。
 //    workflow スクリプト内では時刻取得が禁止（Date.now/new Date は throw）のため、
 //    ブランチ名とタイムスタンプの算出・パス組み立てはエージェントに Bash で行わせる。
 //    ブランチ名の / を - に置換する規約は aidd の README.md の「ブランチ名の / は - に置き換える」。
@@ -308,13 +309,17 @@ const report = await agent(
     JSON.stringify(confirmed),
     '',
     '【レポート本文の要件】',
+    '- ファイル新規作成時のみ、先頭に「# docs-consistency-audit 実行結果」の H1 を置く（追記時は付けない）。',
     '- 追記する塊の先頭に「## 監査 <timestamp>（branch: <branch>）」の見出しを付け、いつの結果か分かるようにする。',
-    '- その直下に「対象 N ファイル / 参照した規約 / スキップした観点」を 1 行で記す（何を見て何を見ていないかを明示する）。',
-    '- severity を high → medium → low の順にセクション分けする。',
+    `- その直下に、次の冒頭の文をそのまま書く: 「この監査は、docs-consistency-audit によって、ドキュメント間の整合性（値の矛盾・重複記述・参照方向違反）の観点から、${files.length} 件のドキュメントに問題が無いかチェックし結果をレポートしたものです。」`,
+    '- 冒頭の文の直後に、引用（>）の注記を書く（何を見て何を見ていないかを明示する）。',
+    '  - 「参照した規約：…」（上の「参照した規約」から。無ければ「なし」）',
+    '  - 「スキップした観点：…」（参照方向の観点が有効なら、この行は書かない）',
+    '  - 「範囲：リンク切れ・markdown 規約などの機械チェックは Lint の担当。この監査は横断的な意味の整合のみを扱う」',
+    '- 注記の後に、次の見出しをこの順で置く: 「### high」「### medium」「### low」「### 推奨アクション」。severity ごとに指摘を分ける。',
     '- 各指摘は「対象ファイル / 種別(kind) / 内容(detail) / 根拠(reason)」を含める。',
-    '- 確定指摘が 0 件なら「指摘なし」と明記する。',
-    '- ファイル新規作成時のみ、先頭に「# ドキュメント整合性 監査レポート」の H1 を置く（追記時は付けない）。',
-    '- 末尾に「リンク切れ・markdown 規約などの機械チェックは Lint の担当。本監査は横断的な意味の整合のみを扱う」と注記する。',
+    '- 指摘が無い見出しには「なし」と 1 行書く。確定指摘が 0 件なら、4 つの見出しとも「なし」にする。',
+    '- 推奨アクションは、直す順に番号を付けて 1 行ずつ書く。最大 5 件。high の指摘から先に並べ、対象ファイルと、何を直すかを書く。同じ原因の指摘は 1 項目にまとめる。',
     '- markdown 規約（見出し前後の空行・コードブロックの言語指定など）に従う。',
     '',
     '【禁止】',

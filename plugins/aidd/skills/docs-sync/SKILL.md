@@ -18,7 +18,7 @@ allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(date
 | ファイル | 役割 |
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh` | 差分列挙・機械チェック |
-| `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/docdd-design.md` | チェック対象・判定範囲・PASS/FAIL 基準 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/docdd-design.md` | チェック対象・判定範囲・重大度 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/output-template.md` | レポートの出力フォーマット |
 | `${CLAUDE_PLUGIN_ROOT}/references/document.md` | 重複排除（SSOT）・文体・構造ルール |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | markdown 書式規約 |
@@ -55,7 +55,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
 - 変更 md に対する「相対リンク切れ」「markdown 規約」「docs-type フロントマター」の PASS/FAIL
 - 全走査（差分非依存）の「全 docs リンク切れ」「SSOT 一覧ポインタ存在」の PASS/FAIL
 - リンク検査から外したファイルの件数（外したときだけ。指定のしかたは `docdd-design.md` の「リンク検査から外すファイル」）
-- 「## サマリ」配下に各カテゴリの FAIL 件数
+- 「## サマリ」配下に各カテゴリの FAIL 件数（レポートの材料。レポートの構成とは別で、レポートにサマリの節は作らない）
 
 終了コードは、機械チェック FAIL があれば `1`、基準ブランチでの停止なら `3`、すべて PASS なら `0`。
 
@@ -86,12 +86,16 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
 1. `git branch --show-current` で現在のブランチ名を取得する（出力パス用。`/` は `-` に置換する。規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）
 2. `date +%Y%m%d_%H%M%S` でタイムスタンプを取得する
 3. `output-template.md` のテンプレートに従い、Step 1 のスクリプト出力と Step 2 の判定結果を統合して `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` に書き込み、出力パスをユーザーに報告する
+   - 機械チェックの FAIL と Step 2 の指摘を、`docdd-design.md` の「重大度」に従って high・medium・low に分ける
+   - 冒頭の文に、Step 1 の基準ブランチと変更ファイル数を入れる
+   - `SKIP` にした項目と、Step 2 で参照した規約は、冒頭の文の直後に注記で書く。PASS は書かない
+   - 推奨アクションに、直す順の番号付き一覧（最大 5 件）を書く
 
 ## 判断基準
 
 - 基準ブランチでは Step 1 の `STOP` で終了する（レポートは作らない）
-- 機械チェック（Step 1）または追従判定（Step 2）のいずれかに指摘があれば総合判定 FAIL
-- スクリプトの終了コードのみで総合判定せず、Step 2 の LLM 判定結果を必ず合算する
+- 機械チェック（Step 1）の FAIL と追従判定（Step 2）の指摘を合算し、high・medium・low に分ける。総合判定（PASS / FAIL）は出さない
+- スクリプトの終了コードのみで指摘の有無を決めず、Step 2 の LLM 判定結果を必ず合算する
 - `SKIP` は FAIL に数えない（規約を使っていないリポジトリの正常状態）
 - レポートは `tmp/` 配下に書き込むのみで、検出した問題の自動修正は行わない
 
