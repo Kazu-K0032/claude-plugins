@@ -540,10 +540,13 @@ export const register: Register = on => {
   // スキルの SKILL.md へのリンクを描く。下の行頭の印の色分けより先に登録し、その描画の外側に足す
   //   - 利用者が打ったとき: 送った後に初めて描かれる、Claude の返事かツールの行の上
   //     （打ったコマンドの行は、送った直後の仮の行しか mod に渡らないため）
+  //     ツールの行には、読み取りや検索をまとめて 1 行で描く行（ToolGroup）も含む
   //   - Claude が Skill ツールで呼んだとき: その行の下
-  on('ui.render', { component: ['AssistantMessage', 'ToolUse'] }, async ($, e, next) => {
-    const key = `${e.component}:${String(e.requestId ?? '')}`
-    const props = e.props as { tool?: unknown; input?: unknown }
+  on('ui.render', { component: ['AssistantMessage', 'ToolUse', 'ToolGroup'] }, async ($, e, next) => {
+    const props = e.props as { tool?: unknown; input?: unknown; calls?: readonly { tool_use_id?: string }[] }
+    // まとめた行は、呼び出しが増えても同じ行として扱えるよう、最初の呼び出しで見分ける
+    const firstCall = e.component === 'ToolGroup' ? props.calls?.[0]?.tool_use_id : undefined
+    const key = `${e.component}:${firstCall ?? String(e.requestId ?? '')}`
     const calledLink = await lookUpSkillLink(
       $,
       lookup,

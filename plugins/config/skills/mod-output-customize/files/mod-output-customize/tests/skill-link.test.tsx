@@ -33,7 +33,7 @@ type Hooks = Parameters<Parameters<typeof test>[1]>[1]
  * @param installed - 版の記録の中身。null なら読めない
  */
 function stand(on: Hooks, installed: string | null = INSTALLED) {
-  on('ui.render', { component: ['AssistantMessage', 'ToolUse'] }, ($, e) => {
+  on('ui.render', { component: ['AssistantMessage', 'ToolUse', 'ToolGroup'] }, ($, e) => {
     const { Text } = $.ui.resolve(e)
     return <Text>engine row</Text>
   })
@@ -48,7 +48,7 @@ function stand(on: Hooks, installed: string | null = INSTALLED) {
  * 行を 1 つ描き、付いたリンクの行き先を返す
  * @returns リンクの href の一覧
  */
-async function linksOf($: Engine, component: 'AssistantMessage' | 'ToolUse', requestId: string, props: object) {
+async function linksOf($: Engine, component: 'AssistantMessage' | 'ToolUse' | 'ToolGroup', requestId: string, props: object) {
   const row = await $.ui.mount({ plugin: 'mod-output-customize', surface: 'terminal', component, requestId, props } as never)
   const hrefs = (await row.findAll({ type: 'Link' })).map(link => link.props.href)
   await row.unmount()
@@ -127,6 +127,18 @@ test('返事より先にツールの行が描かれたら、そのツールの�
   const bash = { tool_use_id: 't0', tool: 'Bash', input: { command: 'git status' }, isRunning: true, isErrored: false, isInterrupted: false }
 
   expect(await linksOf($, 'ToolUse', 't0', bash)).toEqual([COMMIT])
+  expect(await linksOf($, 'AssistantMessage', 'a1', REPLY)).toEqual([])
+})
+
+test('読み取りや検索をまとめた行が先に描かれたら、その行の上に付け、呼び出しが増えても付いたままにする', async ($, on) => {
+  stand(on)
+  await $.prompt.submit(typed('/aidd:commit'))
+  const call = { isRunning: false, isErrored: false, isInterrupted: false }
+  const status = { ...call, tool_use_id: 't0', tool: 'Bash', input: { command: 'git status' } }
+  const rule = { ...call, tool_use_id: 't1', tool: 'Read', input: { file_path: 'commit-rule.md' } }
+
+  expect(await linksOf($, 'ToolGroup', 'g1', { calls: [status], isActive: true, isExpanded: false })).toEqual([COMMIT])
+  expect(await linksOf($, 'ToolGroup', 'g2', { calls: [status, rule], isActive: true, isExpanded: false })).toEqual([COMMIT])
   expect(await linksOf($, 'AssistantMessage', 'a1', REPLY)).toEqual([])
 })
 
