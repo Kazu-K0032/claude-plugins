@@ -14,21 +14,6 @@
 
 プラグインが何をして何をしないか（コミットしない・外部へ書き込まないなど）と、その理由は [設計の方針](docs/policies/README.md) にまとめている。方針の土台になる考え方は [AI駆動開発の価値](docs/values/README.md) にある。
 
-## スキルの手順へのリンク
-
-スキルを実行すると、その `SKILL.md` への GitHub のリンクが 1 行、画面に出る。スキルの中で何をしているかを、すぐ確かめられる。
-
-```text
-aidd:commit の手順: https://github.com/Kazu-K0032/claude-plugins/blob/v1.1.0/plugins/aidd/skills/commit/SKILL.md
-```
-
-- 利用者が `/aidd:commit` と入力したときも、Claude がスキルを呼んだときも出る。Claude の作業は増えない
-- リンク先は、入れている版のタグ（`v<版>`）。`main` ではなく、その版でリリースした中身が開く。手元で直した分は映らない
-- 各プラグインの `hooks/skill-link.js` が出す。Node.js が無い環境では出ない
-- `SKILL.md` が無い workflow（`aidd` の `pr-review`・`docs-consistency-audit`）では出ない
-- 止める設定は無い。要らなければ、プラグインを外す
-- 版を上げたのにリリース前だと、タグがまだ無く、リンクを開くと 404 になる
-
 ## 導入
 
 Claude Code のセッション内で次を実行する。カタログを 1 回登録すれば、中のプラグインを個別にインストールできる。

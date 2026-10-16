@@ -1,6 +1,6 @@
 # mod-output-customize
 
-サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を、ユーザー全体に入れる Skill。
+サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を、ユーザー全体に入れる Skill。この mod は、スキルの実行時に `SKILL.md` へのリンクも出す。
 
 `files/mod-output-customize/` が mod の本体。スキルがこれを `~/.claude/mods/mod-output-customize/` にコピーし、`~/.claude/settings.json` の `env.CLAUDE_CODE_PLUGIN_DIRS` に足して読み込ませる。
 
@@ -22,7 +22,7 @@
 | パス | 内容 |
 | --- | --- |
 | `files/mod-output-customize/.claude-plugin/plugin.json` | mod のマニフェスト |
-| `files/mod-output-customize/hooks/` | `hooks.json`（`modules` で `register.tsx` を読む）、ボタンと指示の本体（`register.tsx`）、色分けする行の解析（`emphasis.ts`）、チャットモードで通すコマンド・MCP ツールの判定（`readonly.ts`）、次アクションから入力欄の候補にする依頼文の取り出し（`sections.ts`） |
+| `files/mod-output-customize/hooks/` | `hooks.json`（`modules` で `register.tsx` を読む）、ボタンと指示の本体（`register.tsx`）、色分けする行の解析（`emphasis.ts`）、チャットモードで通すコマンド・MCP ツールの判定（`readonly.ts`）、次アクションから入力欄の候補にする依頼文の取り出し（`sections.ts`）、`SKILL.md` へのリンクの作成（`skill-link.ts`） |
 | `files/mod-output-customize/types/index.d.ts` | mod が持つ 3 つの on / off と、入力欄の候補に出す依頼文の型 |
 | `files/mod-output-customize/tests/` | `claude plugin test` で動かすテスト |
 | `files/mod-output-customize/tsconfig.json` | エディタでの型チェック用。Claude Code が mod を読み込むと書き出す `.claude-plugin/types/` を参照する |

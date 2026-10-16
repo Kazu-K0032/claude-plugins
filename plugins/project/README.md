@@ -29,9 +29,6 @@
 project/
 ├── .claude-plugin/
 │   └── plugin.json         # プラグインのマニフェスト
-├── hooks/                  # スキルの実行時に SKILL.md へのリンクを出す（ルートの README の「スキルの手順へのリンク」）
-│   ├── hooks.json
-│   └── skill-link.js
 ├── scripts/
 │   └── install.sh          # 全 Skill 共通のインストーラ（--skill <Skill 名> でコピー元を切り替える）
 ├── references/

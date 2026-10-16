@@ -1,6 +1,6 @@
 ---
 name: mod-output-customize
-description: config に同梱した mod（サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える）を ~/.claude/mods/ にコピーし、~/.claude/settings.json の CLAUDE_CODE_PLUGIN_DIRS に足して読み込ませる。mod を使い始める時、mod を更新したい時、または外したい時に使用する
+description: config に同梱した mod（サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える。スキルの実行時に SKILL.md へのリンクを出す）を ~/.claude/mods/ にコピーし、~/.claude/settings.json の CLAUDE_CODE_PLUGIN_DIRS に足して読み込ませる。mod を使い始める時、mod を更新したい時、または外したい時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Bash(diff:*), Bash(claude plugin validate:*)
 argument-hint: "[する操作（任意。省略時は導入・更新。例: 外す）]"
@@ -38,6 +38,10 @@ config に同梱した mod を、ユーザー全体で読み込まれるよう�
 - on / off はボタンのクリックで切り替える。数字キーは割り当てない。空の入力欄で数字を打っただけで、切り替わってしまうため
 - 指示はプロンプトを送るたびに添える。端末に描かない実行（`-p` など）では、指示を何も足さない
 - 記法を含む応答は、応答カスタムの on / off に関係なく赤・緑で表示する
+- `aidd`・`config`・`project` のスキルを実行すると、その `SKILL.md` への GitHub のリンクを 1 行出す（`↳ aidd:commit の手順: SKILL.md`。`SKILL.md` は青のリンク）。ボタンは無く、常に出す
+  - 利用者が `/aidd:commit` と打ったときは、次に描かれる返事かツールの行の上に出す。Claude が呼んだときは、その行の下に出す
+  - リンク先は、入れている版のタグ（`v<版>`）。版は `~/.claude/plugins/installed_plugins.json` から読む
+  - 手元に `SKILL.md` が無いもの（`aidd` の workflow の `pr-review` など）には出さない
 
 ## 引数の解釈
 

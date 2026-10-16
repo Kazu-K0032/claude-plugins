@@ -47,9 +47,6 @@ aidd/
 │   └── ...              # 各 Skill が補助ファイル・scripts/ を持つ
 ├── agents/              # サブエージェント定義
 │   └── research.md
-├── hooks/               # スキルの実行時に SKILL.md へのリンクを出す（ルートの README の「スキルの手順へのリンク」）
-│   ├── hooks.json
-│   └── skill-link.js
 ├── workflows/           # 複数エージェントを束ねるスクリプト
 │   ├── pr-review.js
 │   └── docs-consistency-audit.js

@@ -5,6 +5,8 @@ import { hasEmphasis, parse } from './emphasis'
 import type { Block, Span, Tone } from './emphasis'
 import { isReadOnlyCommand, isReadOnlyMcpTool, isReadOnlyTool } from './readonly'
 import { nextClaudeRequest } from './sections'
+import { calledSkillName, parseInstalls, skillLink, typedSkillName } from './skill-link'
+import type { Install, SkillLink } from './skill-link'
 
 /** 強調に使う色。テーマのキーか生の色名 */
 const EMPHASIS_COLOR = 'red'
@@ -23,6 +25,9 @@ const SPEC_COLOR = '#22c55e'
 
 /** 文中の `コード` の色。engine が応答を描くときと同じテーマのキー */
 const CODE_COLOR = 'permission'
+
+/** スキルの SKILL.md へのリンクの色。文中の `コード` の色（permission）から見分けられる青 */
+const LINK_COLOR = '#3b82f6'
 
 /** 応答のカスタマイズの on/off を次のセッションへ持ち越すための $.store のキー */
 const CUSTOMIZED_STORE_KEY = 'isCustomized'
@@ -177,6 +182,62 @@ async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>)
   ]
 }
 
+/** スキルの SKILL.md へのリンクを探すための、入れたプラグインの記録と、探した結果 */
+type LinkLookup = {
+  /** 入れたプラグインの版と置き場所。null は、まだ読めていない */
+  installs: Record<string, Install> | null
+  /** スキルの名前ごとに探した結果。手元に SKILL.md が無いもの（workflow など）は null */
+  found: Map<string, SkillLink | null>
+}
+
+/**
+ * 入れたプラグインの記録（~/.claude/plugins/installed_plugins.json）から、aidd・config・project の版と置き場所を読む
+ * @param $ - フックが受け取った engine のインターフェース
+ * @returns プラグイン名から版と置き場所への対応。記録を読めなければ null（次にスキルを実行したときに読み直す）
+ */
+async function readInstalls($: Pick<CoreEngineInterface, 'env' | 'fs'>): Promise<Record<string, Install> | null> {
+  try {
+    const home = (await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME'))
+    if (home === undefined) {
+      return null
+    }
+    return parseInstalls(await $.fs.read(`${home}/.claude/plugins/installed_plugins.json`))
+  } catch {
+    return null
+  }
+}
+
+/**
+ * スキルの SKILL.md へのリンクを探す。手元の SKILL.md があるスキルだけに出し、同じスキルは探し直さない
+ * @param $ - フックが受け取った engine のインターフェース
+ * @param lookup - 入れたプラグインの記録と、探した結果
+ * @param name - スキルの名前（aidd:commit）
+ * @returns リンク。このマーケットプレイスのスキルでないか、SKILL.md が無ければ null
+ */
+async function lookUpSkillLink(
+  $: Pick<CoreEngineInterface, 'env' | 'fs'>,
+  lookup: LinkLookup,
+  name: string | undefined,
+): Promise<SkillLink | null> {
+  if (name === undefined) {
+    return null
+  }
+  const known = lookup.found.get(name)
+  if (known !== undefined) {
+    return known
+  }
+  if (lookup.installs === null) {
+    lookup.installs = await readInstalls($)
+  }
+  const link = skillLink(name, lookup.installs ?? {})
+  const found = link !== null && (await $.fs.exists(link.file).catch(() => false)) ? link : null
+  // 記録を読めなかったときは、次に読めたときに探し直す
+  if (lookup.installs !== null) {
+    lookup.found.set(name, found)
+  }
+  return found
+}
+
 /**
  * ボタンのサイドバーを開き、入力欄の上の帯を描き直す（サイドバーに置けたら帯を消すため）
  * @param $ - フックが受け取った engine のインターフェース
@@ -295,6 +356,14 @@ function chatModeDenyReason(e: ToolCallInput): string | null {
 }
 
 export const register: Register = on => {
+  // 入れたプラグインの記録と、スキルごとに探したリンク
+  const lookup: LinkLookup = { installs: null, found: new Map() }
+  // 利用者が打ったスキルのうち、まだ行に付けていないリンク
+  let typedLink: SkillLink | null = null
+  // 描いたことのある行と、打ったスキルのリンクを付けた行（描き直しても同じ行に付けるため）
+  const drawnRows = new Set<string>()
+  const rowLinks = new Map<string, SkillLink>()
+
   // システムプロンプト（prompt.compose）には足さない。Team / Enterprise でログインしている時や
   // managed settings がある環境では、組み込みのガード cc-plugin-sec-default がユーザーの mod の
   // prompt.compose を迂回させるため。prompt.submit に添える文脈はガードの対象外
@@ -303,6 +372,11 @@ export const register: Register = on => {
     const surfaces = await $.session.surfaces()
     if (surfaces.length === 0) {
       return next(e)
+    }
+
+    // 送るたびに、打ったスキルのリンクを入れ替える。スキルでない入力なら空にし、利用者に見えない入力では変えない
+    if (!e.isMeta) {
+      typedLink = await lookUpSkillLink($, lookup, e.command?.name ?? typedSkillName(e.text))
     }
 
     const [chatMode, customized, docConcise] = await Promise.all([
@@ -350,6 +424,12 @@ export const register: Register = on => {
       })
       // 頼まれずに開くサイドバーは、端末の幅が足りるまで描かれない。その間は帯にボタンを出す
       void openPane($)
+      // スキルを実行したときに待たずに済むよう、最初のプロンプトの前に版を読んでおく
+      void readInstalls($).then(installs => {
+        if (lookup.installs === null) {
+          lookup.installs = installs
+        }
+      })
     }
     return next(e)
   })
@@ -455,6 +535,52 @@ export const register: Register = on => {
     }
     const request = await read($, nextSuggestion)
     return next(request === '' ? e : { ...e, text: request })
+  })
+
+  // スキルの SKILL.md へのリンクを描く。下の行頭の印の色分けより先に登録し、その描画の外側に足す
+  //   - 利用者が打ったとき: 送った後に初めて描かれる、Claude の返事かツールの行の上
+  //     （打ったコマンドの行は、送った直後の仮の行しか mod に渡らないため）
+  //   - Claude が Skill ツールで呼んだとき: その行の下
+  on('ui.render', { component: ['AssistantMessage', 'ToolUse'] }, async ($, e, next) => {
+    const key = `${e.component}:${String(e.requestId ?? '')}`
+    const props = e.props as { tool?: unknown; input?: unknown }
+    const calledLink = await lookUpSkillLink(
+      $,
+      lookup,
+      e.component === 'ToolUse' ? calledSkillName(props.tool, props.input) : undefined,
+    )
+
+    // 打ったスキルは、送った後に初めて描かれる行に 1 回だけ付ける。前から描かれていた行には付けない
+    // 返事が終わったとき（turn.complete）には空にしない。全画面表示では、返事の行がその後に描かれるため
+    if (calledLink === null && typedLink !== null && !drawnRows.has(key)) {
+      rowLinks.set(key, typedLink)
+      typedLink = null
+    }
+    drawnRows.add(key)
+
+    const link = calledLink ?? rowLinks.get(key)
+    if (link === undefined) {
+      return next(e)
+    }
+    const drawn = await next(e)
+    const { Box, Text, Link } = $.ui.resolve(e)
+    const line = (
+      <Text>
+        ↳ {link.name} の手順: <Link href={link.url}><Text color={LINK_COLOR}>SKILL.md</Text></Link>
+      </Text>
+    )
+
+    return calledLink === null ? (
+      <Box flexDirection="column">
+        {line}
+        {drawn}
+      </Box>
+    ) : (
+      <Box flexDirection="column">
+        {drawn}
+        {line}
+      </Box>
+    )
   })
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {

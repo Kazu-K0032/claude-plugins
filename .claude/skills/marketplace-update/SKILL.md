@@ -1,6 +1,6 @@
 ---
 name: marketplace-update
-description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイル・入力ヒントの書き方・版の整合・実行時リンクのフックの有無をチェックして修正し、スキルが同梱する mod の検証とテストを流す。プラグインやテンプレートを編集した後、push する前に使用する
+description: claude-plugins マーケットプレイスを更新する時に、init-repo テンプレートの権限設定と各スキルの allowed-tools・出力先・参照パス・カタログ記載・テンプレートの収録物表・重複ファイル・入力ヒントの書き方・版の整合をチェックして修正し、スキルが同梱する mod の検証とテストを流す。プラグインやテンプレートを編集した後、push する前に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git status:*), Bash(git diff:*), Bash(python .claude/skills/marketplace-update/scripts/check.py:*), Bash(python3 .claude/skills/marketplace-update/scripts/check.py:*), Bash(claude plugin validate:*), Bash(claude plugin test:*)
 argument-hint: "[重点的に見たい範囲（任意。省略時はすべてのチェックを同じ重さで見る。例: init-repo のテンプレート / 重複ファイル）]"
@@ -8,7 +8,7 @@ argument-hint: "[重点的に見たい範囲（任意。省略時はすべての
 
 # マーケットプレイス更新チェック
 
-このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）、各プラグインの版（`version`）、スキルの実行時に `SKILL.md` へのリンクを出すフック（`hooks/skill-link.js`）、スキルが同梱する mod（`claude plugin validate`・`claude plugin test`）。
+このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）、各プラグインの版（`version`）、スキルが同梱する mod（`claude plugin validate`・`claude plugin test`）。
 
 ## なぜ必要か
 
@@ -49,7 +49,6 @@ python .claude/skills/marketplace-update/scripts/check.py --base origin/main
 | `duplicated-files` | 重複ファイルの組の片方が存在しない、または `duplicated-files.md` の `paths` に載っていない | 表と `paths` を実際のパスに合わせる |
 | `argument-hint` | 入力ヒントの引数が `[]` か `<>` で囲まれていない、`[]` に「（任意。省略時は」が無い、または `<>` に「任意」「省略」がある | `.claude/rules/argument-hint.md` の書き方に直す。省略時の動きは本文を読んで確かめてから書く |
 | `version` | `plugin.json` の版が `X.Y.Z` でない・プラグインの間でそろっていない、`marketplace.json` に版がある。`--base` を付けたときは、`plugins/` を変えたのに版が上がっていない | 3 つの `plugin.json` を同じ版にし、`marketplace.json` から消す。版を上げるのは、リリースの前に版を上げる PR と hotfix だけ（`docs/release.md`） |
-| `skill-link` | スキルを持つプラグインに `hooks/skill-link.js` が無い、または `hooks/hooks.json` が `UserPromptExpansion` と `PreToolUse`（matcher: `Skill`）の両方で実行していない | 新しいプラグインには `plugins/aidd/hooks/skill-link.js` と `hooks.json` の登録をコピーし、`duplicated-files.md` に組を足す。仕組みはルート `README.md` の「スキルの手順へのリンク」 |
 
 ### 4. WARN を判断する
 

@@ -12,8 +12,6 @@
   8. 各スキル（plugins/ 配下と .claude/skills/）の argument-hint が .claude/rules/argument-hint.md の書き方に沿っているか
   9. 版（version）の書き方。全プラグインの plugin.json に同じ版があり、marketplace.json には書いていないか。
      --base を渡したときは、基準から plugins/ が変わっているのに版が上がっていないものも NG にする（main へのリリースの PR 用）
- 10. スキルを持つ各プラグインが、実行時に SKILL.md へのリンクを出すフック（hooks/skill-link.js）を持ち、
-     hooks.json の UserPromptExpansion と PreToolUse（matcher: Skill）で実行しているか
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>] [--base <比べる ref>]
 終了コード: NG が 1 件でもあれば 1、それ以外は 0（WARN は 0 のまま）
@@ -123,7 +121,6 @@ def main():
 
     check_duplicated_files(repo)
     check_argument_hints(repo)
-    check_skill_links(repo)
     base = sys.argv[sys.argv.index("--base") + 1] if "--base" in sys.argv else None
     check_versions(repo, market, base)
 
@@ -322,37 +319,6 @@ def check_argument_hints(repo):
             elif "任意" in group or "省略" in group:
                 add("NG", "argument-hint",
                     "%s: 必須の引数 %s に「任意」「省略」がある。任意なら [] で書く" % (rel, group))
-
-
-# (イベント, matcher)。UserPromptExpansion は利用者が /プラグイン名:スキル名 と入力したとき、PreToolUse は Claude が Skill ツールで呼んだとき
-SKILL_LINK_EVENTS = (("UserPromptExpansion", None), ("PreToolUse", "Skill"))
-
-
-def check_skill_links(repo):
-    """10: スキルを持つ各プラグインが、実行時に SKILL.md へのリンクを出すフックを持ち、登録しているか。"""
-    for skills_dir in sorted(glob.glob(os.path.join(repo, "plugins", "*", "skills"))):
-        if not glob.glob(os.path.join(skills_dir, "*", "SKILL.md")):
-            continue
-        plugin = os.path.dirname(skills_dir)
-        name = os.path.basename(plugin)
-        if not os.path.isfile(os.path.join(plugin, "hooks", "skill-link.js")):
-            add("NG", "skill-link",
-                "%s に hooks/skill-link.js が無い。plugins/aidd/hooks/skill-link.js をコピーする" % name)
-            continue
-        try:
-            hooks = json.loads(read(os.path.join(plugin, "hooks", "hooks.json"))).get("hooks", {})
-        except (OSError, ValueError):
-            add("NG", "skill-link", "%s の hooks/hooks.json を読めない" % name)
-            continue
-        for event, matcher in SKILL_LINK_EVENTS:
-            registered = any(
-                "skill-link.js" in hook.get("command", "") and (group.get("matcher") or None) == matcher
-                for group in hooks.get(event, []) for hook in group.get("hooks", [])
-            )
-            if not registered:
-                add("NG", "skill-link",
-                    "%s の hooks/hooks.json が %s（matcher: %s）で skill-link.js を実行していない"
-                    % (name, event, matcher or "なし"))
 
 
 SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")

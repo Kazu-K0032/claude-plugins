@@ -1,5 +1,5 @@
 {
-  "description": "セッションの開始時に、kazu マーケットプレイスのプラグインの不具合・改善案を作業の区切りで起票するよう提案させる文面を Claude の文脈に入れる。config を入れて最初のセッションだけ、報告の窓口をユーザーにも知らせる。スキルを実行するとき、そのスキルの SKILL.md への GitHub のリンクを 1 行で表示する（利用者が /プラグイン名:スキル名 と入力したときと、Claude が Skill ツールで呼んだときの両方）",
+  "description": "セッションの開始時に、kazu マーケットプレイスのプラグインの不具合・改善案を作業の区切りで起票するよう提案させる文面を Claude の文脈に入れる。config を入れて最初のセッションだけ、報告の窓口をユーザーにも知らせる",
   "hooks": {
     "SessionStart": [
       {
@@ -8,29 +8,6 @@
             "type": "command",
             "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/hooks/plugin-feedback.js\" || true",
             "timeout": 10
-          }
-        ]
-      }
-    ],
-    "UserPromptExpansion": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-link.js\" || true",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Skill",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "command -v node >/dev/null 2>&1 && node \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-link.js\" || true",
-            "timeout": 5
           }
         ]
       }
