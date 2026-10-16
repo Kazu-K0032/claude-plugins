@@ -22,7 +22,7 @@ argument-hint: "[対象のパス（任意。省略時は追跡中の全テキス
 | ファイル | 役割 |
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/references/harness-principles.md` | 監査の物差しになる、設計思想の要約。本文を Workflow に渡す |
-| `${CLAUDE_PLUGIN_ROOT}/workflows/harness-audit-run.js` | 監査の本体。段ごとのモデルと effort は `MODELS`、束ね方は `BATCH`、横断の突合の分け方は `DETECT_GROUP` が正典 |
+| `${CLAUDE_PLUGIN_ROOT}/workflows/harness-audit-run.js` | 監査の本体。段ごとのモデルと effort は `MODELS`、束ね方は `BATCH`、横断の突合の分け方は `DETECT_GROUP`、体数の上限は `planned` の式と `AGENT_PLAN_LIMIT` が正典 |
 
 ## 何を見るか
 
@@ -88,7 +88,7 @@ Step 1 の一覧から、次を数える。トークン数は事前に分から�
 | 中止 | 何もせずに終わる |
 
 - 「絞る」には、分けて実行すると、グループをまたぐ矛盾は見つからないことを説明に添える
-- 束の数 × 2 + 群の数が 900 を超えそうなら、「全部」は出さない。Workflow のエージェント数の上限（1,000）に当たるため、Workflow 側でも止まる
+- 参照ファイルの `planned` の式で数えた体数が `AGENT_PLAN_LIMIT` を超えそうなら、「全部」は出さない。Workflow のエージェント数の上限に当たるため、Workflow 側でも止まる
 
 ### Step 4: Workflow を呼ぶ
 

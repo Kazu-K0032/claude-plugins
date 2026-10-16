@@ -35,6 +35,7 @@ body:
         - [ ] 検証環境で対象の変更の動作確認を行った
         - [ ] main の必須ジョブ（CI）が green である
         - [ ] ドキュメントの追従を確認した（`/aidd:docs-sync`）
+        - [ ] 設計思想との整合を確認した（`/aidd:harness-audit`）
     validations:
       required: true
 

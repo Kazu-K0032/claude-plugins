@@ -47,7 +47,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | 秘密の混入を CI で止める | シークレットスキャン（gitleaks など）の CI | medium |
 | Issue・PR の定型 | Issue・PR のテンプレート（本文の長さの上限を示す） | low |
 | 編集後に Lint・整形を動かす | PostToolUse のフックと、その定義（`lefthook.yml` など） | low |
-| コミット規約を検証する | `commitlint.config.*` など | low |
+| コミット規約を検証する（Node のプロジェクトだけ） | `commitlint.config.*` など | low |
 
 重大度が low・medium の欠けは、意図して入れていないなら無視してよい。`init-repo` は、一部だけ入れることもできるため。
 

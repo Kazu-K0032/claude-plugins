@@ -110,7 +110,7 @@ const PRESENCE_SCHEMA = {
   additionalProperties: false,
   required: ['harnessInstalled', 'marks', 'missing'],
   properties: {
-    harnessInstalled: { type: 'boolean', description: '印が 2 つ以上あれば true' },
+    harnessInstalled: { type: 'boolean', description: '設計思想の要約の「init-repo の印」の条件を満たせば true' },
     marks: { type: 'array', items: { type: 'string' }, description: '見つかった印のパス' },
     missing: {
       type: 'array',
@@ -528,7 +528,7 @@ const presencePromise = (async () => {
       principles,
       '',
       '手順:',
-      '1. 「init-repo の印」のパスを Glob で確かめ、見つかったものを marks に入れる。2 つ以上なら harnessInstalled=true。',
+      '1. 「init-repo の印」のパスを Glob で確かめ、見つかったものを marks に入れる。要約の条件を満たせば harnessInstalled=true。',
       '2. harnessInstalled=false なら、missing は空配列にして終える。',
       '3. true なら、「土台の仕組み」の表の行ごとに、手がかりのファイルを Read して役割を果たしているかを確かめる。',
       '   パスや書き方が違っても、役割を果たしていれば欠けにしない（例: 別の名前のフックで破壊的な操作を止めている）。',
@@ -834,7 +834,7 @@ const presence = await presencePromise
 if (presence.skipped) {
   log('仕組みの欠けは見ていない（設計思想の要約が無い、または判定の段が失敗した）')
 } else if (!presence.installed) {
-  log(`init-repo の印が 2 つ未満のため、仕組みの欠けは見ていない（見つかった印: ${presence.marks.length ? presence.marks.join(', ') : 'なし'}）`)
+  log(`init-repo の印が条件に足りないため、仕組みの欠けは見ていない（見つかった印: ${presence.marks.length ? presence.marks.join(', ') : 'なし'}）`)
 } else {
   log(`仕組みの欠け: 確定 ${presence.verdicts.filter((v) => v.isReal).length} 件`)
 }
