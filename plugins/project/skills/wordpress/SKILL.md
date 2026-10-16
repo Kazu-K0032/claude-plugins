@@ -27,7 +27,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 - リポジトリの**ルート**で実行すること（サブディレクトリで実行するとスクリプトが停止する）
 - `git` / `bash` が利用可能であること
 - 導入後の Lint には PHP と Composer が、Docker のローカル環境には Docker と Docker Compose が要る（このスキル自体はどちらも使わない）
-- `.claude/settings.json`・`CLAUDE.md` などの土台も要るなら、先に `/project:init-repo` を実行しておく（必須ではない）。土台の `.claude/hooks/post-edit-lint.sh` があれば、手順 8 で PHP の Lint を足す
+- `.claude/settings.json`・`CLAUDE.md` などの土台（`/project:init-repo`）は必須ではない。無ければ手順 1 で、先に入れるかを聞く。土台の `.claude/hooks/post-edit-lint.sh` があれば、手順 8 で PHP の Lint を足す
 
 ## 引数の解釈
 
@@ -60,6 +60,13 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 ## 手順
 
 ### 1. 現状を確認する
+
+最初に、土台の `.claude/settings.json` があるかを Glob で確かめる。無ければ、`AskUserQuestion` で聞く。
+
+| 選択肢 | 次の動き |
+| --- | --- |
+| 先に init-repo を実行する（推奨） | ここで止め、`/project:init-repo` を実行してから `/project:wordpress` を呼び直すよう案内する。どちらも Claude からは呼べないため、利用者が実行する |
+| このまま進める | 次の影響を伝えて続ける。`.claude/hooks/post-edit-lint.sh` も無ければ、PHP の Lint をフックで動かせない（Lint の設定と規約は入る）。秘匿ファイルの deny・破壊的な操作を止めるフックも入らない |
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill wordpress --check
@@ -125,6 +132,8 @@ A・B の場合で、ローカル環境のファイルが無く、引数に `Doc
 ### 3. 導入計画を提示して承認を得る（必須）
 
 `--check` の結果を、新規作成するファイル（`NEW`）・既存のまま残すファイル（`SAME`）・衝突していて判断が要るファイル（`DIFF`）に分けて提示する。あわせて、手順 1 の状態（A・B・C）と入れないファイル、手順 2 で決めたローカル環境、手順 5 の置き換え後の名前、手順 8 でフックに PHP の Lint を足すか、手順 9 で ADR を足す場所を示す。
+
+テンプレートの中身を確かめられるよう、`https://github.com/Kazu-K0032/claude-plugins/tree/v<版>/plugins/project/skills/wordpress/files` も示す。`<版>` は `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` にする。入れている版と同じ中身を見せるため。リリース前の版ではタグが無く、開けない。
 
 ### 4. コピーする
 
@@ -235,7 +244,7 @@ esac
 
 ### 10. 導入後にやることを伝える
 
-コピーが終わったら、次を残作業としてユーザーに提示する。済んでいる項目は省く。コマンドは人が実行する。
+コピーが終わったら、次を残作業としてユーザーに提示する。済んでいる項目は省く。コマンドは人が実行する。最後に、手順 3 と同じテンプレートのリンクを添える。
 
 1. `wordpress/` で `composer install` を実行し、`composer lint` で検査できることを確かめる
 1. `style.css` の `Description`・`Requires at least`・`Requires PHP`、`phpcs.xml.dist` の `testVersion`・`minimum_wp_version`、`compose.yaml` のイメージのタグを、本番の WordPress・PHP・DB の版に合わせる

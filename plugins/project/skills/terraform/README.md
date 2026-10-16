@@ -6,18 +6,18 @@ Terraform でインフラを管理するリポジトリへ「`infra/` 配下の�
 
 ## 使い方
 
-導入先のリポジトリのルートで Claude Code を開き、次を実行する。`.claude/settings.json`・`CLAUDE.md` などの土台も要るなら、先に `/project:init-repo` を実行しておく。
+導入先のリポジトリのルートで Claude Code を開き、次を実行する。`.claude/settings.json`（土台）が無ければ、先に `/project:init-repo` を実行するかを Skill が聞く。
 
 ```text
 /project:terraform
 ```
 
-衝突状況の確認 → 計画の提示 → 承認 → コピー → 衝突の片付け → フックの登録 → Lint のフックへの追加、の順に進む。
+衝突状況の確認 → 計画の提示 → 承認 → コピー → 衝突の片付け → フックと deny の登録 → Lint のフックへの追加、の順に進む。
 
 | 引数の例 | 動き |
 | --- | --- |
 | `規約だけ` | `.claude/rules/terraform.md` だけを入れる |
-| `フックだけ` | `.claude/hooks/guard-terraform.sh` だけを入れ、`.claude/settings.json` に登録する |
+| `フックだけ` | `.claude/hooks/guard-terraform.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
 | `既存は置き換えない` | 既存ファイルに触らない |
 
 既に `.tf` がある場合は、ファイルを動かさず、規約とフックだけを入れて、規約を今の構成に合わせる。手順の詳細は [SKILL.md](SKILL.md) を参照。
@@ -34,7 +34,7 @@ bash <plugin>/scripts/install.sh --skill terraform --apply  # 未存在のファ
 | パス | 内容 | 導入後の調整 |
 | --- | --- | --- |
 | `files/.claude/rules/terraform.md` | 置き場所・ファイルの分け方・変数と出力・秘匿値・実行の手順（Claude は plan まで）・`check` ブロック・`.tftpl` のエスケープ・コメントの規約 | そのまま使える（既存の構成に入れたときは、Skill が場所を合わせる） |
-| `files/.claude/hooks/guard-terraform.sh` | Claude がインフラや state を変えるコマンド（apply・destroy・`test` など。一覧は規約の「実行」）と、`-out` の無い plan・`-target` を止める PreToolUse フック | 止めるコマンドを足すときは `deny_patterns` に追記する |
+| `files/.claude/hooks/guard-terraform.sh` | Claude がインフラや state を変えるコマンド（apply・destroy・`test`・`workspace delete` など。一覧は規約の「実行」）と、`-out` の無い plan・`-target` を止める PreToolUse フック。`workspace select` は承認を求める | 止めるコマンドを足すときは `deny_patterns` に追記する |
 | `files/infra/README.md` | `infra/` の案内板 | 環境を足したら行を足す |
 | `files/infra/.gitignore` | `.terraform/`・state・保存した plan・変数の値（`*.tfvars`）の除外 | そのまま使える |
 | `files/infra/modules/README.md` | modules の案内板 | モジュールを足したら行を足す |
@@ -47,7 +47,7 @@ bash <plugin>/scripts/install.sh --skill terraform --apply  # 未存在のファ
 - 環境はディレクトリで分け、workspace は使わない前提にしている。誤った workspace で apply すると、別の環境が変わるため
 - 利用先の Claude が実行してよいのは、fmt・validate・init・`plan -out=tfplan` まで。apply・destroy・state の書き換えは人が行う（[P1](../../../../docs/policies/p01-operation-boundary.md)）。`guard-terraform.sh` はこれを仕組みで守る
 - フックは `settings.json` の PreToolUse に登録して初めて効く。`settings.json` が無いリポジトリでは Skill は作らず、登録の定義を伝える
-- 秘匿ファイル（`*.tfvars`・`*.tfstate`・`.terraform/`）の読み取りの deny は、`/project:init-repo` の `settings.json` が配る。どのリポジトリでも害が無いため、こちらには含めない
+- 秘匿ファイル（`*.tfvars`・`*.tfstate`・`.terraform/`）の読み取りの deny は、Skill が `settings.json` に足す。Terraform を使うリポジトリにだけ要るため、`/project:init-repo` には含めない（[P6](../../../../docs/policies/p06-common-template.md)）
 - `terraform` のコマンドは、Skill は実行しない（人が行う）。認証情報・state・実際のインフラに触れるため
 
 ## 除外したもの

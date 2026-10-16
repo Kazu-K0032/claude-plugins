@@ -33,7 +33,7 @@ Claude が実行してよい操作と、人が行う操作の線引きを決め�
 | GitHub のそのほか | 読み取り | リリース、ワークフローの実行、リポジトリの作成・設定変更・削除、secrets・variables・鍵・ログインの変更 |
 | 外部ツール | 読み取り | リモートとの反映・取り込み（`clasp push`・`clasp pull` など）、ログイン |
 
-`init-repo` は、この表の禁止のうち、外部ツール以外を deny で配る。線引きと理由は、利用先で読めるよう `.claude/rules/permissions.md` で配る。この方針を変えたら、そちらも直す。外部ツールの禁止は、技術スタック別のスキル（`gas` など）の禁止事項で止める。利用先の Claude にも守らせたいものは、そのスキルがフックを配って止めてよい（`terraform` の `guard-terraform.sh`）。スキルの操作との対応は [permissions.md](permissions.md)。deny は、ルールの形に当たるコマンドしか止められない。`bash -c 'rm …'` や、`gh api` での権限の変更は止まらない。抜けやすい形のうち、`gh api` でのマージと DELETE、`git -C`・`git -c` を付けたコミット・push は個別に止めている。deny で止まらない操作も、この線引きに従う。
+`init-repo` は、この表の禁止のうち、外部ツール以外を deny で配る。線引きと理由は、利用先で読めるよう `.claude/rules/permissions.md` で配る。この方針を変えたら、そちらも直す。外部ツールの禁止は、技術スタック別のスキル（`gas` など）の禁止事項で止める。利用先の Claude にも守らせたいものは、そのスキルがフックを配って止めてよい（`terraform` の `guard-terraform.sh`）。技術に依る秘匿ファイル（`*.tfstate` など）の読み取りの deny も、そのスキルが承認を得て足す。スキルの操作との対応は [permissions.md](permissions.md)。deny は、ルールの形に当たるコマンドしか止められない。`bash -c 'rm …'` や、`gh api` での権限の変更は止まらない。抜けやすい形のうち、`gh api` でのマージと DELETE、`git -C`・`git -c` を付けたコミット・push は個別に止めている。deny で止まらない操作も、この線引きに従う。
 
 `git remote` は、変更だけでなく読み取り（`git remote -v` など）も deny で止める。変更系のサブコマンドを並べると、抜けが出やすいため。リモートの URL は `gh repo view` で確かめる。
 

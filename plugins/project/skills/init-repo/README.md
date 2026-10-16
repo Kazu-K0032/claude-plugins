@@ -12,7 +12,7 @@
 /project:init-repo
 ```
 
-衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定とスペルチェックの除外語の調整、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
+衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定とスペルチェックの除外語の調整 → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
 
 | 引数の例 | 動き |
 | --- | --- |
@@ -92,6 +92,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | アプリ固有のログ監視フック | 対象プロダクト専用 |
 | Skill・エージェント・Workflow | プラグイン本体として配布済み。リポジトリへコピーしない |
 | 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。技術スタック別の Skill（`/project:gas`・`/project:terraform` 等）が配るか、必要なリポジトリで `.claude/rules/` に追加する |
+| Terraform の秘匿ファイル（`*.tfvars`・`*.tfstate` 等）の deny と、破壊的なコマンドの検出 | Terraform を使うリポジトリにだけ要る。`/project:terraform` が `settings.json` に deny を足し、`guard-terraform.sh` で止める |
 
 ## なぜ Skill として配るのか
 

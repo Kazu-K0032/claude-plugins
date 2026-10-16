@@ -17,20 +17,6 @@ command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 [ -z "$command" ] && exit 0
 
 patterns=(
-# 保存した plan を実インフラへ反映する。誤った plan や別環境の plan だと、本番のリソースが変わる・消える
-'terraform[[:space:]]+apply'
-# 全リソースを削除する。本番環境で実行するとインフラ構成がすべて失われる
-'terraform[[:space:]]+destroy'
-# state ファイルの強制上書き。古い state で push すると plan/apply が実態と乖離する
-'terraform[[:space:]]+state[[:space:]]+push'
-# state からリソースを削除。クラウド側のリソースは残るが Terraform が管理を失い次の apply で再作成衝突が起きる
-'terraform[[:space:]]+state[[:space:]]+rm'
-# state 内のリソース参照先を書き換え。誤った引数で不整合が生じると destroy → 再作成が発生する
-'terraform[[:space:]]+state[[:space:]]+mv'
-# backend のロックを強制解除。別プロセスが apply 中に実行すると state が破損する
-'terraform[[:space:]]+force-unlock'
-# workspace 切り替え。誤った workspace で apply すると別環境に影響する
-'terraform[[:space:]]+workspace[[:space:]]+(select|delete)'
 # コンテナと named volume を削除する。DB データが消えるとアプリの全コンテンツが失われる
 'docker[[:space:]]+compose[[:space:]]+down[[:space:]].*-v'
 'docker-compose[[:space:]]+down[[:space:]].*-v'
@@ -51,7 +37,7 @@ if printf '%s' "$command" | grep -qE "$p"; then
     hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "ask",
-        permissionDecisionReason: ("破壊的操作の可能性: " + $cmd + "\n削除・変更される対象を列挙し、実データ（本番環境・tfstate 等）を含まないか確認してから承認すること。")
+        permissionDecisionReason: ("破壊的操作の可能性: " + $cmd + "\n削除・変更される対象を列挙し、実データ（本番環境・データベース等）を含まないか確認してから承認すること。")
     }
     }'
     exit 0

@@ -23,8 +23,6 @@
     "shellcheck",
     "ssot",
     "stoks",
-    "tfstate",
-    "tfvars",
     "toks",
     "toplevel"
   ]
