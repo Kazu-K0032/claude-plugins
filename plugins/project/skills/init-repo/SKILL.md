@@ -73,7 +73,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・コミット / push・削除・権限の変更・深刻な外部操作の deny）・フックの配線と、Python のキャッシュを作らない環境変数 | Claude Code を使う（常に該当） | `.claude/settings.json` |
 | `.claude/hooks/guard-destructive.sh` | 破壊的コマンドの承認エスカレーション | `settings.json` を入れる | 既存の PreToolUse フック |
 | `.claude/hooks/post-edit-lint.sh` | 編集後の Lint・整形（推論と機械の検査の分担） | ソースコードがある | 既存の PostToolUse フック |
-| `lefthook.yml` | Lint・整形のツールの定義（`post-edit-lint.sh` が使う） | `post-edit-lint.sh` を入れる | `lefthook.yml`・`.lefthook.yml`・`lefthook.yaml`（`claude-edit` を足す） |
+| `lefthook.yml` | Lint・整形のツールの定義（`post-edit-lint.sh` が使う） | `post-edit-lint.sh` を入れる | `lefthook.yml`・`lefthook.yaml`・`.lefthook.yml`・`.lefthook.yaml`（`claude-edit` を足す） |
 | `.claude/hooks/session-start.sh` | セッション開始時の運用ルール通知 | `settings.json` を入れる | 既存の SessionStart フック |
 | `.claude/hooks/guard-git-write.sh` | ラッパー経由まで含めた git / gh 書き込みの遮断 | 要件に明記がある場合のみ（既定では未配線） | 同等の PreToolUse フック |
 | `.claude/rules/comment.md` | コメントの書き方の規約 | ソースコードがある | `CLAUDE.md`・`.claude/rules/` 内のコメント規約 |
@@ -140,6 +140,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --check
 
 `commitlint.config.mjs` は `NEW` でも、ほかの commitlint の設定（`commitlint.config.*`・`.commitlintrc*`・`package.json` の `commitlint` キー）があれば入れない。前の版の `init-repo` が配った `commitlint.config.js` もこれに当たる。設定が 2 つあると、どちらが読まれるか分かりにくいため。手順 3 では `--only` でこのファイルを外してコピーする。
 
+`lefthook.yml` も `NEW` でも、別名の設定（`lefthook.yaml`・`.lefthook.yml`・`.lefthook.yaml`）があれば入れない。両方あると lefthook は `lefthook.yml` だけを読み、既存の設定の検査が黙って止まるため。手順 3 では `--only` でこのファイルを外してコピーし、手順 5 で既存の設定に `claude-edit` を足す。
+
 ユーザーが一部だけを希望した場合は、`--only` で対象を絞る（手順 3）。
 
 テンプレートの中身を確かめられるよう、`https://github.com/Kazu-K0032/claude-plugins/tree/v<版>/plugins/project/skills/init-repo/files` も示す。`<版>` は `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` にする。入れている版と同じ中身を見せるため。リリース前の版ではタグが無く、開けない。
@@ -187,7 +189,7 @@ README は「どこに何があるか」を示す案内板として扱う（`.cl
 2. ユーザーの承認を得てから、本文を移動先へそのまま移す（要約・削除しない）。移動先のサブディレクトリを新しく作る場合は、同時にその `README.md`（案内板）も置く
 3. ルートの `README.md` はテンプレートの構成に合わせる。移した本文へのリンクは、ルートではなく移動先の案内板（`docs/README.md` やサブディレクトリの `README.md`）に置き、ルートからは `docs/README.md` だけを案内する。概要（1〜2 行）・各環境のリンク・外部リンクなど、リンク集として残せる情報はそのまま残す
 
-### 5. エディタ設定・スペルチェックの除外語・Lint と整形のツールを調整する
+### 5. エディタ設定・Lint と整形のツール・スペルチェックの除外語を調整する
 
 `.vscode/`・`cspell.json`・`lefthook.yml` を導入した（または既にある）場合は、プロジェクトに合わせて中身を提案する。どれも**一覧を見せて承認を得てから**書き込む。
 
@@ -206,30 +208,9 @@ README は「どこに何があるか」を示す案内板として扱う（`.cl
 
 表にない技術は、公式に推奨されている拡張機能を調べてから提案する。拡張機能 ID の推測で書かない。
 
-#### スペルチェックの除外語（`cspell.json` の `words`）
-
-除外語は `.vscode/settings.json` の `cSpell.words` ではなく `cspell.json` に置く。VS Code の拡張機能と cspell の CLI（`pr-checks.yml` のスペルチェック）の両方が読むのは `cspell.json` だけのため。テンプレート自身が使う語（`aidd`・`ssot` 等）は登録済み。
-
-次から固有名詞・技術用語の候補を集め、重複を除いて小文字で並べる。
-
-- `package.json` などの依存パッケージ名・プロジェクト名
-- ルート直下のディレクトリ名・主要なファイル名
-- `README.md` / `CLAUDE.md` / `docs/` に出てくるサービス名・製品名・略語
-
-`npx` が使える環境では、次の結果も候補に加えてよい（初回はパッケージの取得が走る）。
-
-```bash
-npx --yes cspell@9.8.0 lint --no-progress --words-only --unique --dot --gitignore --exclude ".git/**" "**/*.{md,ts,tsx,js,jsx,py,go,rs,json,yml,yaml}"
-```
-
-- 版は `pr-checks.yml` のスペルチェックとそろえる。版を固定しないと最新版が使われ、最新版が要求する Node より手元の Node が古いと失敗する
-- `--dot` は `.claude/`・`.github/` などドット始まりのディレクトリも対象にする（既定では検査しない）。`--exclude ".git/**"` は、そのときに `.git/` の中まで検査しないためのもの
-
-一般的な英単語の誤字は候補から外す。除外語に入れるのは「正しい綴りだが辞書に無い語」だけ。`pr-checks.yml` を入れた場合、ここで登録しなかった語は PR のスペルチェックで誤字として出る。
-
 #### Lint と整形のツール（`lefthook.yml` の `claude-edit`）
 
-土台が持つのは、推論（Claude）と機械の検査を分ける仕組みだけである。どのツールを使うかはプロジェクトが決めるため、次の順で決めて `claude-edit` の `commands` に足す。
+土台が持つのは、推論（Claude）と機械の検査を分ける仕組みだけである。どのツールを使うかはプロジェクトが決めるため、次の順で決めて `claude-edit` の `commands` に足す。別名の設定（`.lefthook.yml` など）を使っているときは、そのファイルに足す。`claude-edit` が無ければ、`piped: true` と一緒に定義ごと足す。
 
 1. 引数でツールを指定されていれば、それを使う
 1. 指定が無ければ、既存の設定を Glob で探す（例：`biome.json`・`.oxlintrc.json`・`eslint.config.*`・`.prettierrc*`・`ruff.toml`・`pyproject.toml`・`.golangci.*`、`package.json` の `scripts` の `lint`・`format`）。あれば、それを使う
@@ -257,6 +238,28 @@ claude-edit:
 ```
 
 ツールの導入（`npm install` など）は人が行う。手順 6 で伝える。
+
+#### スペルチェックの除外語（`cspell.json` の `words`）
+
+除外語は `.vscode/settings.json` の `cSpell.words` ではなく `cspell.json` に置く。VS Code の拡張機能と cspell の CLI（`pr-checks.yml` のスペルチェック）の両方が読むのは `cspell.json` だけのため。テンプレート自身が使う語（`aidd`・`ssot` 等）は登録済み。
+
+次から固有名詞・技術用語の候補を集め、重複を除いて小文字で並べる。
+
+- `package.json` などの依存パッケージ名・プロジェクト名
+- ルート直下のディレクトリ名・主要なファイル名
+- `README.md` / `CLAUDE.md` / `docs/` に出てくるサービス名・製品名・略語
+- 上の小節で `lefthook.yml` に書いたツール名・オプション（PR のスペルチェックは `lefthook.yml` も検査する）
+
+`npx` が使える環境では、次の結果も候補に加えてよい（初回はパッケージの取得が走る）。
+
+```bash
+npx --yes cspell@9.8.0 lint --no-progress --words-only --unique --dot --gitignore --exclude ".git/**" "**/*.{md,ts,tsx,js,jsx,py,go,rs,json,yml,yaml}"
+```
+
+- 版は `pr-checks.yml` のスペルチェックとそろえる。版を固定しないと最新版が使われ、最新版が要求する Node より手元の Node が古いと失敗する
+- `--dot` は `.claude/`・`.github/` などドット始まりのディレクトリも対象にする（既定では検査しない）。`--exclude ".git/**"` は、そのときに `.git/` の中まで検査しないためのもの
+
+一般的な英単語の誤字は候補から外す。除外語に入れるのは「正しい綴りだが辞書に無い語」だけ。`pr-checks.yml` を入れた場合、ここで登録しなかった語は PR のスペルチェックで誤字として出る。
 
 ### 6. 導入後にやることを伝える
 

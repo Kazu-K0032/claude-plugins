@@ -210,10 +210,17 @@ Lint の設定（`composer.json`・`phpcs.xml.dist`）と `.gitignore` は、テ
 
 | フックの形 | 足すもの・場所 |
 | --- | --- |
-| `lefthook.yml` に `claude-edit` がある（今の `init-repo` の形） | `claude-edit` の `commands` に、下の YAML を足す。`post-edit-lint.sh` は変えない |
+| `post-edit-lint.sh` が `lefthook run claude-edit` を呼ぶ（今の `init-repo` の形） | lefthook の設定（`lefthook.yml`・`.lefthook.yml` など）の `claude-edit` の `commands` に、下の YAML を足す。`claude-edit` が無ければ、`piped: true` と一緒に定義ごと足す |
 | `post-edit-lint.sh` に `[ -d "$LINT_DIR/node_modules/.bin" ] \|\| finish` の行がある（古い `init-repo` の形） | 下の bash のブロックを、その行より前に足す。後ろに足すと、Node を使わないリポジトリでブロックまで届かないため |
 | 上の行が無く、`post-edit-lint.sh` に `# --- 言語別チェック` の区切りがある | 下の bash のブロックを、区切りのすぐ後ろに足す |
 | `report`・`finish` を使っていない（`init-repo` 以外の形） | 書き換えず、下の bash のブロックを示して、利用者に足し方を決めてもらう |
+
+フックが古い形のまま `lefthook.yml` もある（`init-repo` を入れ直し、フックを据え置いた）ときは、`lefthook.yml` に足しても動かない。`AskUserQuestion` で、次のどちらにするかを聞く。
+
+| 選択肢 | 扱い |
+| --- | --- |
+| `lefthook.yml` に足す（推奨） | 下の YAML を足す。フックを今の形にするため、手順 10 で `/project:init-repo` を実行し、`post-edit-lint.sh` を上書きするよう伝える |
+| 古い形のフックに足す | 下の bash のブロックを、上の表の古い形の行に従って足す |
 
 `lefthook.yml` に足す定義。検査するのは、`phpcs.xml.dist` の `<file>` と同じく、テーマと mu-plugins だけにする。`{staged_files}` は `root` からの相対パスになり、`glob` はリポジトリのルートから数える。
 
@@ -287,6 +294,7 @@ Docker の雛形を入れた、またはローカル環境のファイルがあ�
 1. Docker の雛形を入れなかった場合は、WordPress を動かす環境でテーマを有効にする。ローカル環境を作るときは、規約の「ローカル環境」に沿う
 1. `CLAUDE.md` があれば、「ディレクトリ」に `wordpress/` を足し、「反映されない」と判断する前の配信経路に、有効なテーマとマウント元（`wordpress/compose.yaml` など）を書く。ルートの `README.md` から `wordpress/README.md` へ案内する
 1. 手順 8 でフックに足さなかった場合は、PHP の Lint と Docker の検出をフックで動かすかを決める
+1. 手順 8 で、古い形のフックのまま `lefthook.yml` に足した場合は、`/project:init-repo` を実行して `post-edit-lint.sh` を上書きする。上書きするまで、足した定義は動かない
 1. 手順 9 で ADR の一覧が無かった場合は、足した ADR を一覧に載せるかを決める
 1. プラグインを Git で管理している場合は、`.gitignore` と規約のプラグインの行を、管理する前提に直したことを伝える
 

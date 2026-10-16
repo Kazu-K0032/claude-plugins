@@ -22,7 +22,8 @@
 | 場所 | 足すもの |
 | --- | --- |
 | `.claude/settings.json` | フック（`hooks`）と、その技術の秘匿ファイルの deny |
-| `lefthook.yml` の `claude-edit` | その技術の Lint・整形のツール |
+| lefthook の設定（`lefthook.yml` など）の `claude-edit` | その技術の Lint・整形のツール |
+| `.claude/hooks/post-edit-lint.sh` の言語別のブロック（前の版の形だけ） | その技術の Lint。`lefthook` を呼ばない前の版のフックが残る利用先との互換のため |
 | `.claude/hooks/guard-destructive.sh` の `patterns` | その技術の破壊的な操作 |
 | `cspell.json` の `words` | テンプレートが使う語 |
 | `.claude/rules/<技術>.md` | その技術の規約（新しいファイル） |

@@ -157,10 +157,17 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/terraform/files/<同�
 
 | フックの形 | 足すもの・場所 |
 | --- | --- |
-| `lefthook.yml` に `claude-edit` がある（今の `init-repo` の形） | `claude-edit` の `commands` に、下の YAML を足す。`post-edit-lint.sh` は変えない |
+| `post-edit-lint.sh` が `lefthook run claude-edit` を呼ぶ（今の `init-repo` の形） | lefthook の設定（`lefthook.yml`・`.lefthook.yml` など）の `claude-edit` の `commands` に、下の YAML を足す。`claude-edit` が無ければ、`piped: true` と一緒に定義ごと足す |
 | `post-edit-lint.sh` に `[ -d "$LINT_DIR/node_modules/.bin" ] \|\| finish` の行がある（古い `init-repo` の形） | 下の bash のブロックを、その行より前に足す。後ろに足すと、Node を使わないリポジトリでブロックまで届かないため |
 | 上の行が無く、`post-edit-lint.sh` に `# --- 言語別チェック` の区切りがある | 下の bash のブロックを、区切りのすぐ後ろに足す |
 | `report`・`finish` を使っていない（`init-repo` 以外の形） | 書き換えず、下の bash のブロックを示して、利用者に足し方を決めてもらう |
+
+フックが古い形のまま `lefthook.yml` もある（`init-repo` を入れ直し、フックを据え置いた）ときは、`lefthook.yml` に足しても動かない。`AskUserQuestion` で、次のどちらにするかを聞く。
+
+| 選択肢 | 扱い |
+| --- | --- |
+| `lefthook.yml` に足す（推奨） | 下の YAML を足す。フックを今の形にするため、手順 9 で `/project:init-repo` を実行し、`post-edit-lint.sh` を上書きするよう伝える |
+| 古い形のフックに足す | 下の bash のブロックを、上の表の古い形の行に従って足す |
 
 `lefthook.yml` に足す定義。整形はファイルを書き換える。`*.tf` は `.tfvars` に一致しない。
 
@@ -206,6 +213,7 @@ esac
 1. 手順 6 でフックと deny を登録しなかった場合は、`.claude/settings.json` に手順 6 の定義を足す（`/project:init-repo` で土台を入れてからでもよい）
 1. 手順 6 で `guard-destructive.sh` に古い Terraform のブロックや `patterns` の行が見つかった場合は、`guard-terraform.sh` と重なるため、消してよい
 1. 手順 7 でフックに足さなかった場合は、`terraform fmt` をフックで動かすかを決める
+1. 手順 7 で、古い形のフックのまま `lefthook.yml` に足した場合は、`/project:init-repo` を実行して `post-edit-lint.sh` を上書きする。上書きするまで、足した定義は動かない
 1. 手順 4 で規約のまま残した違いがあれば、構成を直すかを決める
 
 ## 禁止事項
