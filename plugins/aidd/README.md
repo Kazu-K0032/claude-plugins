@@ -16,7 +16,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
-| `/aidd:harness-audit` | リポジトリのファイルが規約・方針・価値に合うかと、ファイル間の矛盾・重複を監査する。実行前に件数とエージェント数の見込みを示して聞く |
+| `/aidd:harness-audit` | リポジトリ全体が、このマーケットプレイスの設計思想と規約に合うかを監査する。init-repo からの作り直しの後や、統合ブランチへのマージ前に使う。実行前に件数とエージェント数の見込みを示して聞く |
 
 同梱エージェント。
 
@@ -29,7 +29,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | Workflow | 用途 |
 | --- | --- |
 | `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証して、直す箇所を high・medium・low に分け、推奨アクションを添えて出力 |
-| `harness-audit-run` | `/aidd:harness-audit` の本体。規約への適合と、ファイル間の値の矛盾・重複記述・参照方向違反を監査する。対象の一覧を `args` で受け取るため、スキルから呼ぶ |
+| `harness-audit-run` | `/aidd:harness-audit` の本体。設計思想・規約への適合、土台の仕組みの欠け、ファイル間の値の矛盾・重複記述・参照方向違反を監査する。対象の一覧と設計思想の要約を `args` で受け取るため、スキルから呼ぶ |
 
 収録は上記 9 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
 
@@ -58,7 +58,8 @@ aidd/
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
     ├── short-body.md    # Issue・PR の本文の長さ
-    └── ai-research.md   # AI 出力を引用として扱わないための規約
+    ├── ai-research.md   # AI 出力を引用として扱わないための規約
+    └── harness-principles.md # 設計思想の要約（harness-audit の物差し）
 ```
 
 ## references/ とは何か
@@ -177,8 +178,13 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 `pr-create`・`issue-start`・`issue-pr-sync` は、本文を 500 文字以内、1 文・1 項目を 50 文字以内で書く。書いたら `scripts/body_length.js` で数える。長い本文は読まれないため（[P8](../../docs/policies/p08-short-body.md)）。上限と数え方は `references/short-body.md` にある。
 
-### 監査は、実行前に見込みを示してから走らせる
+### ハーネス監査は、設計思想を物差しにし、実行前に見込みを示す
 
-`harness-audit` は、ファイル数ぶんのエージェントを動かすため、費用が大きい。そのため、スキルが対象を数え、件数・総量・エージェント数を示して続けるかを聞く。Workflow は利用者に質問できないため、入口をスキルにしている。
+`harness-audit` は、リポジトリ全体がこのマーケットプレイスの設計思想に合うかを見る最終チェック。init-repo から作り直した後や、統合ブランチへのマージ前に使う。
 
-段ごとのモデルは、`workflows/harness-audit-run.js` の `MODELS` で固定する。呼ぶ人のモデルで費用が変わらないようにするため。規約の整理・横断の突合・検証は opus にし、判断の質を落とさない（[V1](../../docs/values/v01-quality-over-speed.md)）。ファイル数ぶん走る検査は sonnet にし、誤検出は検証の段で落とす。
+- 物差し：利用先には `docs/values`・`docs/policies` が配られないため、要点を `references/harness-principles.md` に同梱する（[P5](../../docs/policies/p05-standalone-plugin.md)）。価値・方針・init-repo の土台を変えたら、この要約も直す
+- 仕組みの欠け：存在するファイルを読むだけでは、土台の欠けに気づけない。そのため、init-repo の印があるリポジトリでは、要約の「土台の仕組み」を役割ごとに確かめる
+- 見込みの確認：Workflow は利用者に質問できないため、入口をスキルにし、件数・総量・エージェント数を示して続けるかを聞く
+- モデル：`workflows/harness-audit-run.js` の `MODELS` で段ごとに固定する。呼ぶ人のモデルで費用が変わらないようにするため。判断の段は opus にし、質を落とさない（[V1](../../docs/values/v01-quality-over-speed.md)）。数の多い検査は sonnet にし、誤検出は検証の段で落とす
+- 束ねる：エージェントは 1 体ごとに共通の前提を読むため、体数がそのまま費用になる。小さいファイルは束ねて 1 体で検査する（`BATCH`）
+- 2 段の突合：1 体が読む事実が多すぎると取りこぼすため、件数が多いときは、ディレクトリの群ごとに突き合わせてから全体で突き合わせる（`DETECT_GROUP`）

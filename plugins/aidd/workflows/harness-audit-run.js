@@ -1,48 +1,58 @@
 export const meta = {
-  // リポジトリのファイルが、そのリポジトリの規約・方針・価値（ハーネス）に合うかと、
-  // ファイル間の意味的な整合性を fan-out で網羅監査する workflow。
+  // リポジトリ全体が、本マーケットプレイスの設計思想（aidd × DocDD）と、そのリポジトリの規約に合うかを、
+  // fan-out で網羅監査する workflow。init-repo からの作り直しの後や、統合ブランチへのマージ前の最終チェックに使う。
   // 機械チェック（リンク切れ・markdown 規約）は Lint の担当として重複させない。
   //
-  // 対象の一覧は /aidd:harness-audit スキルが決め、args で渡す。
+  // 対象の一覧と設計思想の要約（aidd の references/harness-principles.md の本文）は、/aidd:harness-audit スキルが args で渡す。
   // 実行前に件数と体数の見込みを示して利用者の確認を取るのはスキル側（workflow からは利用者に質問できない）。
   // 出力は tmp/<branch>/harness-audit_<timestamp>.md のみ。修正は行わない。
   name: 'harness-audit-run',
   description:
-    'ファイルが規約・方針・価値に合うかと、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。通常は /aidd:harness-audit から呼ぶ（args で { files: [...] } を渡す）',
+    'リポジトリ全体がマーケットプレイスの設計思想と規約に合うか（規約違反・価値に反する・規約のずれ・仕組みの欠け）と、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。通常は /aidd:harness-audit から呼ぶ（args で { files, principles } を渡す）',
   phases: [
-    { title: 'Rubric', detail: '規約・方針・価値を探し、当てるファイル付きのチェックリストにする', model: 'opus' },
-    { title: 'Inspect', detail: '1ファイル=1エージェントで、規約への違反の候補と事実を抽出', model: 'sonnet' },
-    { title: 'Detect', detail: '全ファイルの事実集合を横断突合し矛盾・重複・参照方向違反の候補を生成', model: 'opus' },
-    { title: 'Verify', detail: '違反の候補はファイルごと、横断の候補は1件ごとに敵対的に検証', model: 'opus' },
+    { title: 'Rubric', detail: '設計思想の要約とリポジトリの規約から、当てるファイル付きのチェックリストと規約のずれの候補を作る', model: 'opus' },
+    { title: 'Presence', detail: 'init-repo の印があれば、土台の仕組みの欠けを判定して反証する', model: 'opus' },
+    { title: 'Inspect', detail: '小さいファイルは束ねて、違反の候補と事実を抽出', model: 'sonnet' },
+    { title: 'Detect', detail: '事実集合を横断突合し矛盾・重複・参照方向違反の候補を生成（多ければディレクトリの群ごと → 全体の 2 段）', model: 'opus' },
+    { title: 'Verify', detail: '違反の候補は束ごと、規約のずれと横断の候補は1件ごとに敵対的に検証', model: 'opus' },
     { title: 'Report', detail: '確定指摘を重大度別に分け、推奨アクションを添えて tmp/<branch>/harness-audit_<timestamp>.md へ追記', model: 'sonnet' },
   ],
 }
 
 // --- 段ごとのモデルと effort ---
 // 呼び出し元のモデルに任せると、費用が呼ぶ人のモデルで変わるため固定する。
-// 規約の整理・横断の突合・検証は判断の質が結果を決めるため、opus / high で質を落とさない（V1）。
-// 各ファイルの検査はファイル数ぶん走るため sonnet にし、規約への適合の判断が入るぶん effort を上げる。
-// 誤検出は後段の検証で落とす。
+// 規約の整理・欠けの判定・横断の突合・検証は判断の質が結果を決めるため、opus / high で質を落とさない（V1）。
+// 各ファイルの検査は数が多いため sonnet にし、規約への適合の判断が入るぶん effort を上げる。誤検出は検証の段で落とす。
 const MODELS = {
   rubric: { model: 'opus', effort: 'high' },
+  presence: { model: 'opus', effort: 'high' },
   inspect: { model: 'sonnet', effort: 'high' },
   detect: { model: 'opus', effort: 'high' },
   verify: { model: 'opus', effort: 'high' },
   report: { model: 'sonnet', effort: 'medium' },
 }
 
-// 1 つの workflow のエージェント数は合計 1,000 が上限。
-// Inspect と、ファイルごとの Verify が最大でファイル数ぶんずつ走り、横断の Verify と前後の段にも残りが要るため、
-// 途中で上限に当たって結果が欠ける前に止める。
-const MAX_FILES = 450
+// --- 小さいファイルの束ね方 ---
+// エージェントは 1 体ごとに共通の前提（指示・CLAUDE.md など）を読むため、体数がそのまま費用になる。
+// 小さいファイルは束ねて 1 体で検査し、大きいファイルと大きさが分からないファイルは 1 件で 1 体にする。
+const BATCH = { smallBytes: 8000, maxBytes: 32000, maxFiles: 8 }
+
+// --- 横断の突合の分け方 ---
+// 1 体が読む事実集合が大きすぎると取りこぼすため、これを超えたらディレクトリの群ごと → 全体の 2 段にする。
+const DETECT_GROUP = { maxFiles: 60 }
+
+// 1 つの workflow のエージェント数は合計 1,000 が上限。途中で当たって結果が欠ける前に止められるよう、
+// 実行前に数えられる体数（横断の候補の検証を除く）がこれを超えたら実行しない。
+const AGENT_LIMIT = 1000
+const AGENT_PLAN_LIMIT = 900
 
 // --- スキーマ定義（agent の構造化出力を強制する） ---
 
-// Rubric: 判定に使う規約と、そこから作ったチェックリスト
+// Rubric: 判定に使う規約と、そこから作ったチェックリスト、規約のずれの候補
 const RUBRIC_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['rubrics', 'checklist', 'hasReferenceDirectionRule', 'ssotTableFile'],
+  required: ['rubrics', 'checklist', 'drift', 'hasReferenceDirectionRule', 'ssotTableFile'],
   properties: {
     rubrics: {
       type: 'array',
@@ -54,7 +64,7 @@ const RUBRIC_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['id', 'rule', 'appliesTo', 'source', 'basis'],
+        required: ['id', 'rule', 'appliesTo', 'source', 'basis', 'origin'],
         properties: {
           id: { type: 'string', description: '項目の識別子（規約は R1, R2…、価値は V1, V2…）' },
           rule: { type: 'string', description: 'ファイルの中身で確かめられる決まり（1〜2 文）' },
@@ -63,8 +73,23 @@ const RUBRIC_SCHEMA = {
             items: { type: 'string' },
             description: '当てるファイルの glob（*・**・? のみ。例: **/*.md, .claude/settings.json）',
           },
-          source: { type: 'string', description: '出典のパスと見出し' },
+          source: { type: 'string', description: '出典のパスと見出し（同梱の思想なら「設計思想の要約」と見出し）' },
           basis: { type: 'string', enum: ['rule', 'value'], description: '具体的な決まりなら rule、価値・原則なら value' },
+          origin: { type: 'string', enum: ['marketplace', 'repo'], description: '同梱の思想から取ったか、リポジトリの規約から取ったか' },
+        },
+      },
+    },
+    drift: {
+      type: 'array',
+      description: 'リポジトリの規約が、同梱の思想と食い違っている箇所の候補',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['topic', 'files', 'detail'],
+        properties: {
+          topic: { type: 'string' },
+          files: { type: 'array', items: { type: 'string' }, description: '食い違っている規約のファイル' },
+          detail: { type: 'string', description: '規約のどの記述が、思想のどの文と食い違うか（思想の文を引用する）' },
         },
       },
     },
@@ -79,8 +104,56 @@ const RUBRIC_SCHEMA = {
   },
 }
 
+// Presence: init-repo の印と、土台の仕組みの欠け
+const PRESENCE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['harnessInstalled', 'marks', 'missing'],
+  properties: {
+    harnessInstalled: { type: 'boolean', description: '印が 2 つ以上あれば true' },
+    marks: { type: 'array', items: { type: 'string' }, description: '見つかった印のパス' },
+    missing: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['mechanism', 'severity', 'detail'],
+        properties: {
+          mechanism: { type: 'string', description: '欠けている仕組み（要約の「土台の仕組み」の名前）' },
+          severity: { type: 'string', enum: ['high', 'medium', 'low'] },
+          detail: { type: 'string', description: 'どこを見て、何が無かったか' },
+        },
+      },
+    },
+  },
+}
+
+// Presence の反証: 欠けごとの判定
+const PRESENCE_VERDICT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['verdicts'],
+  properties: {
+    verdicts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['mechanism', 'detail', 'isReal', 'severity', 'reason'],
+        properties: {
+          mechanism: { type: 'string' },
+          detail: { type: 'string' },
+          isReal: { type: 'boolean' },
+          severity: { type: 'string', enum: ['high', 'medium', 'low'] },
+          reason: { type: 'string' },
+        },
+      },
+    },
+  },
+}
+
 // Inspect: 1ファイルから抽出した、規約への違反の候補と、他ファイルと衝突し得る事実集合
-const INSPECT_SCHEMA = {
+const INSPECT_FILE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   required: ['file', 'violations', 'facts', 'ssotOwned', 'referencesUp', 'suspectInlineDetail'],
@@ -123,8 +196,18 @@ const INSPECT_SCHEMA = {
   },
 }
 
-// Verify（ファイルごと）: 1ファイルの違反の候補をまとめて判定した結果
-const FILE_VERDICT_SCHEMA = {
+// Inspect: 束ねたファイルごとの結果
+const INSPECT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['results'],
+  properties: {
+    results: { type: 'array', items: INSPECT_FILE_SCHEMA, description: '対象のファイルごとに 1 件' },
+  },
+}
+
+// Verify（束ごと）: 束の中の違反の候補をまとめて判定した結果
+const BATCH_VERDICT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   required: ['verdicts'],
@@ -134,8 +217,9 @@ const FILE_VERDICT_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['ruleId', 'location', 'detail', 'isReal', 'severity', 'reason'],
+        required: ['file', 'ruleId', 'location', 'detail', 'isReal', 'severity', 'reason'],
         properties: {
+          file: { type: 'string' },
           ruleId: { type: 'string' },
           location: { type: 'string' },
           detail: { type: 'string' },
@@ -149,22 +233,44 @@ const FILE_VERDICT_SCHEMA = {
 }
 
 // Detect: 横断突合で挙がった指摘候補
+const CANDIDATE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['kind', 'topic', 'files', 'detail'],
+  properties: {
+    kind: { type: 'string', enum: ['contradiction', 'duplication', 'reference-direction'] },
+    topic: { type: 'string' },
+    files: { type: 'array', items: { type: 'string' } },
+    detail: { type: 'string' },
+  },
+}
 const DETECT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   required: ['candidates'],
   properties: {
-    candidates: {
+    candidates: { type: 'array', items: CANDIDATE_SCHEMA },
+  },
+}
+
+// Detect（群ごと）: 群の中の候補と、ほかの群との突合に回す要点の事実
+const GROUP_DETECT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['candidates', 'keyFacts'],
+  properties: {
+    candidates: { type: 'array', items: CANDIDATE_SCHEMA },
+    keyFacts: {
       type: 'array',
+      description: 'ほかの群のファイルも書いていそうな事実（同じ値を持つファイルはまとめる）',
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['kind', 'topic', 'files', 'detail'],
+        required: ['topic', 'value', 'files'],
         properties: {
-          kind: { type: 'string', enum: ['contradiction', 'duplication', 'reference-direction'] },
           topic: { type: 'string' },
+          value: { type: 'string' },
           files: { type: 'array', items: { type: 'string' } },
-          detail: { type: 'string' },
         },
       },
     },
@@ -233,8 +339,64 @@ function applies(item, file) {
   })
 }
 
+// --- 束と群を作る ---
+// パスの順に並べ、同じディレクトリのファイルが同じ束に入りやすくする。
+function makeBatches(entries) {
+  const sorted = [...entries].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
+  const batches = []
+  let cur = null
+  for (const e of sorted) {
+    const small = typeof e.bytes === 'number' && e.bytes <= BATCH.smallBytes
+    if (!small) {
+      batches.push([e.path])
+      continue
+    }
+    if (!cur || cur.files.length >= BATCH.maxFiles || cur.bytes + e.bytes > BATCH.maxBytes) {
+      cur = { files: [], bytes: 0 }
+      batches.push(cur.files)
+    }
+    cur.files.push(e.path)
+    cur.bytes += e.bytes
+  }
+  return batches
+}
+
+// ディレクトリの深さを 1 段ずつ下げて分け、それでも多ければ件数で切る。小さすぎる群は、隣の群とまとめる。
+function makeGroups(paths) {
+  const max = DETECT_GROUP.maxFiles
+  const chunk = (list) => {
+    const out = []
+    for (let i = 0; i < list.length; i += max) out.push(list.slice(i, i + max))
+    return out
+  }
+  const split = (list, depth) => {
+    if (list.length <= max) return [list]
+    const deepest = list.reduce((n, p) => Math.max(n, p.split('/').length), 0)
+    if (depth >= deepest) return chunk(list)
+    const byDir = new Map()
+    for (const p of list) {
+      const parts = p.split('/')
+      // 深さ depth より浅いファイルは、親ディレクトリの直下のファイルとして 1 つにまとめる
+      const key = parts.length > depth ? parts.slice(0, depth).join('/') : ''
+      if (!byDir.has(key)) byDir.set(key, [])
+      byDir.get(key).push(p)
+    }
+    if (byDir.size === 1) return split(list, depth + 1)
+    return [...byDir.values()].flatMap((g) => split(g, depth + 1))
+  }
+  const sorted = [...paths].sort()
+  const merged = []
+  for (const g of split(sorted, 1)) {
+    const last = merged[merged.length - 1]
+    if (last && last.length + g.length <= max) last.push(...g)
+    else merged.push([...g])
+  }
+  return merged
+}
+
 // --- args の解釈 ---
-// { files: [...] } で対象を受け取る。文字列化された JSON で渡されても読めるようにする。
+// { files: [{ path, bytes }] | [path], principles: <設計思想の要約の本文> } を受け取る。
+// 文字列化された JSON で渡されても読めるようにする。
 let input = args
 if (typeof input === 'string') {
   try {
@@ -243,30 +405,51 @@ if (typeof input === 'string') {
     input = null
   }
 }
-const files = input && Array.isArray(input.files) ? input.files.filter((f) => typeof f === 'string' && f) : []
+const entries = (input && Array.isArray(input.files) ? input.files : [])
+  .map((f) => {
+    if (typeof f === 'string') return { path: f, bytes: null }
+    if (f && typeof f.path === 'string') return { path: f.path, bytes: typeof f.bytes === 'number' ? f.bytes : null }
+    return null
+  })
+  .filter((f) => f && f.path)
+const files = entries.map((e) => e.path)
+const principles = input && typeof input.principles === 'string' ? input.principles.trim() : ''
 
 if (files.length === 0) {
   log('対象のファイルが渡されていないため終了する。/aidd:harness-audit から呼ぶ（args の files に対象のパスを渡す）')
   return { file: null, files: 0, confirmed: 0 }
 }
-if (files.length > MAX_FILES) {
+
+const batches = makeBatches(entries)
+const groups = files.length <= DETECT_GROUP.maxFiles ? [files] : makeGroups(files)
+const detectAgents = groups.length === 1 ? 1 : groups.length + 1
+// Rubric 1・Presence 2・Inspect と束ごとの Verify が束の数ずつ・Detect・Report 1
+const planned = 1 + 2 + batches.length * 2 + detectAgents + 1
+if (planned > AGENT_PLAN_LIMIT) {
   log(
-    `対象が ${files.length} ファイルあり、1 回の上限 ${MAX_FILES} を超えるため実行せずに終了する` +
-      '（エージェント数の上限 1,000 に途中で当たり、結果が欠けるため）。対象を分けて呼ぶ'
+    `対象 ${files.length} ファイル（束 ${batches.length}・群 ${groups.length}）で、エージェントが ${planned} 体以上要る。` +
+      `1 回の上限 ${AGENT_PLAN_LIMIT} を超えるため実行せずに終了する（途中で上限 ${AGENT_LIMIT} に当たり、結果が欠けるため）。対象を分けて呼ぶ`
   )
   return { file: null, files: files.length, confirmed: 0 }
+}
+log(`対象 ${files.length} ファイル / 束 ${batches.length} / 横断の群 ${groups.length} / 横断の候補の検証を除くエージェント ${planned} 体`)
+if (!principles) {
+  log('設計思想の要約が渡されていないため、リポジトリの規約だけで見る。仕組みの欠けと規約のずれは見ない')
 }
 
 // --- 本体 ---
 
-// 1. Rubric: 判定に使う規約を探し、各ファイルに渡せる大きさのチェックリストにする。
+// 1. Rubric: 同梱の思想とリポジトリの規約から、各ファイルに渡せる大きさのチェックリストを作る。
 //    規約のパスはリポジトリごとに違うため、固定せず探索させる。
 //    見つからなかった観点は後段で「規約なし」として扱い、指摘を捏造させない。
 phase('Rubric')
 const rubric = await agent(
   [
-    'このリポジトリの規約・方針・価値（ハーネス）を探し、監査対象のファイルに当てるチェックリストを作れ。',
+    'このリポジトリを、本マーケットプレイスの設計思想と、このリポジトリの規約に当てるためのチェックリストを作れ。',
     '',
+    ...(principles
+      ? ['【設計思想の要約】（マーケットプレイスが同梱する物差し。origin=marketplace の項目の出典）', principles, '']
+      : ['【設計思想の要約】渡されていない。origin=marketplace の項目と drift は作らない。', '']),
     '監査対象のファイル（appliesTo を決める参考にする）:',
     JSON.stringify(files),
     '',
@@ -278,26 +461,39 @@ const rubric = await agent(
     '- ドキュメント階層の参照方向を定めた規約: 「参照方向」「一方向」「逆流」等の語を含む記述',
     '',
     '【チェックリストの作り方】',
+    '- 設計思想の要約の「価値」「利用先に効く方針」と、リポジトリの規約の両方から項目を作る。「土台の仕組み」と「init-repo の印」は別の段で見るため、項目にしない。',
+    '- 同じ決まりが両方にあれば 1 項目にし、リポジトリの規約の側（origin=repo）を出典にする。',
     '- ファイルの中身で確かめられる決まりだけを入れる。操作の手順・会話での振る舞いなど、ファイルを読んでも確かめられないものは入れない。',
     '- 具体的な決まりは basis=rule、価値・原則（抽象的な考え方）は basis=value にする。',
     '- value の rule には、価値の文を短く引用し、ファイルのどんな書き方・作りがそれに反するかを書く。',
     '- appliesTo には当てるファイルの glob を書く。使える記号は *・**・? だけ（{a,b} は使わず、要素を分ける）。',
     '  `.claude/rules/*.md` の frontmatter に `paths:` があれば、それを appliesTo に使う。',
-    '- source には出典のパスと見出しを書く（例: `.claude/rules/tmp-output.md` の「作業用のファイルを作る場合」）。',
-    '- 同じ決まりを重ねて入れない。1 項目は 1〜2 文にする。',
+    '- source には出典のパスと見出しを書く（例: `.claude/rules/tmp-output.md` の「作業用のファイルを作る場合」、設計思想の要約の「利用先に効く方針」の P4）。',
+    '- 1 項目は 1〜2 文にする。',
+    '',
+    '【規約のずれ（drift）】',
+    principles
+      ? '- リポジトリの規約が、設計思想の要約と食い違う箇所を挙げる（例: コミットを Claude に任せると書いた規約）。思想をより厳しくしているだけのものと、理由を残して意図的に変えているものは挙げない。'
+      : '- 設計思想の要約が無いため、空配列を返す。',
     '',
     '判定結果:',
     '- ssotTableFile: 情報→唯一の情報源の対応表を持つファイルのパス。無ければ空文字。',
     '- hasReferenceDirectionRule: 「ドキュメント階層の参照は一方向に固定する（逆流は違反）」旨の規約が実在すれば true。',
     '  そういう規約が無いリポジトリでは false にする（推測で true にしないこと）。',
     '',
-    '存在しないファイルを rubrics に入れてはならない。規約ファイルに無い一般論を、チェックリストに入れてはならない。',
+    '存在しないファイルを rubrics に入れてはならない。思想の要約にも規約ファイルにも無い一般論を、チェックリストに入れてはならない。',
   ].join('\n'),
   { label: 'rubric', phase: 'Rubric', schema: RUBRIC_SCHEMA, ...MODELS.rubric }
 )
+if (!rubric) {
+  // 物差しが無いまま進めると、規約違反を一般論で挙げてしまうため止める
+  log('チェックリストを作れなかったため終了する（エージェントの失敗・スキップ）')
+  return { file: null, files: files.length, confirmed: 0 }
+}
 
 const rubrics = rubric.rubrics || []
 const checklist = rubric.checklist || []
+const driftCandidates = principles ? (rubric.drift || []).map((d) => ({ kind: 'drift', ...d })) : []
 const ssotTableFile = rubric.ssotTableFile || ''
 const hasRefRule = !!rubric.hasReferenceDirectionRule
 const itemsById = new Map(checklist.map((it) => [it.id, it]))
@@ -305,8 +501,9 @@ const itemsFor = (f) => checklist.filter((it) => applies(it, f))
 const uncovered = files.filter((f) => itemsFor(f).length === 0)
 
 log(
-  `監査対象: ${files.length} ファイル / 規約: ${rubrics.length ? rubrics.join(', ') : 'なし'}` +
-    ` / チェックリスト: ${checklist.length} 項目（価値 ${checklist.filter((it) => it.basis === 'value').length}）` +
+  `規約: ${rubrics.length ? rubrics.join(', ') : 'なし'}` +
+    ` / チェックリスト: ${checklist.length} 項目（同梱の思想 ${checklist.filter((it) => it.origin === 'marketplace').length}・価値 ${checklist.filter((it) => it.basis === 'value').length}）` +
+    ` / 規約のずれの候補: ${driftCandidates.length}` +
     `${ssotTableFile ? ` / SSOT 対応表: ${ssotTableFile}` : ' / SSOT 対応表なし'}` +
     `${hasRefRule ? '' : ' / 参照方向の規約なし（この観点はスキップ）'}`
 )
@@ -315,172 +512,349 @@ if (uncovered.length > 0) {
   log(`当てはまる規約が無いファイル: ${uncovered.length} 件（規約への適合は見ず、横断の突合にだけ使う）`)
 }
 
-// 規約が 1 つも無いリポジトリでは、値の矛盾（客観的に判定できる観点）だけに絞る。
+// 規約が 1 つも無く、思想の要約も無いリポジトリでは、値の矛盾（客観的に判定できる観点）だけに絞る。
 const rubricNote = rubrics.length
   ? `判定の前に、このリポジトリの規約を Read せよ: ${rubrics.join(' / ')}`
   : 'このリポジトリには明文化された規約が見つからなかった。値の矛盾（客観的に判定できるもの）に絞って判定し、規約違反としての指摘は挙げないこと。'
 
-// 2. Inspect → Verify（ファイルごと）: pipeline。1ファイル=1エージェントで精読し、
-//    違反の候補があれば、そのファイルの検査が終わりしだい 1 体でまとめて検証する。
+// 2. Presence: init-repo の土台の仕組みの欠けを見る。ファイルごとの検査と関係しないため、並行して走らせる。
+//    欠けがあれば、別の 1 体が「別の形で役割を果たしていないか」を探して反証する。
+const presencePromise = (async () => {
+  if (!principles) return { installed: false, skipped: true, marks: [], verdicts: [] }
+  const found = await agent(
+    [
+      '次の設計思想の要約の「init-repo の印」と「土台の仕組み」に従い、このリポジトリの土台の欠けを判定せよ。',
+      '',
+      principles,
+      '',
+      '手順:',
+      '1. 「init-repo の印」のパスを Glob で確かめ、見つかったものを marks に入れる。2 つ以上なら harnessInstalled=true。',
+      '2. harnessInstalled=false なら、missing は空配列にして終える。',
+      '3. true なら、「土台の仕組み」の表の行ごとに、手がかりのファイルを Read して役割を果たしているかを確かめる。',
+      '   パスや書き方が違っても、役割を果たしていれば欠けにしない（例: 別の名前のフックで破壊的な操作を止めている）。',
+      '4. 果たしていない仕組みを missing に入れる。severity は表の重大度をそのまま使う。detail には、どこを見て何が無かったかを書く。',
+      '',
+      '技術別のスキル（gas・terraform・wordpress）が足すものは見ない。ファイルの修正はしない。',
+    ].join('\n'),
+    { label: 'presence', phase: 'Presence', schema: PRESENCE_SCHEMA, ...MODELS.presence }
+  )
+  if (!found) return { installed: false, skipped: true, marks: [], verdicts: [] }
+  const missing = found.missing || []
+  if (!found.harnessInstalled || missing.length === 0) {
+    return { installed: !!found.harnessInstalled, skipped: false, marks: found.marks || [], verdicts: [] }
+  }
+  const checked = await agent(
+    [
+      '次の「土台の仕組みの欠け」を敵対的に検証せよ。別の形で役割を果たしていれば isReal=false にする。',
+      '',
+      '欠けの候補（JSON）:',
+      JSON.stringify(missing),
+      '',
+      '設計思想の要約（「土台の仕組み」の表が基準）:',
+      principles,
+      '',
+      '手順:',
+      '1. 候補ごとに、同じ役割を果たす別の設定・フック・CI・規約が無いかを Glob / Grep / Read で探す。',
+      '2. 見つかれば isReal=false。見つからなければ isReal=true にする。',
+      '3. severity は表の重大度を使う。low・medium の欠けは、reason の最後に「意図して入れていないなら無視してよい」と添える。',
+      '',
+      '候補ごとに 1 件の verdict を返す（mechanism・detail は候補のまま写す）。',
+    ].join('\n'),
+    { label: 'verify:presence', phase: 'Verify', schema: PRESENCE_VERDICT_SCHEMA, ...MODELS.verify }
+  )
+  const verdicts = ((checked && checked.verdicts) || []).map((v) => ({
+    ...v,
+    kind: 'missing',
+    files: [],
+    topic: v.mechanism,
+    source: '設計思想の要約の「土台の仕組み」',
+  }))
+  return { installed: true, skipped: false, marks: found.marks || [], verdicts }
+})()
+
+// 3. Inspect → Verify（束ごと）: pipeline。小さいファイルは束ねて 1 体で精読し、
+//    違反の候補があれば、その束の検査が終わりしだい 1 体でまとめて検証する。
 //    事実はフルテキストではなく圧縮して後段に渡し、Detect の "Lost in the middle" を緩和する。
 phase('Inspect')
-const perFile = await pipeline(
-  files,
-  (f) => {
-    const items = itemsFor(f)
+const perBatch = await pipeline(
+  batches,
+  (batch) => {
+    const targets = batch.map((f) => ({ file: f, items: itemsFor(f).map((it) => it.id) }))
+    const items = checklist.filter((it) => targets.some((t) => t.items.includes(it.id)))
     return agent(
       [
-        `次のファイルを精読し、構造化して抽出せよ: ${f}`,
+        `次の ${batch.length} 件のファイルを精読し、ファイルごとに構造化して抽出せよ。results にはファイルごとに 1 件ずつ返す。`,
         '',
-        items.length
-          ? '- violations: 次のチェックリストの項目に反している疑いのある箇所。疑いが強ければ確証が無くても挙げてよい（後段で検証する）。項目に無い一般論では挙げない。'
-          : '- violations: このファイルに当てはまる項目が無いため、空配列を返す。',
-        ...(items.length ? [JSON.stringify(items)] : []),
+        '対象のファイルと、そのファイルに当てるチェックリストの項目の id:',
+        ...targets.map((t) => `- ${t.file}: ${t.items.length ? t.items.join(', ') : '（当てる項目なし）'}`),
+        '',
+        ...(items.length ? ['チェックリストの項目（JSON）:', JSON.stringify(items), ''] : []),
+        '- violations: そのファイルに当てる項目に反している疑いのある箇所。疑いが強ければ確証が無くても挙げてよい（後段で検証する）。項目に無い一般論では挙げない。当てる項目が無いファイルは空配列。',
         '- facts: 他ファイルと矛盾し得る具体値（ポート/バージョン/URL/パス/コマンド引数/件数など）。本文に明示された値のみ。コード・設定のファイルは、コメントと設定値から拾う。',
-        '- ssotOwned: このファイルが唯一の情報源として所有を主張している情報（コード・設定のファイルは空配列）。',
+        '- ssotOwned: そのファイルが唯一の情報源として所有を主張している情報（コード・設定のファイルは空配列）。',
         hasRefRule
-          ? '- referencesUp: このファイルがドキュメント層（docs/ 等）にありながら、ツール・設定層（`.claude/` 配下等）を参照していたら true。ドキュメント層以外なら false。'
+          ? '- referencesUp: そのファイルがドキュメント層（docs/ 等）にありながら、ツール・設定層（`.claude/` 配下等）を参照していたら true。ドキュメント層以外なら false。'
           : '- referencesUp: このリポジトリには参照方向の規約が無いため、常に false を返す。',
         '- suspectInlineDetail: README なのに手順・コマンド・設定値の詳細を本文へ直書きしている箇所（README 以外なら空配列）。',
       ].join('\n'),
-      { label: `inspect:${f}`, phase: 'Inspect', schema: INSPECT_SCHEMA, ...MODELS.inspect }
+      { label: `inspect:${batch[0]}${batch.length > 1 ? ` +${batch.length - 1}` : ''}`, phase: 'Inspect', schema: INSPECT_SCHEMA, ...MODELS.inspect }
     )
   },
-  async (inspected, f) => {
+  async (inspected, batch) => {
     if (!inspected) return null
-    const candidates = inspected.violations || []
-    if (candidates.length === 0) return { inspected, verdicts: [] }
+    // 頼んでいないファイルの結果は捨て、同じファイルの結果は 1 件にする
+    const byFile = new Map()
+    for (const r of inspected.results || []) {
+      if (batch.includes(r.file) && !byFile.has(r.file)) byFile.set(r.file, r)
+    }
+    const results = [...byFile.values()]
+    const candidates = results.flatMap((r) => (r.violations || []).map((v) => ({ file: r.file, ...v })))
+    if (candidates.length === 0) return { results, verdicts: [] }
     const items = [...new Set(candidates.map((c) => c.ruleId))].map((id) => itemsById.get(id)).filter(Boolean)
-    const result = await agent(
+    const checked = await agent(
       [
-        `次のファイルについて挙がった、規約への違反の候補を敵対的に検証せよ: ${f}`,
-        '確証が持てなければ isReal=false を既定とする。候補ごとに 1 件の verdict を返す（ruleId・location・detail は候補のまま写す）。',
+        '次のファイルについて挙がった、規約・思想への違反の候補を敵対的に検証せよ。',
+        '確証が持てなければ isReal=false を既定とする。候補ごとに 1 件の verdict を返す（file・ruleId・location・detail は候補のまま写す）。',
         '',
         '違反の候補（JSON）:',
         JSON.stringify(candidates),
         '',
         '候補が根拠にしているチェックリストの項目（JSON）:',
         JSON.stringify(items),
+        ...(principles && items.some((it) => it.origin === 'marketplace')
+          ? ['', '設計思想の要約（origin=marketplace の項目の出典）:', principles]
+          : []),
         '',
         '手順:',
         '1. 対象のファイルを Read する。',
-        '2. 各項目の source（出典）を Read し、項目の要約ではなく原文で決まりを確かめる。',
+        '2. 各項目の出典を読み、項目の要約ではなく原文で決まりを確かめる（リポジトリの規約は Read、同梱の思想は上の要約）。',
         '3. 本当にその決まりに反しているかを判定する。',
         '',
         '誤検出として除外すべきもの:',
         '- その決まりが、このファイルには当てはまらないもの（対象外の種類・場所のファイル）',
         '- 規約・テンプレート自身が、例（NG 例・プレースホルダなど）として書いている箇所',
-        '- 出典に例外として書かれているもの',
+        '- 出典に例外・当てはまらない場面として書かれているもの',
         '- 出典の原文に無い根拠による指摘（「一般にこうすべき」だけを根拠にしたもの）',
         '- 価値（basis=value）を根拠にした候補で、価値の文と箇所の食い違いを具体的に説明できないもの',
         '',
         'severity は影響度（high=実害/誤誘導, medium=保守性低下, low=軽微）で付けること。',
         'reason には、ファイルのどの記述が、出典のどの文に反するかを具体的に書くこと。',
       ].join('\n'),
-      { label: `verify:rules:${f}`, phase: 'Verify', schema: FILE_VERDICT_SCHEMA, ...MODELS.verify }
+      { label: `verify:rules:${batch[0]}${batch.length > 1 ? ` +${batch.length - 1}` : ''}`, phase: 'Verify', schema: BATCH_VERDICT_SCHEMA, ...MODELS.verify }
     )
-    const verdicts = ((result && result.verdicts) || []).map((v) => {
+    const verdicts = ((checked && checked.verdicts) || []).map((v) => {
       const item = itemsById.get(v.ruleId)
       return {
         ...v,
         kind: item && item.basis === 'value' ? 'value' : 'rule',
-        files: [f],
+        files: [v.file],
         topic: item ? item.rule : v.ruleId,
         source: item ? item.source : '',
       }
     })
-    return { inspected, verdicts }
+    return { results, verdicts }
   }
 )
 
-const done = perFile.filter(Boolean)
-const inspections = done.map((r) => r.inspected)
-const ruleVerdicts = done.flatMap((r) => r.verdicts)
+const done = perBatch.filter(Boolean)
+const inspections = done.flatMap((b) => b.results)
+const ruleVerdicts = done.flatMap((b) => b.verdicts)
 const ruleCandidates = inspections.reduce((n, x) => n + (x.violations || []).length, 0)
 if (inspections.length < files.length) {
-  log(`検査できなかったファイル: ${files.length - inspections.length} 件（エージェントの失敗・スキップ）`)
+  log(`検査できなかったファイル: ${files.length - inspections.length} 件（エージェントの失敗・スキップ・結果の欠け）`)
 }
-log(`規約への違反の候補: ${ruleCandidates} 件 / 確定 ${ruleVerdicts.filter((v) => v.isReal).length} 件`)
+log(`規約・思想への違反の候補: ${ruleCandidates} 件 / 確定 ${ruleVerdicts.filter((v) => v.isReal).length} 件`)
 
-// 3. Detect: barrier 正当。横断比較は全抽出が揃って初めて成立するため、ここだけ集約する。
+// 4. Detect: barrier 正当。横断比較は全抽出が揃って初めて成立するため、ここだけ集約する。
 //    渡すのは圧縮済み事実集合のみ（フルテキスト・違反の候補は渡さない）。
+//    多いときは、ディレクトリの群ごとに突き合わせてから、群が返した要点の事実を全体で突き合わせる。
 phase('Detect')
-const factSets = inspections.map((x) => ({
+const factSet = (x) => ({
   file: x.file,
   facts: x.facts,
   ssotOwned: x.ssotOwned,
   referencesUp: x.referencesUp,
   suspectInlineDetail: x.suspectInlineDetail,
-}))
-const detect = await agent(
-  [
-    `次は ${factSets.length} 個のファイルから抽出した事実集合（JSON）。`,
-    '',
-    JSON.stringify(factSets),
-    '',
-    rubricNote,
-    ssotTableFile ? `情報と唯一の情報源の対応表は ${ssotTableFile} にある。所有者の判定にはこれを使う。` : '',
-    '',
-    'その上で、ファイル間の指摘候補を列挙せよ:',
-    '- contradiction: 同一トピックに複数ファイルが異なる値を記載している矛盾。コードのコメントや設定値と、ドキュメントの記述の食い違いも含める',
-    ssotTableFile
-      ? '- duplication: 同じ手順・設定値が複数ファイルに重複記述されている（対応表の所有者以外が本文に書いている場合）'
-      : '- duplication: 同じ手順・設定値が複数ファイルに実質同内容で重複記述されている（どちらが正か判断できない状態になっているもの）',
-    hasRefRule
-      ? '- reference-direction: ドキュメント層から上位層への逆参照（referencesUp=true のファイル）'
-      : '- reference-direction: このリポジトリには参照方向の規約が無いため、この種別の候補は挙げない',
-    '',
-    '確実な候補のみ挙げ、各候補に関与ファイルを files として明記すること。',
-    '規約ファイルが見つからなかった観点について、一般論を根拠に「違反」として挙げてはならない。',
-  ]
-    .filter(Boolean)
-    .join('\n'),
-  { label: 'detect', phase: 'Detect', schema: DETECT_SCHEMA, ...MODELS.detect }
-)
-log(`横断の指摘候補: ${detect.candidates.length} 件`)
+})
+const kindLines = [
+  '- contradiction: 同一トピックに複数ファイルが異なる値を記載している矛盾。コードのコメントや設定値と、ドキュメントの記述の食い違いも含める',
+  ssotTableFile
+    ? '- duplication: 同じ手順・設定値が複数ファイルに重複記述されている（対応表の所有者以外が本文に書いている場合）'
+    : '- duplication: 同じ手順・設定値が複数ファイルに実質同内容で重複記述されている（どちらが正か判断できない状態になっているもの）',
+  hasRefRule
+    ? '- reference-direction: ドキュメント層から上位層への逆参照（referencesUp=true のファイル）'
+    : '- reference-direction: このリポジトリには参照方向の規約が無いため、この種別の候補は挙げない',
+]
+const detectRules = [
+  '確実な候補のみ挙げ、各候補に関与ファイルを files として明記すること。',
+  '規約ファイルが見つからなかった観点について、一般論を根拠に「違反」として挙げてはならない。',
+]
+const ssotLine = ssotTableFile ? `情報と唯一の情報源の対応表は ${ssotTableFile} にある。所有者の判定にはこれを使う。` : ''
+const inspectedByFile = new Map(inspections.map((x) => [x.file, x]))
 
-// 4. Verify（横断）: fan-out。候補ごとに敵対的検証し、誤検出を落とす。
+let crossCandidates = []
+if (groups.length === 1) {
+  const detect = await agent(
+    [
+      `次は ${inspections.length} 個のファイルから抽出した事実集合（JSON）。`,
+      '',
+      JSON.stringify(inspections.map(factSet)),
+      '',
+      rubricNote,
+      ssotLine,
+      '',
+      'その上で、ファイル間の指摘候補を列挙せよ:',
+      ...kindLines,
+      '',
+      ...detectRules,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    { label: 'detect', phase: 'Detect', schema: DETECT_SCHEMA, ...MODELS.detect }
+  )
+  crossCandidates = (detect && detect.candidates) || []
+} else {
+  const perGroup = (
+    await parallel(
+      groups.map((g, i) => () =>
+        agent(
+          [
+            `次は、全体を ${groups.length} 群に分けたうちの第 ${i + 1} 群（${g.length} ファイル）から抽出した事実集合（JSON）。`,
+            '',
+            JSON.stringify(g.map((f) => inspectedByFile.get(f)).filter(Boolean).map(factSet)),
+            '',
+            rubricNote,
+            ssotLine,
+            '',
+            'この群の中のファイル間の指摘候補を candidates に列挙せよ:',
+            ...kindLines,
+            '',
+            ...detectRules,
+            '',
+            'あわせて、ほかの群のファイルも書いていそうな事実（版・パス・件数・コマンド・設定値・規約の要点など）を keyFacts に入れる。同じ値を持つファイルは 1 件にまとめる。',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          { label: `detect:group-${i + 1}`, phase: 'Detect', schema: GROUP_DETECT_SCHEMA, ...MODELS.detect }
+        )
+      )
+    )
+  ).filter(Boolean)
+  if (perGroup.length < groups.length) {
+    log(`横断の突合ができなかった群: ${groups.length - perGroup.length} 群（エージェントの失敗・スキップ）`)
+  }
+  const keyFacts = perGroup.map((r, i) => ({ group: i + 1, keyFacts: r.keyFacts || [] }))
+  const global = await agent(
+    [
+      `次は、${perGroup.length} 群のそれぞれから取り出した要点の事実（JSON）。群の中の突合は済んでいる。`,
+      '',
+      JSON.stringify(keyFacts),
+      '',
+      rubricNote,
+      ssotLine,
+      '',
+      '群をまたぐ指摘候補だけを列挙せよ（同じ群の中だけで閉じる候補は挙げない）:',
+      ...kindLines,
+      '',
+      ...detectRules,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    { label: 'detect:global', phase: 'Detect', schema: DETECT_SCHEMA, ...MODELS.detect }
+  )
+  crossCandidates = [...perGroup.flatMap((r) => r.candidates || []), ...((global && global.candidates) || [])]
+}
+log(`横断の指摘候補: ${crossCandidates.length} 件 / 規約のずれの候補: ${driftCandidates.length} 件`)
+
+// 5. Verify（横断・規約のずれ）: fan-out。候補ごとに敵対的検証し、誤検出を落とす。
+//    エージェント数の上限に当たらないよう、残りの枠を超えた候補は検証せず、件数を伝える（黙って落とさない）。
 phase('Verify')
+const allCross = [...driftCandidates, ...crossCandidates]
+const crossBudget = Math.max(0, AGENT_LIMIT - planned - 5)
+const toVerify = allCross.slice(0, crossBudget)
+const unverified = allCross.slice(crossBudget)
+if (unverified.length > 0) {
+  log(`エージェント数の上限のため、${unverified.length} 件の候補を検証していない（レポートに件数を書く）。対象を分けて呼び直す`)
+}
+const buildCrossPrompt = (c) =>
+  c.kind === 'drift'
+    ? [
+        '次の「規約のずれ」の候補を敵対的に検証せよ。確証が持てなければ isReal=false を既定とする。',
+        '',
+        JSON.stringify(c),
+        '',
+        '設計思想の要約（基準）:',
+        principles,
+        '',
+        '手順:',
+        '1. 候補の files（リポジトリの規約）を実際に Read する。',
+        '2. 規約の記述が、要約のどの文と食い違うかを原文で確かめる。',
+        '',
+        '誤検出として除外すべきもの:',
+        '- 思想をより厳しくしているだけの規約（ずれではない）',
+        '- 理由を残して意図的に変えている規約（V4 を満たしている）',
+        '- 要約の「当てはまらない場面」に当たるもの',
+        '',
+        'severity は影響度（high=安全や判断の線引きが崩れる, medium=保守性低下, low=軽微）で付けること。',
+        'reason には、規約のどの記述が、要約のどの文と食い違うかを具体的に書くこと。',
+      ].join('\n')
+    : [
+        '次の指摘候補を敵対的に検証せよ。確証が持てなければ isReal=false を既定とする。',
+        '',
+        JSON.stringify(c),
+        '',
+        '手順:',
+        '1. 関与ファイル（候補の files）を実際に Read する。',
+        `2. ${rubricNote}`,
+        '3. 本当に矛盾/重複/逆参照が成立するか判定する。',
+        '',
+        '誤検出として除外すべきもの:',
+        '- 別トピックを同一視した取り違え',
+        '- 唯一の情報源へリンクで参照しているだけの正当な記述（重複ではない）',
+        '- 案内板・目次としての README や索引ファイルの要約（重複記述として扱わない慣行が一般的）',
+        '- 規約ファイルに実在しない根拠による指摘（「一般にこうすべき」だけを根拠にしたもの）',
+        '',
+        'severity は影響度（high=実害/誤誘導, medium=保守性低下, low=軽微）で付けること。',
+        'reason には、どのファイルのどの記述が何と食い違うかを具体的に書くこと。',
+      ].join('\n')
 const crossVerdicts = (
   await parallel(
-    detect.candidates.map((c) => () =>
-      agent(
-        [
-          '次の指摘候補を敵対的に検証せよ。確証が持てなければ isReal=false を既定とする。',
-          '',
-          JSON.stringify(c),
-          '',
-          '手順:',
-          '1. 関与ファイル（候補の files）を実際に Read する。',
-          `2. ${rubricNote}`,
-          '3. 本当に矛盾/重複/逆参照が成立するか判定する。',
-          '',
-          '誤検出として除外すべきもの:',
-          '- 別トピックを同一視した取り違え',
-          '- 唯一の情報源へリンクで参照しているだけの正当な記述（重複ではない）',
-          '- 案内板・目次としての README や索引ファイルの要約（重複記述として扱わない慣行が一般的）',
-          '- 規約ファイルに実在しない根拠による指摘（「一般にこうすべき」だけを根拠にしたもの）',
-          '',
-          'severity は影響度（high=実害/誤誘導, medium=保守性低下, low=軽微）で付けること。',
-          'reason には、どのファイルのどの記述が何と食い違うかを具体的に書くこと。',
-        ].join('\n'),
-        { label: `verify:${c.kind}:${c.topic}`, phase: 'Verify', schema: VERDICT_SCHEMA, ...MODELS.verify }
-      ).then((v) => ({ ...c, ...v }))
+    toVerify.map((c) => () =>
+      agent(buildCrossPrompt(c), {
+        label: `verify:${c.kind}:${c.topic}`,
+        phase: 'Verify',
+        schema: VERDICT_SCHEMA,
+        ...MODELS.verify,
+      }).then((v) => (v ? { ...c, ...v } : null))
     )
   )
 ).filter(Boolean)
 
-const confirmed = [...ruleVerdicts, ...crossVerdicts].filter((v) => v.isReal)
-const candidateCount = ruleCandidates + detect.candidates.length
+const presence = await presencePromise
+if (presence.skipped) {
+  log('仕組みの欠けは見ていない（設計思想の要約が無い、または判定の段が失敗した）')
+} else if (!presence.installed) {
+  log(`init-repo の印が 2 つ未満のため、仕組みの欠けは見ていない（見つかった印: ${presence.marks.length ? presence.marks.join(', ') : 'なし'}）`)
+} else {
+  log(`仕組みの欠け: 確定 ${presence.verdicts.filter((v) => v.isReal).length} 件`)
+}
+
+const confirmed = [...presence.verdicts, ...ruleVerdicts, ...crossVerdicts].filter((v) => v.isReal)
+const candidateCount = ruleCandidates + allCross.length + presence.verdicts.length
 log(`確定指摘: ${confirmed.length} / 候補 ${candidateCount}`)
 
-// 5. Report: 確定指摘を重大度別に分け、直す順の推奨アクションを添えた Markdown に整形し、tmp/<branch>/harness-audit_<timestamp>.md へ追記する。
+// 6. Report: 確定指摘を重大度別に分け、直す順の推奨アクションを添えた Markdown に整形し、tmp/<branch>/harness-audit_<timestamp>.md へ追記する。
 //    実行ごとの塊の構成は docs-sync・pr-review のレポートとそろえる（冒頭の文・high・medium・low・推奨アクション）。
 //    workflow スクリプト内では時刻取得が禁止（Date.now/new Date は throw）のため、
 //    ブランチ名とタイムスタンプの算出・パス組み立てはエージェントに Bash で行わせる。
 //    ブランチ名の / を - に置換する規約は aidd の README.md の「ブランチ名の / は - に置き換える」。
 //    検出のみ。問題の自動修正はしない。
 phase('Report')
+const presenceNote = presence.skipped
+  ? '見ていない（設計思想の要約が無い、または判定の段が失敗した）'
+  : presence.installed
+    ? '見た'
+    : 'init-repo の土台が見つからないため見ていない'
 const report = await agent(
   [
     '次の確定済み指摘を Markdown レポートに整形し、所定のファイルへ追記せよ。',
@@ -494,30 +868,34 @@ const report = await agent(
     '- 書き込んだ相対パスを path として返す。',
     '',
     `- 監査対象ファイル数: ${files.length}`,
+    `- 設計思想の要約: ${principles ? '同梱のものを使った' : '使っていない'}`,
     `- 参照した規約: ${rubrics.length ? rubrics.join(', ') : 'なし'}`,
-    `- チェックリストの項目数: ${checklist.length}`,
     `- 当てはまる規約が無かったファイル数: ${uncovered.length}`,
+    `- 仕組みの欠け: ${presenceNote}`,
     `- 参照方向の観点: ${hasRefRule ? '有効' : '規約が無いためスキップ'}`,
+    `- 検証していない候補数（エージェント数の上限のため）: ${unverified.length}`,
     `- 指摘候補数: ${candidateCount}`,
     `- 確定指摘数: ${confirmed.length}`,
     '',
-    '確定指摘（JSON）。kind は rule=規約違反、value=価値に反する、contradiction=値の矛盾、duplication=重複記述、reference-direction=参照方向違反:',
+    '確定指摘（JSON）。kind は rule=規約違反、value=価値に反する、drift=規約のずれ、missing=仕組みの欠け、contradiction=値の矛盾、duplication=重複記述、reference-direction=参照方向違反:',
     JSON.stringify(confirmed),
     '',
     '【レポート本文の要件】',
     '- ファイル新規作成時のみ、先頭に「# harness-audit 実行結果」の H1 を置く（追記時は付けない）。',
     '- 追記する塊の先頭に「## 監査 <timestamp>（branch: <branch>）」の見出しを付け、いつの結果か分かるようにする。',
-    `- その直下に、次の冒頭の文をそのまま書く: 「この監査は、harness-audit によって、規約・方針・価値への適合と、ファイル間の整合性（値の矛盾・重複記述・参照方向違反）の観点から、${files.length} 件のファイルに問題が無いかチェックし結果をレポートしたものです。」`,
+    `- その直下に、次の冒頭の文をそのまま書く: 「この監査は、harness-audit によって、本マーケットプレイスの設計思想とこのリポジトリの規約への適合、土台の仕組みの欠け、ファイル間の整合性（値の矛盾・重複記述・参照方向違反）の観点から、${files.length} 件のファイルに問題が無いかチェックし結果をレポートしたものです。」`,
     '- 冒頭の文の直後に、引用（>）の注記を書く（何を見て何を見ていないかを明示する）。',
-    '  - 「参照した規約：…」（上の「参照した規約」から。無ければ「なし」）',
+    '  - 「参照した規約：…」（上の「参照した規約」から。設計思想の要約を使ったなら「同梱の設計思想の要約」も並べる。無ければ「なし」）',
+    '  - 「仕組みの欠け：…」（上の「仕組みの欠け」が「見た」なら、この行は書かない）',
     '  - 「規約を当てなかったファイル：…件」（上の件数が 0 なら、この行は書かない）',
+    '  - 「検証していない候補：…件。対象を分けて再実行する」（上の件数が 0 なら、この行は書かない）',
     '  - 「スキップした観点：…」（参照方向の観点が有効なら、この行は書かない）',
-    '  - 「範囲：リンク切れ・markdown 規約などの機械チェックは Lint の担当。この監査は規約への適合と横断的な意味の整合を扱う」',
+    '  - 「範囲：リンク切れ・markdown 規約などの機械チェックは Lint の担当。この監査は設計思想・規約への適合と横断的な意味の整合を扱う」',
     '- 注記の後に、次の見出しをこの順で置く: 「### high」「### medium」「### low」「### 推奨アクション」。severity ごとに指摘を分ける。',
-    '- 各指摘は「対象ファイル / 種別 / 内容(detail) / 根拠(reason)」を含める。種別は上の日本語名で書く。rule と value は、出典（source）も書く。',
-    '- value（価値に反する）の指摘は解釈を含むため、根拠に価値の文の引用を入れ、種別で規約違反と見分けられるようにする。',
+    '- 各指摘は「対象ファイル / 種別 / 内容(detail) / 根拠(reason)」を含める。種別は上の日本語名で書く。rule・value・missing は、出典（source）も書く。仕組みの欠けの対象ファイルは「（無し）」と書く。',
+    '- value（価値に反する）と drift（規約のずれ）の指摘は解釈を含むため、根拠に価値・思想の文の引用を入れる。',
     '- 指摘が無い見出しには「なし」と 1 行書く。確定指摘が 0 件なら、4 つの見出しとも「なし」にする。',
-    '- 推奨アクションは、直す順に番号を付けて 1 行ずつ書く。最大 5 件。high の指摘から先に並べ、対象ファイルと、何を直すかを書く。同じ原因の指摘は 1 項目にまとめる。',
+    '- 推奨アクションは、直す順に番号を付けて 1 行ずつ書く。最大 5 件。high の指摘から先に並べ、対象ファイルと、何を直すかを書く。同じ原因の指摘は 1 項目にまとめる。規約のずれは「規約を思想に合わせる」か「意図した変更なら理由を残す」かを書く。',
     '- markdown 規約（見出し前後の空行・コードブロックの言語指定など）に従う。',
     '',
     '【禁止】',
@@ -530,10 +908,15 @@ const report = await agent(
 return {
   file: report.path,
   files: files.length,
+  batches: batches.length,
+  groups: groups.length,
   rubrics,
+  principles: !!principles,
   checklist: checklist.length,
   uncovered: uncovered.length,
+  harnessInstalled: presence.installed,
   referenceDirectionChecked: hasRefRule,
   candidates: candidateCount,
+  unverified: unverified.length,
   confirmed: confirmed.length,
 }
