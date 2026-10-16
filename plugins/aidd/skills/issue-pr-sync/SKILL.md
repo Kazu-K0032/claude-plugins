@@ -3,7 +3,7 @@ name: issue-pr-sync
 description: 指定した Issue（省くとブランチ名の番号）と PR（省くと今のブランチの PR）を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える）・ラベル等のサイドバーを直接反映する（既存の記述を消すなどの重要な変更だけ、反映前に承認を取る）。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
 argument-hint: "[Issue番号|URL（任意。省略時はブランチ名の issues/ の後ろの番号。取れなければ質問する）] [PR番号|URL（任意。省略時は今のブランチの PR）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
 ---
 
 # Issue / PR の同期更新
@@ -80,9 +80,9 @@ git diff <baseRefName>...HEAD
 1. Issue / PR タイトルの変更案（「タイトルの方針」）
 1. サイドバーの変更案（「サイドバーの更新方針」）
 
-本文は `tmp/<ブランチ名>/issue-pr-sync_<ts>_issue.md` / `_pr.md` に書き出す。ブランチ名の `/` は `-` に置換する（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。
+本文は `tmp/<ブランチ名>/issue-pr-sync/<ts>_issue.md` / `<ts>_pr.md` に書き出す。1 回の実行で 4 個まで書くため、`issue-pr-sync/` にまとめる。ブランチ名の `/` は `-` に置換する（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。
 
-本文を変える対象は、Step 1 で取った反映前の本文を `_issue_before.md` / `_pr_before.md` に書き出す。承認なしで反映した変更も、ここから戻せるようにするため。
+本文を変える対象は、Step 1 で取った反映前の本文を `<ts>_issue_before.md` / `<ts>_pr_before.md` に書き出す。承認なしで反映した変更も、ここから戻せるようにするため。
 
 更新が不要と判断した対象があれば、無理に変更を作らず「変更なし」とする。
 
@@ -105,8 +105,8 @@ Step 3 の変更のうち、「[承認を取る変更](#承認を取る変更)�
 承認の要らない変更と、承認された変更を反映する。`--body` に長文を直接渡すとシェルの引用で壊れるため、本文は必ずファイル経由で渡す。
 
 ```bash
-gh issue edit <Issue> --body-file tmp/<ブランチ名>/issue-pr-sync_<ts>_issue.md
-gh pr edit <PR> --body-file tmp/<ブランチ名>/issue-pr-sync_<ts>_pr.md
+gh issue edit <Issue> --body-file tmp/<ブランチ名>/issue-pr-sync/<ts>_issue.md
+gh pr edit <PR> --body-file tmp/<ブランチ名>/issue-pr-sync/<ts>_pr.md
 gh issue edit <Issue> --title "<新しいタイトル>"
 gh pr edit <PR> --title "<Issue のタイトル>"
 ```

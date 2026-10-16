@@ -68,7 +68,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 | テンプレート | 満たす要件 | 入れる条件 | 同じ役割の既存物の例 |
 | --- | --- | --- | --- |
-| `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・コミット / push・削除・権限の変更・深刻な外部操作の deny）とフックの配線 | Claude Code を使う（常に該当） | `.claude/settings.json` |
+| `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・コミット / push・削除・権限の変更・深刻な外部操作の deny）・フックの配線と、Python のキャッシュを作らない環境変数 | Claude Code を使う（常に該当） | `.claude/settings.json` |
 | `.claude/hooks/guard-destructive.sh` | 破壊的コマンドの承認エスカレーション | `settings.json` を入れる | 既存の PreToolUse フック |
 | `.claude/hooks/post-edit-lint.sh` | 編集後の Lint | Lint ツールがある（`package.json` の `lint` スクリプト・`ruff`・`golangci-lint` 等） | 既存の PostToolUse フック・lint-staged |
 | `.claude/hooks/session-start.sh` | セッション開始時の運用ルール通知 | `settings.json` を入れる | 既存の SessionStart フック |
@@ -80,6 +80,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `.claude/rules/adr.md` | 判断の前に ADR の一覧を見る・判断を ADR に残すか聞く | `docs/adr/README.md` を入れる | `CLAUDE.md`・`.claude/rules/` 内の ADR の規約 |
 | `.claude/rules/permissions.md` | 権限の線引き（Claude に任せる操作と人が行う操作）と、deny・フックを変えるときの決まり | `settings.json` を入れる | `CLAUDE.md`・`.claude/rules/` 内の権限の規約 |
 | `.claude/rules/branch.md` | ブランチ名を Issue 番号と作業の要点にそろえる | GitHub で Issue を使う | `CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md` 内のブランチ名の規約 |
+| `.claude/rules/tmp-output.md` | `tmp/<ブランチ名>/` の置き方（スキルの出力と Claude の作業ファイルを分ける） | Claude Code を使う（常に該当） | `CLAUDE.md`・`.claude/rules/` 内の `tmp/` の規約 |
 | `.github/ISSUE_TEMPLATE/` | Issue の起票形式 | GitHub で Issue を使う | `.github/ISSUE_TEMPLATE/`・`.github/issue_template.md` |
 | `.github/PULL_REQUEST_TEMPLATE.md` | PR 本文の形式 | GitHub で PR を使う | `.github/pull_request_template.md`・`docs/pull_request_template.md`・ルートの `PULL_REQUEST_TEMPLATE.md` |
 | `.github/dependabot.yml` | GitHub Actions の依存更新 | `.github/workflows/` がある、または入れる | `.github/dependabot.yml`・`renovate.json`・`.github/renovate.json` |
@@ -100,6 +101,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 - `.claude/settings.json` は `guard-destructive.sh`・`post-edit-lint.sh`・`session-start.sh` を呼ぶ。フックを外す場合は、`settings.json` の該当の `hooks` 定義も外す必要があるため、計画で明示する
 - `.github/workflows/sync-labels.yml` は `.github/labels.yml` を読む
+- `.claude/rules/tmp-output.md` は、`.gitignore` の `tmp/` を前提にする。`tmp/` が除外されていないと、作業ファイルがコミットに混ざる
 - `CLAUDE.md` の `@docs/adr/README.md` と `.claude/rules/adr.md` は、`docs/adr/README.md` を読む。入れないときは、取り込みの行と `adr.md` も外す。ADR を別の場所（`doc/adr/`・`docs/decisions/` など）に置いているときは、取り込みの行と `adr.md` のパスをその場所に直す
 - `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`tfstate` 等）も誤字として出て、PR のチェックが落ちる
 - Issue テンプレートの `labels:` は `labels.yml` のラベルを前提にしている
@@ -168,6 +170,7 @@ diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/<同�
 | `.gitignore` | 既存の行は残し、テンプレートにあって既存に無い行だけを末尾へ追記する |
 | `.vscode/settings.json` / `.vscode/extensions.json` | 既存のキー・配列要素は残し、無いものだけを足す。JSONC（コメント・末尾カンマ）を壊さない。既存の `cSpell.words` は cspell の CLI が読まないため、`cspell.json` の `words` へ移すことを提案する |
 | `cspell.json` | 既存のキー・`words` の語は残し、無いものだけを足す |
+| `.claude/settings.json` | 既存のキー・配列要素は残し、無いものだけを足す。`env` の `PYTHONDONTWRITEBYTECODE` も足す |
 
 #### README.md を案内板にする
 

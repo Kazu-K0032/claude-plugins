@@ -149,13 +149,14 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### ブランチ名の `/` は `-` に置き換える
 
-`tmp/<ブランチ名>/` への出力の規則は [P4](../../docs/policies/p04-tmp-output.md) に従う。`allowed-tools` の書き込み先は、1 階層だけに当たる `tmp/*/` で書く。スキル名のサブディレクトリに書くスキル（`issue-start`）は、`tmp/*/<スキル名>/` と 2 階層を書く。
+`tmp/<ブランチ名>/` への出力の規則は [P4](../../docs/policies/p04-tmp-output.md) に従う。`allowed-tools` の書き込み先は、1 階層だけに当たる `tmp/*/` で書く。スキル名のサブディレクトリに書くスキル（`commit`・`issue-pr-sync`・`issue-start`）は、`tmp/*/<スキル名>/` と 2 階層を書く。Claude の作業ファイルは、スキルの出力と分けて `tmp/<ブランチ名>/work/<目的>/` に置く。
 
 ワークフロー（`.js`）にはこの README を読ませにくい。そのため、各スキル・ワークフローにも同じ 1 文を書いている。規約を変えるときは、次の箇所もそろえて直す。
 
 - `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
 - `workflows/` の `pr-review.js`・`docs-consistency-audit.js`
+- `project` の `init-repo` が配る `.claude/rules/tmp-output.md`（このリポジトリの `.claude/rules/tmp-output.md` と組）。サブディレクトリに書くスキルを増やす・改名するときも直す
 
 ### Issue 番号を省いたら、ブランチ名から取る
 

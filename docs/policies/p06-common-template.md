@@ -3,6 +3,7 @@
 | 区分 | 内容 |
 | --- | --- |
 | 対象 | `project`（`init-repo`・`gas`・`wordpress`・`terraform`） |
+| 例外 | `init-repo` の `settings.json` の `env` に入れる `PYTHONDONTWRITEBYTECODE=1` は、Python 専用だが配る。Claude の作業スクリプトは、リポジトリの言語に関係なく Python で書かれやすく、入れても害が無いため |
 
 `init-repo` のテンプレートには、どのプロジェクトでも使うものだけを入れる。技術やプロジェクトで変わるもの（言語別のルール・ビルドの CI など）は配らず、README の「除外したもの」に理由を書く。別のスキルがそのファイルを作るときは、その理由と食い違わないかを確かめる。
 
