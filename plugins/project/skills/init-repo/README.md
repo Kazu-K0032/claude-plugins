@@ -47,7 +47,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/rules/permissions.md` | Claude に任せる操作と人が行う操作の線引きと、deny・フックを変えるときの規約。`settings.json`・フックを開いたときに読み込まれる | deny やフックの方針を変えたら表を合わせる |
 | `files/.claude/rules/branch.md` | ブランチ名を `issues/<Issue番号>-<説明>` にし、スキルの引数などに要る Issue 番号をブランチ名から取る規約 | 名前の形が違うリポジトリでは書き換える |
 | `files/.claude/rules/tmp-output.md` | `tmp/<ブランチ名>/` の置き方の規約。スキルの出力と、Claude の作業ファイル（`work/<目的>/`）を分け、Python は `-B` で実行する | そのまま使える |
-| `files/.claude/rules/ai-docs.md` | `SKILL.md`・規約・`CLAUDE.md` など AI が読む文書を、人も読み切れる形で書く規約（本筋と細部を分ける・本文 5,000 文字以内） | そのまま使える |
+| `files/.claude/rules/ai-docs.md` | `SKILL.md`・規約・`CLAUDE.md` など AI が読む文書を、人も読み切れる形で書く規約（`SKILL.md`・規約の骨組み・本筋と細部を分ける・本文 5,000 文字以内） | そのまま使える |
 | `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / リファクタ / リリース / AIDD 振り返り）。先頭に本文の長さの上限を示す | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[SKILL.md](SKILL.md) の手順 6） |
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト）。本文の長さの上限をコメントで示す | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
