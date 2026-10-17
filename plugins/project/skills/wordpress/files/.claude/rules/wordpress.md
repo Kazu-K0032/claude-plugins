@@ -3,7 +3,6 @@ paths:
   - "wordpress/**/*.php"
   - "wordpress/seed/**"
   - "wordpress/compose.yaml"
-docs-type: people-ai-doc
 ---
 
 # WordPress の実装ルール

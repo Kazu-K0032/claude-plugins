@@ -3,7 +3,6 @@ paths:
   - "src/**/*.js"
   - "src/**/*.html"
   - "src/appsscript.json"
-docs-type: people-ai-doc
 ---
 
 # Google Apps Script（GAS）の実装ルール

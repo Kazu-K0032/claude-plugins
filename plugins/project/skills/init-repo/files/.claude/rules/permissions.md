@@ -3,7 +3,6 @@ paths:
   - ".claude/settings.json"
   - ".claude/settings.local.json"
   - ".claude/hooks/**"
-docs-type: people-ai-doc
 ---
 
 # 権限の設定（deny・フック）に関するルール

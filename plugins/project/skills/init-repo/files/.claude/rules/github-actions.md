@@ -2,7 +2,6 @@
 paths:
   - ".github/workflows/**/*.yml"
   - ".github/workflows/**/*.yaml"
-docs-type: ai-doc
 ---
 
 # GitHub Actions 実装ルール

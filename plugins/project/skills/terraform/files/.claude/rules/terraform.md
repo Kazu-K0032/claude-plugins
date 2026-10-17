@@ -3,7 +3,6 @@ paths:
   - "infra/**/*.tf"
   - "infra/**/*.tftpl"
   - "infra/**/*.tfvars.example"
-docs-type: people-ai-doc
 ---
 
 # Terraform の実装ルール

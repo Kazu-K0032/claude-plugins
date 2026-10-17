@@ -84,6 +84,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `.claude/rules/permissions.md` | 権限の線引き（Claude に任せる操作と人が行う操作）と、deny・フックを変えるときの決まり | `settings.json` を入れる | `CLAUDE.md`・`.claude/rules/` 内の権限の規約 |
 | `.claude/rules/branch.md` | ブランチ名を Issue 番号と作業の要点にそろえる | GitHub で Issue を使う | `CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md` 内のブランチ名の規約 |
 | `.claude/rules/tmp-output.md` | `tmp/<ブランチ名>/` の置き方（スキルの出力と Claude の作業ファイルを分ける） | Claude Code を使う（常に該当） | `CLAUDE.md`・`.claude/rules/` 内の `tmp/` の規約 |
+| `.claude/rules/ai-docs.md` | AI が読む文書（`SKILL.md`・規約・`CLAUDE.md`）を、人も読み切れる形で書く | Claude Code を使う（常に該当） | `CLAUDE.md`・`.claude/rules/` 内の文書の書き方の規約 |
 | `.github/ISSUE_TEMPLATE/` | Issue の起票形式 | GitHub で Issue を使う | `.github/ISSUE_TEMPLATE/`・`.github/issue_template.md` |
 | `.github/PULL_REQUEST_TEMPLATE.md` | PR 本文の形式 | GitHub で PR を使う | `.github/pull_request_template.md`・`docs/pull_request_template.md`・ルートの `PULL_REQUEST_TEMPLATE.md` |
 | `.github/dependabot.yml` | GitHub Actions の依存更新 | `.github/workflows/` がある、または入れる | `.github/dependabot.yml`・`renovate.json`・`.github/renovate.json` |
@@ -168,7 +169,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --apply --only
 diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/<同じ相対パス>"
 ```
 
-`CLAUDE.md` は、テンプレートの見出し構成に既存の記述を差し込む形でマージするのが基本。既存の内容を捨てない。
+`CLAUDE.md` は、テンプレートの見出し構成に既存の記述を差し込む形でマージするのが基本。既存の内容を捨てない。既存の `CLAUDE.md` に `docs-type` の節（「`.claude/` ファイルのメタデータ規約」）があれば、選んだ扱いや `既存は置き換えない` の指定に関わらず、外すことを提案する。前の版が配った節で、AI 向けの文書は人が読めなくてよいとしており、`.claude/rules/ai-docs.md` と食い違うため。
 
 ファイル別のマージ方針は次のとおり。
 

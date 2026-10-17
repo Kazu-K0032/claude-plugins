@@ -12,7 +12,7 @@
 
 | 区分 | 入れるもの |
 | --- | --- |
-| 設計思想 | 権限の線引き（P1）、推論（Claude）と機械の検査の分担、`tmp/` の置き方、ADR、README の案内板、GitHub の定型（Issue・PR のテンプレート・ラベル・dependabot） |
+| 設計思想 | 権限の線引き（P1）、推論（Claude）と機械の検査の分担、`tmp/` の置き方、ADR、README の案内板、AI が読む文書の書き方（P9）、GitHub の定型（Issue・PR のテンプレート・ラベル・dependabot） |
 | 土台自身が動くのに使う技術 | フックの bash・jq、ワークフローの YAML、CI で cspell を動かす Node、Lint・整形を動かす lefthook |
 
 特定の言語・ツール向けの動く設定（ESLint の設定、言語の拡張子の一覧、特定のツールの破壊的な操作の検出など）は入れない。README の「除外したもの」に理由を書く。例示の文で技術名を出すのはよい。

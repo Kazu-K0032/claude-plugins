@@ -25,7 +25,8 @@
 | ADR など、置き場所がプロジェクトで決まるファイルを作る手順 | [P3](../../docs/policies/p03-check-placement.md) |
 | `init-repo` の `README.md`・`docs/README.md`・`.claude/rules/readme.md`、README を作る手順 | [P7](../../docs/policies/p07-readme-guide.md) |
 | Issue・PR の本文やコメントを書く手順、`init-repo` の PR・Issue のテンプレート、mod の「文書を簡潔に」 | [P8](../../docs/policies/p08-short-body.md) |
-| `plugins/aidd/references/harness-principles.md`（`harness-audit` の物差し） | [docs/values/](../../docs/values/README.md)、[P1](../../docs/policies/p01-operation-boundary.md)・[P3](../../docs/policies/p03-check-placement.md)・[P4](../../docs/policies/p04-tmp-output.md)・[P7](../../docs/policies/p07-readme-guide.md)・[P8](../../docs/policies/p08-short-body.md)、`init-repo` の README の「収録物」 |
+| `SKILL.md`・同梱の参照ファイル・規約（`.claude/rules/`・`files/.claude/rules/`）の本文 | [P9](../../docs/policies/p09-readable-ai-docs.md)、`.claude/rules/ai-docs.md` |
+| `plugins/aidd/references/harness-principles.md`（`harness-audit` の物差し） | [docs/values/](../../docs/values/README.md)、[P1](../../docs/policies/p01-operation-boundary.md)・[P3](../../docs/policies/p03-check-placement.md)・[P4](../../docs/policies/p04-tmp-output.md)・[P7](../../docs/policies/p07-readme-guide.md)・[P8](../../docs/policies/p08-short-body.md)・[P9](../../docs/policies/p09-readable-ai-docs.md)、`init-repo` の README の「収録物」 |
 
 ### 方針の一覧
 
@@ -39,6 +40,7 @@
 | [P6](../../docs/policies/p06-common-template.md) | 土台には設計思想だけを入れ、技術に依るものは技術別のスキルで重ねること | テンプレートにファイルを足すとき、技術別のスキルが土台のファイルに足すとき、`init-repo` が配らないファイルを別のスキルで作るとき |
 | [P7](../../docs/policies/p07-readme-guide.md) | README には本文を書かず、どこに何があるかの案内にとどめること | README のひな形・規約を直すとき、README を作るスキルを足すとき |
 | [P8](../../docs/policies/p08-short-body.md) | Issue・PR の本文は、人が読み切れる長さにすること | Issue・PR の本文やコメントを書く手順・テンプレートを直すとき |
+| [P9](../../docs/policies/p09-readable-ai-docs.md) | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・参照ファイル・規約を書く・直すとき |
 
 ## 権限設定や、スキルが利用先で触れるものを変更する場合
 
@@ -53,7 +55,7 @@
 - 方針を足す・変えるときは、`docs/values/` のどの価値に基づくか、どの価値にも反しないかを確かめ、方針の冒頭の表の「価値」に番号を書く。価値に反する方針になるときは、実装する前に利用者に伝える
 - 価値（`docs/values/`）を足す・変えるのは、利用者が決める。Claude からは提案にとどめる。書き方は `docs/values/README.md` の「ファイルの書き方」に従う
 - 方針を変えるときは、方針のファイルを直し、その方針に沿って書いた場所（README・`SKILL.md`・テンプレート・`check.py`）もすべて直す
-- 価値・P1・P3・P4・P7・P8、`init-repo` の土台の仕組みと印のファイルを変えたら、`plugins/aidd/references/harness-principles.md` の要約も直す。利用先の監査は、この要約を物差しにするため
+- 価値・P1・P3・P4・P7・P8・P9、`init-repo` の土台の仕組みと印のファイルを変えたら、`plugins/aidd/references/harness-principles.md` の要約も直す。利用先の監査は、この要約を物差しにするため
 - ある方針が 1 つのプラグインにしか書かれていないのに、ほかのプラグインで同じ場面が出てきたら、その方針をほかのプラグインにも広げるかを利用者に聞く
 
 ## 食い違いを見つけた場合

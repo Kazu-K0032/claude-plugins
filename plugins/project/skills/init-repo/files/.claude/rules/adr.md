@@ -1,7 +1,3 @@
----
-docs-type: ai-doc
----
-
 # ADR に関するルール
 
 このリポジトリでは、技術的な判断を ADR（判断の記録）として `docs/adr/` に残す。ADR の一覧（`docs/adr/README.md`）は `CLAUDE.md` で読み込んでいる。作業の方向がこれまでの判断とずれないようにし、新しい判断も ADR に残す。
