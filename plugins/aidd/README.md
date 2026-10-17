@@ -29,7 +29,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | Workflow | 用途 |
 | --- | --- |
 | `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証して、直す箇所を high・medium・low に分け、推奨アクションを添えて出力 |
-| `harness-audit-run` | `/aidd:harness-audit` の本体。設計思想・規約への適合、土台の仕組みの欠け、ファイル間の値の矛盾・重複記述・参照方向違反を監査する。対象の一覧と設計思想の要約を `args` で受け取るため、スキルから呼ぶ |
+| `harness-audit-run` | `/aidd:harness-audit` の本体。設計思想・規約への適合、土台の仕組みの欠け、ファイル間の値の矛盾・重複記述・参照方向違反を監査する。対象の一覧・設計思想の要約・確認の印（`confirmed`）を `args` で受け取るため、スキルから呼ぶ。確認の印が無い呼び出しは走らない |
 
 収録は上記 9 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
 

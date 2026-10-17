@@ -1,5 +1,5 @@
 export const meta = {
-  // リポジトリ全体が、本マーケットプレイスの設計思想（aidd × DocDD）と、そのリポジトリの規約に合うかを、
+  // リポジトリ全体が、本マーケットプレイスの設計思想（AIDD × DocDD）と、そのリポジトリの規約に合うかを、
   // fan-out で網羅監査する workflow。init-repo からの作り直しの後や、統合ブランチへのマージ前の最終チェックに使う。
   // 機械チェック（リンク切れ・markdown 規約）は Lint の担当として重複させない。
   //
@@ -8,7 +8,7 @@ export const meta = {
   // 出力は tmp/<branch>/harness-audit_<timestamp>.md のみ。修正は行わない。
   name: 'harness-audit-run',
   description:
-    'リポジトリ全体がマーケットプレイスの設計思想と規約に合うか（規約違反・価値に反する・規約のずれ・仕組みの欠け）と、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。通常は /aidd:harness-audit から呼ぶ（args で { files, principles } を渡す）',
+    'リポジトリ全体がマーケットプレイスの設計思想と規約に合うか（規約違反・価値に反する・規約のずれ・仕組みの欠け）と、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。費用が大きいため直接は呼ばず、見込みを示して確認を取る /aidd:harness-audit から呼ぶ（args で { files, principles, confirmed: true } を渡す）',
   // phases の model は進み具合の表示に使う。下の MODELS とそろえる（meta は純粋なリテラルのため、定数を参照できない）
   phases: [
     { title: 'Rubric', detail: '設計思想の要約とリポジトリの規約から、当てるファイル付きのチェックリストと規約のずれの候補を作る', model: 'opus' },
@@ -417,9 +417,14 @@ const entries = (input && Array.isArray(input.files) ? input.files : [])
 const files = entries.map((e) => e.path)
 const principles = input && typeof input.principles === 'string' ? input.principles.trim() : ''
 
+// 見込みを示して利用者の確認を取るのはスキル側。確認を通っていない呼び出しは、費用が大きいため走らせない
+if (!input || input.confirmed !== true) {
+  log('利用者の確認を経ていないため終了する。/aidd:harness-audit から呼ぶ（見込みを示して確認を取り、args に confirmed: true を渡す）')
+  return { file: null, files: files.length, confirmed: 0, stopped: 'not-confirmed' }
+}
 if (files.length === 0) {
   log('対象のファイルが渡されていないため終了する。/aidd:harness-audit から呼ぶ（args の files に対象のパスを渡す）')
-  return { file: null, files: 0, confirmed: 0 }
+  return { file: null, files: 0, confirmed: 0, stopped: 'no-files' }
 }
 
 const batches = makeBatches(entries)
@@ -432,7 +437,7 @@ if (planned > AGENT_PLAN_LIMIT) {
     `対象 ${files.length} ファイル（束 ${batches.length}・群 ${groups.length}）で、エージェントが ${planned} 体以上要る。` +
       `1 回の上限 ${AGENT_PLAN_LIMIT} を超えるため実行せずに終了する（途中で上限 ${AGENT_LIMIT} に当たり、結果が欠けるため）。対象を分けて呼ぶ`
   )
-  return { file: null, files: files.length, confirmed: 0 }
+  return { file: null, files: files.length, confirmed: 0, stopped: 'too-many-agents' }
 }
 log(`対象 ${files.length} ファイル / 束 ${batches.length} / 横断の群 ${groups.length} / 横断の候補の検証を除くエージェント ${planned} 体`)
 if (!principles) {
@@ -490,7 +495,7 @@ const rubric = await agent(
 if (!rubric) {
   // 物差しが無いまま進めると、規約違反を一般論で挙げてしまうため止める
   log('チェックリストを作れなかったため終了する（エージェントの失敗・スキップ）')
-  return { file: null, files: files.length, confirmed: 0 }
+  return { file: null, files: files.length, confirmed: 0, stopped: 'rubric-failed' }
 }
 
 const rubrics = rubric.rubrics || []
@@ -540,7 +545,8 @@ const presencePromise = (async () => {
     ].join('\n'),
     { label: 'presence', phase: 'Presence', schema: PRESENCE_SCHEMA, ...MODELS.presence }
   )
-  if (!found) return { installed: false, skipped: true, marks: [], verdicts: [], unchecked: [] }
+  // 判定の段が止まったときは、「土台が無い」と取り違えないよう failed を立てる
+  if (!found) return { installed: false, skipped: true, failed: true, marks: [], verdicts: [], unchecked: [] }
   const missing = found.missing || []
   if (!found.harnessInstalled || missing.length === 0) {
     return { installed: !!found.harnessInstalled, skipped: false, marks: found.marks || [], verdicts: [], unchecked: [] }
@@ -568,14 +574,20 @@ const presencePromise = (async () => {
     // 反証の段が止まったときは、欠けを黙って落とさず、確かめられなかったものとしてレポートに出す
     return { installed: true, skipped: false, marks: found.marks || [], verdicts: [], unchecked: missing }
   }
-  const verdicts = (checked.verdicts || []).map((v) => ({
-    ...v,
-    kind: 'missing',
-    files: [],
-    topic: v.mechanism,
-    source: '設計思想の要約の「土台の仕組み」',
-  }))
-  return { installed: true, skipped: false, marks: found.marks || [], verdicts, unchecked: [] }
+  // 候補に無い仕組みの返事は捨てる。返事の無い欠けは、黙って落とさず反証できなかったものに入れる
+  const names = new Set(missing.map((m) => m.mechanism))
+  const verdicts = (checked.verdicts || [])
+    .filter((v) => names.has(v.mechanism))
+    .map((v) => ({
+      ...v,
+      kind: 'missing',
+      files: [],
+      topic: v.mechanism,
+      source: '設計思想の要約の「土台の仕組み」',
+    }))
+  const answered = new Set(verdicts.map((v) => v.mechanism))
+  const unchecked = missing.filter((m) => !answered.has(m.mechanism))
+  return { installed: true, skipped: false, marks: found.marks || [], verdicts, unchecked }
 })()
 
 // 3. Inspect → Verify（束ごと）: pipeline。小さいファイルは束ねて 1 体で精読し、
@@ -650,17 +662,28 @@ const perBatch = await pipeline(
     )
     // 検証の段が止まったときは、候補を黙って落とさず、検証できなかった件数として数える
     if (!checked) return { results, verdicts: [], failed: candidates.length }
-    const verdicts = (checked.verdicts || []).map((v) => {
-      const item = itemsById.get(v.ruleId)
-      return {
-        ...v,
-        kind: item && item.basis === 'value' ? 'value' : 'rule',
-        files: [v.file],
-        topic: item ? item.rule : v.ruleId,
-        source: item ? item.source : '',
-      }
-    })
-    return { results, verdicts, failed: 0 }
+    // 返事を候補と突き合わせる。ファイルと項目の組ごとに、返事が候補より少なければ、足りない分を検証できなかった件数に数える。
+    // location は書き写すときに揺れやすいため、組の単位で数える。候補に無い組の返事は捨てる
+    const pairKey = (x) => `${x.file}\u0000${x.ruleId}`
+    const asked = new Map()
+    for (const c of candidates) asked.set(pairKey(c), (asked.get(pairKey(c)) || 0) + 1)
+    const answeredCount = new Map()
+    const verdicts = (checked.verdicts || [])
+      .filter((v) => asked.has(pairKey(v)))
+      .map((v) => {
+        answeredCount.set(pairKey(v), (answeredCount.get(pairKey(v)) || 0) + 1)
+        const item = itemsById.get(v.ruleId)
+        return {
+          ...v,
+          kind: item && item.basis === 'value' ? 'value' : 'rule',
+          files: [v.file],
+          topic: item ? item.rule : v.ruleId,
+          source: item ? item.source : '',
+        }
+      })
+    let failed = 0
+    for (const [k, n] of asked) failed += Math.max(0, n - (answeredCount.get(k) || 0))
+    return { results, verdicts, failed }
   }
 )
 
@@ -847,8 +870,18 @@ const crossVerdicts = (
 const crossFailed = toVerify.length - crossVerdicts.length
 
 const presence = await presencePromise
-if (presence.skipped) {
-  log('仕組みの欠けは見ていない（設計思想の要約が無い、または判定の段が失敗した）')
+// 仕組みの欠けを見たかを 1 語で返す。判定の段が止まったときを「土台が無い」と取り違えないため
+const presenceStatus = presence.failed
+  ? 'failed'
+  : presence.skipped
+    ? 'no-principles'
+    : presence.installed
+      ? 'checked'
+      : 'not-installed'
+if (presence.failed) {
+  log('仕組みの欠けを判定する段が止まったため、欠けは見ていない。再実行する')
+} else if (presence.skipped) {
+  log('設計思想の要約が無いため、仕組みの欠けは見ていない')
 } else if (!presence.installed) {
   log(`init-repo の印が条件に足りないため、仕組みの欠けは見ていない（見つかった印: ${presence.marks.length ? presence.marks.join(', ') : 'なし'}）`)
 } else {
@@ -876,11 +909,12 @@ log(`確定指摘: ${confirmed.length} / 候補 ${candidateCount}`)
 //    ブランチ名の / を - に置換する規約は aidd の README.md の「ブランチ名の / は - に置き換える」。
 //    検出のみ。問題の自動修正はしない。
 phase('Report')
-const presenceNote = presence.skipped
-  ? '見ていない（設計思想の要約が無い、または判定の段が失敗した）'
-  : presence.installed
-    ? '見た'
-    : 'init-repo の土台が見つからないため見ていない'
+const presenceNote = {
+  failed: '判定の段が止まったため見ていない（再実行する）',
+  'no-principles': '設計思想の要約が無いため見ていない',
+  checked: '見た',
+  'not-installed': 'init-repo の土台が見つからないため見ていない',
+}[presenceStatus]
 const report = await agent(
   [
     '次の確定済み指摘を Markdown レポートに整形し、所定のファイルへ追記せよ。',
@@ -949,6 +983,7 @@ return {
   checklist: checklist.length,
   uncovered: uncovered.length,
   harnessInstalled: presence.installed,
+  presence: presenceStatus,
   referenceDirectionChecked: hasRefRule,
   candidates: candidateCount,
   unverified: unverified.length,

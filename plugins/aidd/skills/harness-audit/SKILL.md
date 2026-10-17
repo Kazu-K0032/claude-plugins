@@ -1,6 +1,6 @@
 ---
 name: harness-audit
-description: リポジトリ全体が、本マーケットプレイスの設計思想（aidd × DocDD）とそのリポジトリの規約に合うかを監査する。規約違反・価値に反する箇所・規約のずれ・土台の仕組みの欠けと、ファイル間の値の矛盾・重複記述・参照方向違反を見る。実行前に対象の件数・総量・エージェント数の見込みを示して続けるかを聞き、Workflow（harness-audit-run）で各指摘を敵対的に検証して tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md に出力する。init-repo から作り直した後や、統合ブランチ（develop・stg・main）へのマージ前の最終チェックに使用する
+description: リポジトリ全体が、本マーケットプレイスの設計思想（AIDD × DocDD）とそのリポジトリの規約に合うかを監査する。規約違反・価値に反する箇所・規約のずれ・土台の仕組みの欠けと、ファイル間の値の矛盾・重複記述・参照方向違反を見る。実行前に対象の件数・総量・エージェント数の見込みを示して続けるかを聞き、Workflow（harness-audit-run）で各指摘を敵対的に検証して tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md に出力する。init-repo から作り直した後や、統合ブランチ（develop・stg・main）へのマージ前の最終チェックに使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git grep:*), AskUserQuestion
 argument-hint: "[対象のパス（任意。省略時は追跡中の全テキストファイル。例: plugins/aidd docs）]"
@@ -8,7 +8,7 @@ argument-hint: "[対象のパス（任意。省略時は追跡中の全テキス
 
 # ハーネス監査（harness-audit）
 
-リポジトリ全体が、本マーケットプレイスの設計思想（aidd × DocDD）と、そのリポジトリの規約に合っているかを監査する。設計思想の質を保つための最終チェックで、次のときに使う。
+リポジトリ全体が、本マーケットプレイスの設計思想（AIDD × DocDD）と、そのリポジトリの規約に合っているかを監査する。設計思想の質を保つための最終チェックで、次のときに使う。
 
 - `/project:init-repo` から、ハーネスやツールを作り直した後
 - 統合ブランチ（develop・stg・main など）へマージする前
@@ -97,10 +97,13 @@ Step 1 の一覧から、次を数える。トークン数は事前に分から�
 
 `${CLAUDE_PLUGIN_ROOT}/references/harness-principles.md` を Read し、本文をそのまま `principles` に入れる。Workflow ツールで、`name` に `aidd:harness-audit-run`、`args` に対象の一覧と要約を渡して呼ぶ。`args` は JSON の値のまま渡す（文字列にしない）。
 
+`confirmed` は、Step 3 で利用者が続けると選んだときだけ `true` にする。Workflow は、これが無い呼び出しを走らせない。見込みの確認を飛ばした実行を止めるため。
+
 ```json
 {
   "files": [{ "path": "README.md", "bytes": 1820 }, { "path": "docs/README.md", "bytes": 940 }],
-  "principles": "<harness-principles.md の本文>"
+  "principles": "<harness-principles.md の本文>",
+  "confirmed": true
 }
 ```
 
@@ -112,9 +115,20 @@ Step 1 の一覧から、次を数える。トークン数は事前に分から�
 
 Workflow の戻り値から、次を伝えて終わる。
 
+戻り値に `stopped` があれば、監査の前に止まっている。指摘が 0 件だったとは伝えず、理由と次の手だけを伝えて終わる。
+
+| `stopped` | 伝えること |
+| --- | --- |
+| `not-confirmed` | 確認の印が渡っていない。Step 4 の `confirmed` を確かめて呼び直す |
+| `no-files` | 対象が渡っていない。Step 1 の一覧を確かめて呼び直す |
+| `too-many-agents` | 対象が多すぎる。Step 3 で「絞る」を選んで呼び直す |
+| `rubric-failed` | チェックリストを作る段が止まった。呼び直す |
+
+`stopped` が無ければ、次を伝える。
+
 - レポートのパス（`tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md`。ブランチ名の `/` は `-` に置き換える。規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）
 - 監査したファイル数・確定した指摘の数・指摘の候補の数
-- 仕組みの欠けを見たか（`init-repo` の印が無ければ、見ていないこと）
+- 仕組みの欠けを見たか（`presence`。`checked` は見た、`not-installed` は印が無く見ていない、`no-principles` は要約が無く見ていない、`failed` は判定の段が止まった。`failed` なら再実行を勧める）
 - 当てはまる規約が無かったファイルの数と、検証していない候補の数（0 でなければ）
 - 途中で止まった段の件数（`failed`・`notInspected`・`detectFailed`）と、反証できなかった仕組みの欠けの数（`uncheckedMissing`）。0 でなければ伝え、再実行を勧める。その分は見ていないため
 - `file` が `null` なら、レポートを書けなかったことを伝え、上の件数を戻り値から伝える
