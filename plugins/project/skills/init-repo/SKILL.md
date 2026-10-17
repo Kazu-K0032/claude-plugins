@@ -169,7 +169,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh" --skill init-repo --apply --only
 diff -u <既存ファイル> "${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/<同じ相対パス>"
 ```
 
-`CLAUDE.md` は、テンプレートの見出し構成に既存の記述を差し込む形でマージするのが基本。既存の内容を捨てない。
+`CLAUDE.md` は、テンプレートの見出し構成に既存の記述を差し込む形でマージするのが基本。既存の内容を捨てない。既存の `CLAUDE.md` に `docs-type` の節（「`.claude/` ファイルのメタデータ規約」）があれば、選んだ扱いや `既存は置き換えない` の指定に関わらず、外すことを提案する。前の版が配った節で、AI 向けの文書は人が読めなくてよいとしており、`.claude/rules/ai-docs.md` と食い違うため。
 
 ファイル別のマージ方針は次のとおり。
 
