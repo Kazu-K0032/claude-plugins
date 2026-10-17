@@ -1,8 +1,8 @@
 ---
 name: docs-sync
-description: 現在のブランチ（基準ブランチ以外）の差分を分析し、コード・インフラ変更に追従して更新すべき md ドキュメントを特定して更新を提案する。ブランチの変更にドキュメントが追従しているか点検したい時に使用する。基準ブランチでは停止する
+description: 現在のブランチと、そのマージ先との差分を分析し、コード・インフラ変更に追従して更新すべき md ドキュメントを特定して更新を提案する。ブランチの変更にドキュメントが追従しているか点検したい時に使用する。マージ先が無いブランチ（既定ブランチなど）と main・master では停止する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
+allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
 ---
 
 # ドキュメント追従チェック（docs-sync）
@@ -11,7 +11,9 @@ allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(date
 
 ## 基準ブランチでの停止
 
-基準ブランチ（`origin/HEAD` が指す既定ブランチ、または `main` / `master`）では差分の基準が無いため**フローを停止する**。`run-checks.sh` が `STOP` を返したら、その旨をユーザーに伝えて終了する。
+基準ブランチは、今のブランチのマージ先（決め方は Step 0）。マージ先が今のブランチ自身になるとき（既定ブランチで実行したときなど）と、`main` / `master` では差分の基準が無いため**フローを停止する**。`run-checks.sh` が `STOP` を返したら、その旨をユーザーに伝えて終了する。
+
+`develop` のように、ほかのブランチのマージ先になるブランチでも、自分のマージ先（`stg`・`main` など）があれば止めない。リリース前に、未リリースの変更へドキュメントが追従しているかを点検できるようにするため。
 
 ## 参照ファイル
 
@@ -27,6 +29,7 @@ allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(date
 
 | フェーズ | 担当 | 対象 |
 | --- | --- | --- |
+| 比べるブランチの決定 | LLM | PR・規約から、今のブランチのマージ先を決めて `run-checks.sh` に渡す |
 | 差分列挙・機械チェック | `run-checks.sh` | ブランチ差分の列挙・変更 md の相対リンク切れ・markdown 規約、および全 md のリンク切れ・SSOT 一覧ポインタ（全走査・差分非依存） |
 | 追従要否の判定 | LLM | 非 md 変更（コード・インフラ）に追従して更新すべき md の特定・更新提案 |
 | レポート出力 | LLM | スクリプト出力と LLM 判定を統合して `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` に整形 |
@@ -35,29 +38,43 @@ allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(date
 
 - リポジトリのルートで実行されること
 - `git` / `bash` / `perl` / `awk` が利用可能であること
-- 基準ブランチ以外のフィーチャーブランチであること
+- マージ先がある（基準ブランチ以外の）ブランチであること
 
 ## 手順
 
+### Step 0: 比べるブランチを決める
+
+今のブランチのマージ先を、次の順で決める。既定ブランチと比べると、`develop` に溜めてから `main` へリリースするリポジトリでは、未リリースの変更まで差分に混ざるため。順は `/aidd:pr-create` と同じ。
+
+1. `git branch --show-current` で今のブランチを取る
+1. `gh pr view --json baseRefName` で今のブランチの PR のマージ先を取る。PR が無ければ（コマンドが失敗したら）次へ進む
+1. リポジトリの規約（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/`）を「ブランチ」「branch」「マージ先」で Grep し、今のブランチの種類（`issues/`・`develop`・`release/`・`stg` など）のマージ先を読む。ブランチ戦略はリポジトリごとに違う（`develop → stg → main` など）ため、ブランチの種類ごとに読む
+   - 今のブランチが「ほかのブランチのマージ先」として書かれているだけの記述は使わない。`develop` で「普段の PR は `develop` へ」を読むと、自分自身と比べてしまうため
+1. PR も規約も無ければ、`--base` を付けずに Step 1 へ進む。スクリプトが既定ブランチ（`origin/HEAD`）と比べる
+1. マージ先が決まったら、`git fetch origin <マージ先>` で最新にする。手元の `origin/<マージ先>` は、GitHub でのマージに追いつかず古くなりやすいため。断られたら手元の `origin/<マージ先>` で続け、古い可能性をレポートに書く。`origin/<マージ先>` が無いときだけ、手元の `<マージ先>` を使う
+
+決めたブランチと根拠（PR のマージ先・規約のファイル・既定ブランチ）は、Step 3 のレポートに書くため控えておく。
+
 ### Step 1: 差分列挙・機械チェック実行
 
-次のコマンドを実行し、標準出力を保持する。
+次のコマンドを実行し、標準出力を保持する。`<比べるブランチ>` は Step 0 で決めたもの（通常は `origin/<マージ先>`）。Step 0 で決まらなければ `--base` を付けない。
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比べるブランチ>"
 ```
 
 スクリプトは以下を出力する。
 
 - 基準ブランチ上の場合は `STOP` と表示し終了コード 3。**この場合は以降を実施せず、停止理由をユーザーに伝えて終了する**
-- 基準ブランチ・変更ファイル総数
+- `--base` のブランチが見つからない場合は `ERROR` と表示し終了コード 2。**以降を実施せず、渡したブランチと原因をユーザーに伝えて終了する**
+- 基準ブランチ（決め方を括弧で添える）・変更ファイル総数
 - 「## 変更された md」「## 変更された非 md（docs 追従判断の入力）」のファイル一覧
 - 変更 md に対する「相対リンク切れ」「markdown 規約」「docs-type フロントマター」の PASS/FAIL
 - 全走査（差分非依存）の「全 docs リンク切れ」「SSOT 一覧ポインタ存在」の PASS/FAIL
 - リンク検査から外したファイルの件数（外したときだけ。指定のしかたは `docdd-design.md` の「リンク検査から外すファイル」）
 - 「## サマリ」配下に各カテゴリの FAIL 件数（レポートの材料。レポートの構成とは別で、レポートにサマリの節は作らない）
 
-終了コードは、機械チェック FAIL があれば `1`、基準ブランチでの停止なら `3`、すべて PASS なら `0`。
+終了コードは、機械チェック FAIL があれば `1`、`ERROR`（`--base` のブランチが無いなど）なら `2`、基準ブランチでの停止なら `3`、すべて PASS なら `0`。
 
 **`SKIP` の扱い**: `docs-type` と `SSOT 一覧ポインタ` は、そのリポジトリが該当の規約を使っていない場合 `SKIP` を返す。これは異常ではないため FAIL として扱わず、レポートには「対象外」と記す。
 
@@ -88,11 +105,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
 3. `output-template.md` のテンプレートに従い、Step 1 のスクリプト出力と Step 2 の判定結果を統合して `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` に書き込み、出力パスをユーザーに報告する
    - 機械チェックの FAIL と Step 2 の指摘を、`docdd-design.md` の「重大度」に従って high・medium・low に分ける
    - 冒頭の文に、Step 1 の基準ブランチと変更ファイル数を入れる
-   - `SKIP` にした項目と、Step 2 で参照した規約は、冒頭の文の直後に注記で書く。PASS は書かない
+   - Step 0 で決めた根拠（PR のマージ先・規約のファイル・既定ブランチ）と、`git fetch` を断られたときはその旨を、冒頭の文の直後に注記で書く。比べる先を取り違えていないかを、読み手が確かめられるようにするため
+   - `SKIP` にした項目と、Step 2 で参照した規約も、同じ注記に書く。PASS は書かない
    - 推奨アクションに、直す順の番号付き一覧（最大 5 件）を書く
 
 ## 判断基準
 
+- 基準ブランチは、今のブランチのマージ先にする（Step 0）。既定ブランチに決め打ちしない
 - 基準ブランチでは Step 1 の `STOP` で終了する（レポートは作らない）
 - 機械チェック（Step 1）の FAIL と追従判定（Step 2）の指摘を合算し、high・medium・low に分ける。総合判定（PASS / FAIL）は出さない
 - スクリプトの終了コードのみで指摘の有無を決めず、Step 2 の LLM 判定結果を必ず合算する
@@ -102,6 +121,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
 ## 禁止事項
 
 - ❌ 基準ブランチでフローを継続する（必ず停止する）
+- ❌ Step 0 で PR・規約を確かめずに、既定ブランチと比べる
 - ❌ 検出した問題を自動修正する（レポート出力のみに留める）
 - ❌ 機械チェック（Step 1）の判定範囲を LLM 判定（Step 2）で重複点検する（役割分担を崩さない）
 - ❌ `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` 以外のファイルを書き換える
@@ -111,7 +131,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh"
 
 ## 使用する引数
 
-引数は受け取らない。スクリプトが対象差分を自動列挙する。
+引数は受け取らない。比べるブランチは Step 0 で決め、スクリプトが対象差分を列挙する。
 
 ## 補完関係
 
