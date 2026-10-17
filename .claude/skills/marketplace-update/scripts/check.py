@@ -17,6 +17,9 @@
      比べる ref（--base、無ければ origin/develop）でも超えていたものは、前からの超過として分けて出す
  11. 各スキル（plugins/ 配下と .claude/skills/）の allowed-tools に、書き込み・実行のオプション（--output など）も
      確認なしで通す前方一致の Bash 規則が無いか（docs/policies/p01-operation-boundary.md の「確認なしで任せる操作」）
+ 12. このリポジトリと init-repo テンプレートの settings.json の deny が、Bash(git ...)・Bash(gh ...) の組の PowerShell(...) と
+     削除の別名を持つか（Bash(...) の規則は PowerShell のツールには効かない）。2 つの settings.json の deny が食い違わないか。
+     harness-principles.md の「土台の仕組み」が例に挙げるコマンドが、テンプレートの deny に残っているか
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>] [--base <比べる ref>]
 終了コード: NG が 1 件でもあれば 1、それ以外は 0（WARN は 0 のまま）
@@ -127,6 +130,7 @@ def main():
     check_duplicated_files(repo)
     check_argument_hints(repo)
     check_allowed_prefixes(repo)
+    check_deny_sync(repo)
     base = sys.argv[sys.argv.index("--base") + 1] if "--base" in sys.argv else None
     check_doc_lengths(repo, base)
     check_versions(repo, market, base)
@@ -352,6 +356,52 @@ def check_allowed_prefixes(repo):
                 add("NG", "allowed-prefix",
                     "%s: allowed-tools の Bash(%s) は、書き込み・実行のオプションも確認なしで通す。"
                     "外すか、完全一致で書く（P1）" % (rel, m.group(1)))
+
+
+SETTINGS_FILES = (
+    ".claude/settings.json",
+    "plugins/project/skills/init-repo/files/.claude/settings.json",
+)
+PRINCIPLES_FILE = "plugins/aidd/references/harness-principles.md"
+# 削除のコマンドは、PowerShell では別名が複数あり、規則が別名まで解決するかが分からないため、別名も並べる
+POWERSHELL_DELETE = ("Remove-Item", "rm", "rmdir", "del", "rd", "ri", "erase")
+
+
+def check_deny_sync(repo):
+    """12: settings.json の deny の PowerShell の組と、2 つの settings.json・物差しとの同期。"""
+    denies = {}
+    for rel in SETTINGS_FILES:
+        path = os.path.join(repo, rel)
+        if not os.path.isfile(path):
+            continue
+        deny = json.loads(read(path)).get("permissions", {}).get("deny", [])
+        denies[rel] = deny
+        for rule in deny:
+            m = re.match(r"^Bash\(((?:git|gh)\b.*)\)$", rule)
+            if m and "PowerShell(%s)" % m.group(1) not in deny:
+                add("NG", "deny-powershell",
+                    "%s: %s に組になる PowerShell(%s) が無い。Bash(...) の規則は PowerShell のツールには効かない（P1）"
+                    % (rel, rule, m.group(1)))
+        for name in POWERSHELL_DELETE:
+            if "PowerShell(%s *)" % name not in deny:
+                add("NG", "deny-powershell", "%s: 削除の PowerShell(%s *) が deny に無い（P1）" % (rel, name))
+    if len(denies) == len(SETTINGS_FILES):
+        sets = [{r for r in d if r.startswith(("Bash(", "PowerShell("))} for d in denies.values()]
+        for rel, only in zip(SETTINGS_FILES, (sets[0] - sets[1], sets[1] - sets[0])):
+            if only:
+                add("WARN", "deny-sync",
+                    "%s にだけある deny: %s。もう片方の settings.json にも入れるか、違いが意図したものか確かめる"
+                    % (rel, "、".join(sorted(only)[:5]) + ("…" if len(only) > 5 else "")))
+    principles = os.path.join(repo, PRINCIPLES_FILE)
+    template = denies.get(SETTINGS_FILES[1])
+    if os.path.isfile(principles) and template is not None:
+        for line in read(principles).splitlines():
+            if line.startswith("| コミット・push・削除・権限の変更・深刻な外部操作を止める"):
+                for ex in re.findall(r"`([a-z][a-z -]*[a-z])`", line):
+                    if not any(re.match(r"^Bash\(%s[ *)]" % re.escape(ex), r) for r in template):
+                        add("WARN", "deny-sync",
+                            "%s の例 `%s` に当たる deny が、テンプレートの settings.json に無い。物差しを直すか、deny を戻す"
+                            % (PRINCIPLES_FILE, ex))
 
 
 # 人が読み切れる本文の長さの上限（P9）。変えるときは P9 の Q&A「上限の数を変えたい」の場所もそろえる
