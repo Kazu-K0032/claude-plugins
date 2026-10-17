@@ -4,6 +4,7 @@
 チェック対象（1〜6 は plugins/ 配下の全プラグイン、2 の基準は project の init-repo テンプレート）:
   1. 権限規則の書式（allowed-tools に Write()/NotebookEdit()/MultiEdit()/Glob() のパス規則を使っていないか）
   2. init-repo テンプレートの deny の Bash 規則と、各スキルが使うコマンドの衝突
+     （allowed-tools と、スキルのフォルダの md（サブフォルダも）・references/ の本文。README.md と files/ は見ない）
   3. allowed-tools の書き込み許可パスが tmp 配下に収まっているか
   4. ${CLAUDE_PLUGIN_ROOT} 参照先のファイルが実在するか
   5. カタログの整合（スキル名・README の一覧・marketplace.json の source と登録漏れ）
@@ -138,6 +139,22 @@ def main():
     return 1 if ng else 0
 
 
+def instruction_files(plugin, skills_dir, skill_names):
+    """スキルが手順として読む md を返す。
+
+    各スキルのフォルダの md（README.md と、導入先へコピーする files/ は除く）と、プラグインの references/ の md。
+    """
+    paths = []
+    for name in skill_names:
+        for root, dirs, files in os.walk(os.path.join(skills_dir, name)):
+            dirs[:] = sorted(d for d in dirs if not (root == os.path.join(skills_dir, name) and d == "files"))
+            for f in sorted(files):
+                if f.endswith(".md") and f != "README.md":
+                    paths.append(os.path.join(root, f))
+    paths += sorted(glob.glob(os.path.join(plugin, "references", "*.md")))
+    return paths
+
+
 def check_plugin(repo, plugin_name, plugin, prefixes):
     """1〜5 のうちプラグイン単位のチェック。"""
     skills_dir = os.path.join(plugin, "skills")
@@ -177,8 +194,10 @@ def check_plugin(repo, plugin_name, plugin, prefixes):
                     "%s: 書き込み許可 %s が tmp 配下ではない。出力先を固定できているか確認する"
                     % (name, rule))
 
-        # 本文で実行を指示している gh / git と削除のコマンドを拾う（人が手で実行する例も含むため WARN）
-        for num, line in enumerate(text.splitlines(), 1):
+    # 本文で実行を指示している gh / git と削除のコマンドを拾う（人が手で実行する例も含むため WARN）
+    # 手順の細部は参照ファイルへ移すため（P9）、SKILL.md だけでなく、スキルが読む md も見る
+    for path in instruction_files(plugin, skills_dir, skill_names):
+        for num, line in enumerate(read(path).splitlines(), 1):
             stripped = line.strip().lstrip("$ ").strip("`")
             m = re.match(r"^((gh|git) [a-z][a-z-]*|(rm|rmdir|unlink|find)\b)", stripped)
             if not m:
@@ -359,7 +378,7 @@ def check_doc_lengths(repo, base):
             continue
         if ref is None:
             add("WARN", "doc-length",
-                "%s: 本文が %d 文字で、上限の %d 文字を超える。扱いは marketplace-update の SKILL.md の手順 4 を見る（P9）"
+                "%s: 本文が %d 文字で、上限の %d 文字を超える。扱いは .claude/skills/marketplace-update/ng-warn.md の doc-length を見る（P9）"
                 % (rel, length, DOC_LIMIT))
             continue
         shown = git(repo, "show", "%s:%s" % (ref, rel))
