@@ -2,7 +2,7 @@
 name: docs-sync
 description: 現在のブランチと、そのマージ先との差分を分析し、コード・インフラ変更に追従して更新すべき md ドキュメントを特定して更新を提案する。ブランチの変更にドキュメントが追従しているか点検したい時に使用する。マージ先が無いブランチ（既定ブランチなど）と main・master では停止する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
+allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
 ---
 
 # ドキュメント追従チェック（docs-sync）
@@ -22,6 +22,8 @@ allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(gh p
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh` | 差分列挙・機械チェック |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/docdd-design.md` | チェック対象・判定範囲・重大度 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/output-template.md` | レポートの出力フォーマット |
+| `${CLAUDE_PLUGIN_ROOT}/references/merge-target.md` | 比べるブランチ（マージ先）の決め方（Step 0） |
+| `${CLAUDE_PLUGIN_ROOT}/references/report-format.md` | レポートの見出しの構成・推奨アクションの決まり（Step 3） |
 | `${CLAUDE_PLUGIN_ROOT}/references/document.md` | 重複排除（SSOT）・文体・構造ルール |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | markdown 書式規約 |
 
@@ -44,16 +46,10 @@ allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(gh p
 
 ### Step 0: 比べるブランチを決める
 
-今のブランチのマージ先を、次の順で決める。既定ブランチと比べると、`develop` に溜めてから `main` へリリースするリポジトリでは、未リリースの変更まで差分に混ざるため。順は `/aidd:pr-create` と同じ。
+`git branch --show-current` で今のブランチを取り、そのマージ先を `merge-target.md` の順で決める。
 
-1. `git branch --show-current` で今のブランチを取る
-1. `gh pr view --json baseRefName` で今のブランチの PR のマージ先を取る。PR が無ければ（コマンドが失敗したら）次へ進む
-1. リポジトリの規約（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/`）を「ブランチ」「branch」「マージ先」で Grep し、今のブランチの種類（`issues/`・`develop`・`release/`・`stg` など）のマージ先を読む。ブランチ戦略はリポジトリごとに違う（`develop → stg → main` など）ため、ブランチの種類ごとに読む
-   - 今のブランチが「ほかのブランチのマージ先」として書かれているだけの記述は使わない。`develop` で「普段の PR は `develop` へ」を読むと、自分自身と比べてしまうため
-1. PR も規約も無ければ、`--base` を付けずに Step 1 へ進む。スクリプトが既定ブランチ（`origin/HEAD`）と比べる
-1. マージ先が決まったら、`git fetch origin <マージ先>` で最新にする。手元の `origin/<マージ先>` は、GitHub でのマージに追いつかず古くなりやすいため。断られたら手元の `origin/<マージ先>` で続け、古い可能性をレポートに書く。`origin/<マージ先>` が無いときだけ、手元の `<マージ先>` を使う
-
-決めたブランチと根拠（PR のマージ先・規約のファイル・既定ブランチ）は、Step 3 のレポートに書くため控えておく。
+- PR も規約も無ければ、`--base` を付けずに Step 1 へ進む。スクリプトが既定ブランチ（`origin/HEAD`）と比べる
+- `git fetch` を断られたときの古い可能性と、決めたブランチの根拠は、Step 3 のレポートに書く
 
 ### Step 1: 差分列挙・機械チェック実行
 
@@ -107,7 +103,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比
    - 冒頭の文に、Step 1 の基準ブランチと変更ファイル数を入れる
    - Step 0 で決めた根拠（PR のマージ先・規約のファイル・既定ブランチ）と、`git fetch` を断られたときはその旨を、冒頭の文の直後に注記で書く。比べる先を取り違えていないかを、読み手が確かめられるようにするため
    - `SKIP` にした項目と、Step 2 で参照した規約も、同じ注記に書く。PASS は書かない
-   - 推奨アクションに、直す順の番号付き一覧（最大 5 件）を書く
+   - 推奨アクションは `report-format.md` の決まりで書く
 
 ## 判断基準
 

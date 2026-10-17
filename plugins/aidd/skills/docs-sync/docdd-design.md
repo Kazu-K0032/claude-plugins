@@ -5,7 +5,7 @@
 ## チェック対象
 
 - 現在のブランチと基準ブランチの **merge-base 以降の差分**
-- 基準ブランチは、今のブランチのマージ先。`SKILL.md` の Step 0 で、PR のマージ先 → 規約にある今のブランチの種類のマージ先 → 既定ブランチの順に決め、`run-checks.sh --base` で渡す。ブランチ戦略（`develop → stg → main` など）はリポジトリごとに違い、既定ブランチと比べると未リリースの変更まで混ざるため
+- 基準ブランチは、今のブランチのマージ先。`SKILL.md` の Step 0 で決め（決め方の正典は `references/merge-target.md`）、`run-checks.sh --base` で渡す
 - `--base` が無いときの解決順は `origin/HEAD`（リモートの既定ブランチ）→ `origin/main` → `main` → `origin/master` → `master` → `origin/develop` → `develop`
 - 差分は「コミット済み＋作業ツリーの変更」を含む
 - 差分ファイルを 2 つに分ける

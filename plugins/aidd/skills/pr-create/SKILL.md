@@ -3,7 +3,7 @@ name: pr-create
 description: 現在のブランチのコミット内容とIssue情報から、リポジトリの PR テンプレートに沿ったPR本文の下書きと、レビュワー向けの検証コメントを tmp 配下に生成する。ユーザーが PR 本文作成を求めた時に使用する
 argument-hint: "[Issue番号（任意。省略時はブランチ名の issues/ の後ろの番号。取れなければ質問する）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
 
 # PR本文と検証コメントの作成
@@ -18,14 +18,15 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 | ファイル | 役割 |
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` | 検証コメントの出力フォーマットと書き方 |
+| `${CLAUDE_PLUGIN_ROOT}/references/merge-target.md` | 比べるブランチ（マージ先）の決め方（手順 5） |
+| `${CLAUDE_PLUGIN_ROOT}/references/ai-check.md` | PR 本文の「AI を使った確認」の番号とチェック（PR本文の作成方針） |
+| `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | PR テンプレートを探す順と、無いときの節（「PR テンプレートの解決」） |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 本文の長さの上限・数え方・書き方 |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 本文の文字数を数えるスクリプト |
 
 ## PR テンプレートの解決
 
-1. `.github/PULL_REQUEST_TEMPLATE.md` があればそれを使う
-2. 無ければ `.github/pull_request_template.md`・`.github/PULL_REQUEST_TEMPLATE/*.md`・`docs/PULL_REQUEST_TEMPLATE.md` を Glob で探す
-3. どれも無ければ「概要 / 変更点 / 関連 Issue / チェックリスト」の 4 セクションで構成し、テンプレートが無かったことを報告に含める
+`${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` の順で探す。見つからなければ、同じファイルの 4 つの節で作り、テンプレートが無かったことを報告に含める。
 
 ## バリデーション
 
@@ -39,11 +40,9 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 2. `date +%Y%m%d_%H%M%S` でタイムスタンプを取得する
 3. `gh issue view <Issue番号>` でIssueの内容（タイトル・本文・タスク）を取得する。`<Issue番号>` は、`$ARGUMENTS` か、「バリデーション」でブランチ名から取った番号
 4. `gh pr view --json number,baseRefName` で今のブランチの PR の番号とマージ先を取る。PR がまだ無ければ（コマンドが失敗したら）、番号なしで進める
-5. 比べるブランチ `<base>` を決め、`git log --oneline <base>..HEAD` で現在のブランチのコミット一覧を取得する
-   - マージ先は、PR があれば `baseRefName`、無ければリポジトリの規約にある、今のブランチの種類のマージ先、それも無ければ既定ブランチ（多くは `main`）にする。`develop` に溜めてから `main` へリリースするリポジトリでは、既定ブランチと比べると未リリースの変更まで混ざるため
-   - 規約は `/aidd:issue-start` と同じ範囲（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/`）を Glob と Read で探す。ブランチ戦略はリポジトリごとに違う（`develop → stg → main` など）ため、今のブランチの種類（`issues/`・`develop`・`release/`・`stg` など）ごとのマージ先を読む
-   - 今のブランチが「ほかのブランチのマージ先」として書かれているだけの記述は使わない。`develop` で「普段の PR は `develop` へ」を読むと、自分自身と比べてしまうため
-   - `<base>` は `origin/<マージ先>` にする。手元のブランチは、GitHub でのマージに追いつかず古くなりやすいため。先に `git fetch origin <マージ先>` で最新にし、断られたらそのまま進めて、古い可能性を報告に書く。`origin/<マージ先>` が無いときだけ、手元の `<マージ先>` を使う
+5. 比べるブランチ `<base>` を `merge-target.md` の順で決め、`git log --oneline <base>..HEAD` で現在のブランチのコミット一覧を取得する
+   - PR があれば、手順 4 の `baseRefName` をマージ先にする
+   - PR も規約も無ければ、既定ブランチ（多くは `main`）にする
 6. `git diff <base>...HEAD --stat` で変更ファイルの概要を取得する
 7. 「PR テンプレートの解決」で確定したテンプレートのセクション構成に合わせてPR本文を作成する。本文は `## 概要` から始め、タイトルは本文に含めない
 8. `git diff <base>...HEAD` で差分本体を読み、「[チェック項目の洗い出し](#チェック項目の洗い出し)」の表を上から全て当てて条件分岐を列挙する
@@ -66,29 +65,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 - **変更点**: コミット一覧（手順 5）を元に箇条書き。ファイル名・関数名の羅列ではなく、「〇〇したとき、〇〇される」のように処理の流れで書く。細部は「Files changed」に任せる
 - **関連 Issue**: テンプレートに合わせ `Closes #<Issue番号>` 形式で記載する（マージ時に Issue を自動クローズする。自動クローズが不要な場合のみ `Ref: Issue #<番号>` への変更をユーザーに促す）。マージ先が既定ブランチでないときは、GitHub はマージで Issue を閉じない。リポジトリの規約（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`）と `.github/workflows/` を「Issue」「閉じる」「close」で `Grep` し、マージで Issue を閉じる仕組みが無ければ、マージ後に手で閉じるよう報告に書く。仕組みがあれば書かない
 - **チェックリスト**: テンプレートの項目をそのまま残し、コミット内容から確認できた項目のみチェックを入れる。未確認はチェックを外したままにする（セクション名はテンプレート側の見出しに従う）
-- **AI を使った確認**: テンプレートにこの欄があれば、「[AI を使った確認の書き方](#ai-を使った確認の書き方)」に従って、各コマンドに番号を入れる
-
-## AI を使った確認の書き方
-
-PR テンプレートに「AI を使った確認」の欄があるときだけ書く（「AIを使った確認」など表記が違ってもよい）。欄が無ければ足さない。`/aidd:issue-pr-sync` も、PR 本文を作る・更新するときにこの書き方に従う。
-
-各行のコマンドに番号を入れ、コピーしてそのまま実行できるようにする。
-
-| コマンド | PR があるとき | PR がまだ無いとき |
-| --- | --- | --- |
-| `/aidd:issue-pr-sync` | `<Issue番号> <PR番号>` | `<Issue番号>` だけ（今のブランチの PR が使われる） |
-| `/aidd:pr-review` | `<PR番号>` | 付けない（今のブランチの PR が使われる） |
-| 番号を取らないもの（`/aidd:docs-sync`・`/marketplace-update` など） | 付けない | 付けない |
-
-```markdown
-- [ ] `/aidd:issue-pr-sync 41 42` で、Issue と PR の内容が合っているか確かめた
-- [ ] `/aidd:pr-review 42` を実行し、指摘を確かめて直した
-```
-
-- Issue の番号は、本文の「関連 Issue」に書く番号を使う。複数あれば、Issue を取るコマンドは Issue ごとに 1 行にする
-- PR の番号は、手順 4 で取った今のブランチの PR の番号を使う
-- 行の説明文はテンプレートのまま変えない。番号が無い・片方しか無い・違う番号が入っている行は、表の形に直す
-- `pr-create` は、どの行にもチェックを入れない。実行したかを、本文を作る側からは確かめられないため。既に入っているチェックは外さない。`/aidd:issue-pr-sync` だけは、実行した本人として、自分の行にチェックを入れる（入れ方は `issue-pr-sync` の本文の方針に書いてある）
+- **AI を使った確認**: テンプレートにこの欄があれば、`ai-check.md` に従って、各コマンドに番号を入れる。PR の番号は手順 4 で取ったもの
 
 ## 検証コメントの作成方針
 

@@ -77,7 +77,7 @@ date +%Y-%m-%d
 ### Step 2: collect
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> --pricing '<Step 0 で組み立てた JSON>'
+python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> --pricing '<Step 0 で組み立てた JSON>'
 ```
 
 stdout に定量サマリ・typed プロンプト一覧・出力先パスが出る。渡した単価は中間データに載って Step 4 の `report` へ引き継がれるため、`report` 側で調べ直す必要はない。
@@ -85,7 +85,7 @@ stdout に定量サマリ・typed プロンプト一覧・出力先パスが出�
 出力冒頭の「走査対象ログ（カバレッジ）」を必ず確認する。意図した作業ディレクトリが抜けている、または無関係なリポジトリが混ざっている場合は `--project-dirs` で対象を明示して再実行する（ディレクトリ名でも絶対パスでも可）。
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> \
+python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> \
   --pricing '<JSON>' --project-dirs -home-user-repo -home-user-repo-2
 ```
 
@@ -104,12 +104,12 @@ typed プロンプト一覧・昇格候補エージェントの関連プロン�
 ### Step 4: report
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" report <START> <END>
+python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" report <START> <END>
 ```
 
 レポートを `tmp/<ブランチ名>/your-ai-report-<YYYYMMDD-HHMMSS>.md` に出力する。stdout の出力パスをユーザーに報告する。
 
-> 注意: `report` は `collect` が書く中間データ `.ai-report-data.json` と定性パート `.ai-report-qualitative.md` を読み、生成後に両ファイルを削除する（consume-and-delete）。このため Step 3 の `Write` を完了させてから Step 4 を実行する（同一メッセージで並列実行しない。並列だと定性パートを読む前に走り「（未記入）」になる）。定性が「（未記入）」になる・`report` が「`.ai-report-data.json` が無い」で失敗する場合は、Step 2 の `collect` からやり直す（単独の `report` 再実行では直らない）。
+> 注意: `report` は `collect` が書く中間データ `.ai-report-data.json` と定性パート `.ai-report-qualitative.md` を読む。両ファイルは消さずに残す（削除は人が行う）。前の実行の定性パートを使わないよう、中間データより古い定性パートは読まない。このため Step 3 の `Write` を完了させてから Step 4 を実行する（同一メッセージで並列実行しない。並列だと定性パートを読む前に走り「（未記入）」になる）。定性が「（未記入）」になったら、Step 3 の `Write` をやり直してから `report` を実行する。`report` が「`.ai-report-data.json` が無い」で失敗する場合は、Step 2 の `collect` からやり直す。
 
 ## 単価・為替の保守
 

@@ -3,7 +3,7 @@ name: issue-pr-sync
 description: 指定した Issue（省くとブランチ名の番号）と PR（省くと今のブランチの PR）を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える）・ラベル等のサイドバーを直接反映する（既存の記述を消すなどの重要な変更だけ、反映前に承認を取る）。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
 argument-hint: "[Issue番号|URL（任意。省略時はブランチ名の issues/ の後ろの番号。取れなければ質問する）] [PR番号|URL（任意。省略時は今のブランチの PR）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
 ---
 
 # Issue / PR の同期更新
@@ -34,7 +34,8 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 本文を書くときの markdown 書式規約 |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 本文の長さの上限・数え方・書き方 |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 本文の文字数を数えるスクリプト |
-| `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/SKILL.md` の「AI を使った確認の書き方」 | PR 本文の「AI を使った確認」のコマンドに入れる番号の形 |
+| `${CLAUDE_PLUGIN_ROOT}/references/ai-check.md` | PR 本文の「AI を使った確認」の番号の形と、チェックを入れる行 |
+| `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | PR 本文を新規作成するときの節の構成 |
 
 ## バリデーション
 
@@ -185,26 +186,22 @@ gh pr edit <PR> --add-label enhancement --add-assignee @me --add-reviewer <ユ�
 
 #### 「AI を使った確認」の欄
 
-欄があれば、追従・新規作成のどちらでも、次のとおりに直す。見出しが「AIを使った確認」など違う表記でも、同じ欄として扱う。欄が無ければ足さない。
-
-- 番号：`pr-create` の「AI を使った確認の書き方」の形にそろえる。この実行では PR があるため、`/aidd:issue-pr-sync` の行は `<Issue番号> <PR番号>`、`/aidd:pr-review` の行は `<PR番号>`。番号が無い・片方しか無い・違う番号が入っている行も直す。行の説明文は変えない
-- チェック：`/aidd:issue-pr-sync` で始まる行にだけ入れる。実行した本人のため、確かめたと言える。Issue ごとに行が分かれているときは、この実行の Issue の行だけ。入れるのは、反映まで終えたとき（「更新不要」と判断したときも含む）。中断したときと、承認を断られた変更があるときは入れない
-- ほかの行（`/marketplace-update`・`/aidd:docs-sync`・`/aidd:pr-review` など）には入れない。実行したかも、指摘を直したかも本文から分からず、確かめたと判断するのは人のため。既に入っているチェックは外さない
+欄があれば、追従・新規作成のどちらでも、`ai-check.md` のとおりに直す。
 
 #### 追従のとき（本文がある）
 
 - 「変更点」に、Step 2 のコミットと差分から**増えた分だけ**を追記する。既存の記述は、事実と食い違うときと、500 文字に縮めるとき以外は書き換えない
 - レビュー対応は「変更点」に、何を直したかとして 1 行で書く。レビューコメントの引用や返信は書かない（PR 上に既にある）
 - `Closes #<番号>` / `Ref:` の記述は勝手に付け替えない。関連 Issue が増えた場合のみ、追加の可否をユーザーに確認する
-- チェックリストは、差分から確認できた項目のみチェックする（「AI を使った確認」の欄は、上の規則に従う）
+- チェックリストは、差分から確認できた項目のみチェックする（「AI を使った確認」の欄は、`ai-check.md` に従う）
 
 #### 新規作成のとき（本文が空）
 
-- セクション構成は PR テンプレートに従う。テンプレートは `.github/PULL_REQUEST_TEMPLATE.md` → `.github/pull_request_template.md` → `.github/PULL_REQUEST_TEMPLATE/*.md` → `docs/PULL_REQUEST_TEMPLATE.md` の順に探す。どれも無ければ「概要 / 変更点 / 確認したこと」で構成する
+- セクション構成は PR テンプレートに従う。テンプレートは `pr-template.md` の順に探し、無ければ同じファイルの 4 つの節で作る
 - **概要**：Issue の目的と、この PR で実現したことを 1〜2 文で書く
 - **変更点**：Step 2 のコミットと差分から、何を変えたかを箇条書きで書く。ファイル名・関数名の羅列にせず、「〇〇したとき、〇〇される」のように処理の流れで書く
-- **チェックリスト・確認したこと**：差分や実行結果で確認できた項目だけチェックする。未確認の項目はチェックを外したまま残す（「AI を使った確認」の欄は、上の規則に従う）
-- 末尾に `Closes #<Issue番号>` を付ける。Issue のタスクに差分で確認できないものが残っていれば、付けるかを Step 4 で確認する（マージ時に Issue が自動で閉じるため）
+- **チェックリスト**：差分や実行結果で確認できた項目だけチェックする。未確認の項目はチェックを外したまま残す（「AI を使った確認」の欄は、`ai-check.md` に従う）
+- 「関連 Issue」の節（無ければ末尾）に `Closes #<Issue番号>` を付ける。Issue のタスクに差分で確認できないものが残っていれば、付けるかを Step 4 で確認する（マージ時に Issue が自動で閉じるため）
 - レビュワー向けの検証手順は書かない（`/aidd:pr-create` の検証コメントの役割）
 
 ## タイトルの方針
