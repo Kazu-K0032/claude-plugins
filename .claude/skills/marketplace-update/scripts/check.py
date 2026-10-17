@@ -12,8 +12,9 @@
   8. 各スキル（plugins/ 配下と .claude/skills/）の argument-hint が .claude/rules/argument-hint.md の書き方に沿っているか
   9. 版（version）の書き方。全プラグインの plugin.json に同じ版があり、marketplace.json には書いていないか。
      --base を渡したときは、基準から plugins/ が変わっているのに版が上がっていないものも NG にする（main へのリリースの PR 用）
- 10. SKILL.md（plugins/ 配下と .claude/skills/）と配る規約（skills/*/files/.claude/rules/）の本文が、
-     frontmatter を除いて DOC_LIMIT 文字以内か（docs/policies/p09-readable-ai-docs.md）
+ 10. SKILL.md（plugins/ 配下と .claude/skills/）と規約（.claude/rules/ と、配る skills/*/files/.claude/rules/）の本文が、
+     frontmatter を除いて DOC_LIMIT 文字以内か（docs/policies/p09-readable-ai-docs.md）。
+     比べる ref（--base、無ければ origin/develop）でも超えていたものは、前からの超過として分けて出す
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>] [--base <比べる ref>]
 終了コード: NG が 1 件でもあれば 1、それ以外は 0（WARN は 0 のまま）
@@ -123,8 +124,8 @@ def main():
 
     check_duplicated_files(repo)
     check_argument_hints(repo)
-    check_doc_lengths(repo)
-    base =sys.argv[sys.argv.index("--base") + 1] if "--base" in sys.argv else None
+    base = sys.argv[sys.argv.index("--base") + 1] if "--base" in sys.argv else None
+    check_doc_lengths(repo, base)
     check_versions(repo, market, base)
 
     order = {"NG": 0, "WARN": 1}
@@ -328,23 +329,50 @@ def check_argument_hints(repo):
 DOC_LIMIT = 5000
 
 
-def check_doc_lengths(repo):
-    """10: SKILL.md と配る規約の本文が、frontmatter を除いて DOC_LIMIT 文字以内か。"""
+def body_of(text):
+    """frontmatter を除いた本文を返す。"""
+    if text.startswith("---\n"):
+        end = text.find("\n---\n", 3)
+        if end >= 0:
+            return text[end + 5:]
+    return text
+
+
+def check_doc_lengths(repo, base):
+    """10: SKILL.md と規約の本文が、frontmatter を除いて DOC_LIMIT 文字以内か。
+
+    前から超えている文書は縮めるかを利用者に聞き、今回の変更で超えた文書は細部を分ける（P9）。
+    扱いが違うため、比べる ref でも超えていたかで文言を分ける。
+    """
     paths = glob.glob(os.path.join(repo, "plugins", "*", "skills", "*", "SKILL.md"))
     paths += glob.glob(os.path.join(repo, ".claude", "skills", "*", "SKILL.md"))
+    paths += glob.glob(os.path.join(repo, ".claude", "rules", "*.md"))
     paths += glob.glob(os.path.join(repo, "plugins", "*", "skills", "*", "files", ".claude", "rules", "*.md"))
+    # 普段の PR は develop へ向けるため、--base が無ければ origin/develop と比べる
+    ref = base or "origin/develop"
+    if git(repo, "rev-parse", "--verify", "--quiet", ref).returncode != 0:
+        ref = None
     for path in sorted(paths):
         rel = os.path.relpath(path, repo).replace(os.sep, "/")
-        text = read(path)
-        body = text
-        if text.startswith("---\n"):
-            end = text.find("\n---\n", 3)
-            if end >= 0:
-                body = text[end + 5:]
-        if len(body) > DOC_LIMIT:
+        length = len(body_of(read(path)))
+        if length <= DOC_LIMIT:
+            continue
+        if ref is None:
             add("WARN", "doc-length",
-                "%s: 本文が %d 文字で、上限の %d 文字を超える。細部を別ファイルに分ける（P9）"
-                % (rel, len(body), DOC_LIMIT))
+                "%s: 本文が %d 文字で、上限の %d 文字を超える。扱いは marketplace-update の SKILL.md の手順 4 を見る（P9）"
+                % (rel, length, DOC_LIMIT))
+            continue
+        shown = git(repo, "show", "%s:%s" % (ref, rel))
+        before = len(body_of(shown.stdout)) if shown.returncode == 0 else 0
+        if before > DOC_LIMIT:
+            add("WARN", "doc-length",
+                "%s: 本文が %d 文字で、上限の %d 文字を超える（%s でも %d 文字で超えていた）。"
+                "縮めるかを利用者に聞き、縮めるならほかの変更と分ける（P9）"
+                % (rel, length, DOC_LIMIT, ref, before))
+        else:
+            add("WARN", "doc-length",
+                "%s: 本文が %d 文字で、上限の %d 文字を超える。今回の変更で超えたため、細部を別ファイルに分ける（P9）"
+                % (rel, length, DOC_LIMIT))
 
 
 SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
