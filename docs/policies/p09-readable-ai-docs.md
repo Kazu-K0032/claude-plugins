@@ -42,13 +42,13 @@ AI が書く `SKILL.md`・規約も、人が読み切って技術判断に使え
 
 ### Q. 既存の文書が上限を超えている
 
-ほかの変更と分け、プラグインごとの PR で縮める。規則は消さず、規則ごとに移した先を一覧にして示す。消し忘れを、レビューで見つけられるようにするため。
+ほかの変更と分け、プラグインごとのコミットで縮める。規則は消さず、規則ごとに移した先を一覧にして示す。消し忘れを、レビューで見つけられるようにするため。
 
 ### Q. 上限の数を変えたい
 
 次をすべて同じ数に直す。直したら、上限を超えた既存の文書も新しい上限に合わせて縮める。漏れは `git grep -n "5,000 文字"` で確かめる。
 
-- 検査：`.claude/skills/marketplace-update/scripts/check.py` の `DOC_LIMIT` と、同じスキルの `SKILL.md` の WARN の説明
+- 検査：`.claude/skills/marketplace-update/scripts/check.py` の `DOC_LIMIT` と、同じスキルの `ng-warn.md` の `doc-length` の説明
 - 規約：`.claude/rules/ai-docs.md` と、`init-repo` の `files/.claude/rules/ai-docs.md`・`README.md`（収録物の表）
 - 監査の物差し：`plugins/aidd/references/harness-principles.md`
 - この方針のファイル

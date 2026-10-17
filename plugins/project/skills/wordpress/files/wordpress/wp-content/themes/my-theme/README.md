@@ -23,4 +23,4 @@
 
 ## 書き方
 
-規約は [.claude/rules/wordpress.md](../../../../.claude/rules/wordpress.md) にある。
+規約は [.claude/rules/wordpress.md](../../../../.claude/rules/wordpress.md)・[wordpress-security.md](../../../../.claude/rules/wordpress-security.md)・[wordpress-templates.md](../../../../.claude/rules/wordpress-templates.md) にある。
