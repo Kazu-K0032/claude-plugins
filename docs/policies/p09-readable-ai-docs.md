@@ -2,14 +2,14 @@
 
 | 区分 | 内容 |
 | --- | --- |
-| 対象 | 3 プラグインの `SKILL.md`・同梱の参照ファイル・配る規約（`skills/*/files/.claude/rules/`）。このリポジトリの `.claude/skills/`。`project:init-repo` が配る `.claude/rules/ai-docs.md` |
+| 対象 | 3 プラグインの `SKILL.md`・同梱の参照ファイル・配る規約（`skills/*/files/.claude/rules/`）。このリポジトリの `.claude/skills/`・`.claude/rules/`。`project:init-repo` が配る `.claude/rules/ai-docs.md` |
 | 価値 | [V2](../values/v02-understand-before-accept.md)・[V4](../values/v04-record-reasons.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
-AI が書く `SKILL.md`・規約も、人が読み切って技術判断に使える形で書く。本筋と細部を分け、本文（frontmatter を除く）は 5,000 文字以内にする。書き方は `.claude/rules/ai-docs.md`（`init-repo` にも同じもの）。
+AI が書く `SKILL.md`・規約も、人が読み切って技術判断に使える形で書く。本筋と細部を分け、`SKILL.md` と規約の本文（frontmatter を除く）は 5,000 文字以内にする。書き方は `.claude/rules/ai-docs.md`（`init-repo` にも同じもの）。
 
-- 冒頭に、何をするか・外へ書き込むもの・人がすることを書く
+- 冒頭に、何をするかを書く。`SKILL.md` は外へ書き込むもの・人がすることを、規約は決める理由を添える
 - `SKILL.md`・規約は、`ai-docs.md` の骨組みで見出しの名前と順番をそろえる
-- 手順は本筋だけにし、例外・失敗時の扱いは別ファイルに分ける
+- 手順は本筋だけにし、細部は分ける。`SKILL.md` は参照ファイルへ、規約は同じ `paths` を付けた別の規約へ移す
 - Claude が一般に知っていることは書かない
 - 理由は消さず、1 つの規則に 1 文で添える
 - 上限を超えると、`check.py` が WARN を出す
@@ -31,6 +31,10 @@ AI が書く `SKILL.md`・規約も、人が読み切って技術判断に使え
 ### Q. 細部を別ファイルに移すと、Claude が読み落とさないか
 
 本文から 1 段で参照し、どの場面で読むかを書く（例：「失敗したら `errors.md` を読む」）。参照先から、さらに別のファイルを参照しない。2 段先のファイルは、一部しか読まれないことがあるため。
+
+### Q. 参照ファイルにも上限はあるか
+
+無い。参照ファイルは必要なときだけ読まれ、常に読み込まれる `SKILL.md`・規約とは違うため。100 行を超えるなら、冒頭に目次を置く。
 
 ### Q. 5,000 文字に収まらない
 

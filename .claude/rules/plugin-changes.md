@@ -25,7 +25,7 @@
 | ADR など、置き場所がプロジェクトで決まるファイルを作る手順 | [P3](../../docs/policies/p03-check-placement.md) |
 | `init-repo` の `README.md`・`docs/README.md`・`.claude/rules/readme.md`、README を作る手順 | [P7](../../docs/policies/p07-readme-guide.md) |
 | Issue・PR の本文やコメントを書く手順、`init-repo` の PR・Issue のテンプレート、mod の「文書を簡潔に」 | [P8](../../docs/policies/p08-short-body.md) |
-| `SKILL.md`・同梱の参照ファイル・配る規約（`files/.claude/rules/`）の本文 | [P9](../../docs/policies/p09-readable-ai-docs.md)、`.claude/rules/ai-docs.md` |
+| `SKILL.md`・同梱の参照ファイル・規約（`.claude/rules/`・`files/.claude/rules/`）の本文 | [P9](../../docs/policies/p09-readable-ai-docs.md)、`.claude/rules/ai-docs.md` |
 | `plugins/aidd/references/harness-principles.md`（`harness-audit` の物差し） | [docs/values/](../../docs/values/README.md)、[P1](../../docs/policies/p01-operation-boundary.md)・[P3](../../docs/policies/p03-check-placement.md)・[P4](../../docs/policies/p04-tmp-output.md)・[P7](../../docs/policies/p07-readme-guide.md)・[P8](../../docs/policies/p08-short-body.md)・[P9](../../docs/policies/p09-readable-ai-docs.md)、`init-repo` の README の「収録物」 |
 
 ### 方針の一覧
@@ -40,7 +40,7 @@
 | [P6](../../docs/policies/p06-common-template.md) | 土台には設計思想だけを入れ、技術に依るものは技術別のスキルで重ねること | テンプレートにファイルを足すとき、技術別のスキルが土台のファイルに足すとき、`init-repo` が配らないファイルを別のスキルで作るとき |
 | [P7](../../docs/policies/p07-readme-guide.md) | README には本文を書かず、どこに何があるかの案内にとどめること | README のひな形・規約を直すとき、README を作るスキルを足すとき |
 | [P8](../../docs/policies/p08-short-body.md) | Issue・PR の本文は、人が読み切れる長さにすること | Issue・PR の本文やコメントを書く手順・テンプレートを直すとき |
-| [P9](../../docs/policies/p09-readable-ai-docs.md) | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・参照ファイル・配る規約を書く・直すとき |
+| [P9](../../docs/policies/p09-readable-ai-docs.md) | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・参照ファイル・規約を書く・直すとき |
 
 ## 権限設定や、スキルが利用先で触れるものを変更する場合
 
