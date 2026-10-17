@@ -40,8 +40,9 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 3. `gh issue view <Issue番号>` でIssueの内容（タイトル・本文・タスク）を取得する。`<Issue番号>` は、`$ARGUMENTS` か、「バリデーション」でブランチ名から取った番号
 4. `gh pr view --json number,baseRefName` で今のブランチの PR の番号とマージ先を取る。PR がまだ無ければ（コマンドが失敗したら）、番号なしで進める
 5. 比べるブランチ `<base>` を決め、`git log --oneline <base>..HEAD` で現在のブランチのコミット一覧を取得する
-   - マージ先は、PR があれば `baseRefName`、無ければリポジトリの規約にある PR のマージ先、それも無ければ既定ブランチ（多くは `main`）にする。`develop` に溜めてから `main` へリリースするリポジトリでは、既定ブランチと比べると未リリースの変更まで混ざるため
-   - 規約は `/aidd:issue-start` と同じ範囲（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/`）を Glob と Read で探す
+   - マージ先は、PR があれば `baseRefName`、無ければリポジトリの規約にある、今のブランチの種類のマージ先、それも無ければ既定ブランチ（多くは `main`）にする。`develop` に溜めてから `main` へリリースするリポジトリでは、既定ブランチと比べると未リリースの変更まで混ざるため
+   - 規約は `/aidd:issue-start` と同じ範囲（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/`）を Glob と Read で探す。ブランチ戦略はリポジトリごとに違う（`develop → stg → main` など）ため、今のブランチの種類（`issues/`・`develop`・`release/`・`stg` など）ごとのマージ先を読む
+   - 今のブランチが「ほかのブランチのマージ先」として書かれているだけの記述は使わない。`develop` で「普段の PR は `develop` へ」を読むと、自分自身と比べてしまうため
    - `<base>` は `origin/<マージ先>` にする。手元のブランチは、GitHub でのマージに追いつかず古くなりやすいため。先に `git fetch origin <マージ先>` で最新にし、断られたらそのまま進めて、古い可能性を報告に書く。`origin/<マージ先>` が無いときだけ、手元の `<マージ先>` を使う
 6. `git diff <base>...HEAD --stat` で変更ファイルの概要を取得する
 7. 「PR テンプレートの解決」で確定したテンプレートのセクション構成に合わせてPR本文を作成する。本文は `## 概要` から始め、タイトルは本文に含めない
