@@ -19,12 +19,13 @@
 | 新しいスキルを `plugins/<プラグイン>/skills/` に足す | [P2](../../docs/policies/p02-settings-scope.md) |
 | `SKILL.md` の `allowed-tools` | [P1](../../docs/policies/p01-operation-boundary.md) の「確認なしで任せる操作」 |
 | `SKILL.md` の手順で、コマンドを実行する・ファイルを書き出す・GitHub に書き込む | [P1](../../docs/policies/p01-operation-boundary.md)、[P4](../../docs/policies/p04-tmp-output.md)、[permissions.md](../../docs/policies/permissions.md) |
-| `init-repo` の `files/.claude/settings.json`・`files/.claude/hooks/`・`files/.claude/rules/permissions.md`・`files/.gitignore` | [P1](../../docs/policies/p01-operation-boundary.md)、[permissions.md](../../docs/policies/permissions.md) |
+| `init-repo` の `files/.claude/settings.json`・`files/.claude/hooks/`・`files/.claude/rules/permissions.md`・`files/.gitignore` | [P1](../../docs/policies/p01-operation-boundary.md)、[permissions.md](../../docs/policies/permissions.md)、`plugins/aidd/references/harness-principles.md` の「土台の仕組み」 |
 | `plugins/project/skills/*/files/` にテンプレートを足す、技術別のスキルが土台のファイルに足す手順を書く | [P6](../../docs/policies/p06-common-template.md)、そのスキルの README の「除外したもの」 |
 | `references/` など、ほかのプラグインと同じ内容のファイル | [P5](../../docs/policies/p05-standalone-plugin.md)、`.claude/rules/duplicated-files.md` |
 | ADR など、置き場所がプロジェクトで決まるファイルを作る手順 | [P3](../../docs/policies/p03-check-placement.md) |
 | `init-repo` の `README.md`・`docs/README.md`・`.claude/rules/readme.md`、README を作る手順 | [P7](../../docs/policies/p07-readme-guide.md) |
 | Issue・PR の本文やコメントを書く手順、`init-repo` の PR・Issue のテンプレート、mod の「文書を簡潔に」 | [P8](../../docs/policies/p08-short-body.md) |
+| `plugins/aidd/references/harness-principles.md`（`harness-audit` の物差し） | [docs/values/](../../docs/values/README.md)、[P1](../../docs/policies/p01-operation-boundary.md)・[P3](../../docs/policies/p03-check-placement.md)・[P4](../../docs/policies/p04-tmp-output.md)・[P7](../../docs/policies/p07-readme-guide.md)・[P8](../../docs/policies/p08-short-body.md)、`init-repo` の README の「収録物」 |
 
 ### 方針の一覧
 
@@ -41,7 +42,7 @@
 
 ## 権限設定や、スキルが利用先で触れるものを変更する場合
 
-次のどちらかを変えたら、[docs/policies/permissions.md](../../docs/policies/permissions.md) の対応表を直す。deny・フックの線引きを変えたら、`init-repo` が配る `files/.claude/rules/permissions.md` も直す。
+次のどちらかを変えたら、[docs/policies/permissions.md](../../docs/policies/permissions.md) の対応表を直す。deny・フックの線引きを変えたら、`init-repo` が配る `files/.claude/rules/permissions.md` と、監査の物差しの `plugins/aidd/references/harness-principles.md`（「土台の仕組み」）も直す。
 
 - `init-repo` の `settings.json`（deny）・フック・`.gitignore`
 - スキルが利用先で触れるもの（`tmp/` 以外への書き込み・設定ファイル・`gh` や `git` での書き込み・環境変数）
@@ -52,6 +53,7 @@
 - 方針を足す・変えるときは、`docs/values/` のどの価値に基づくか、どの価値にも反しないかを確かめ、方針の冒頭の表の「価値」に番号を書く。価値に反する方針になるときは、実装する前に利用者に伝える
 - 価値（`docs/values/`）を足す・変えるのは、利用者が決める。Claude からは提案にとどめる。書き方は `docs/values/README.md` の「ファイルの書き方」に従う
 - 方針を変えるときは、方針のファイルを直し、その方針に沿って書いた場所（README・`SKILL.md`・テンプレート・`check.py`）もすべて直す
+- 価値・P1・P3・P4・P7・P8、`init-repo` の土台の仕組みと印のファイルを変えたら、`plugins/aidd/references/harness-principles.md` の要約も直す。利用先の監査は、この要約を物差しにするため
 - ある方針が 1 つのプラグインにしか書かれていないのに、ほかのプラグインで同じ場面が出てきたら、その方針をほかのプラグインにも広げるかを利用者に聞く
 
 ## 食い違いを見つけた場合

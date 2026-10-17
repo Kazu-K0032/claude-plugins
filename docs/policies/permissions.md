@@ -6,7 +6,7 @@
 
 | スキル | 使う操作 | `init-repo` でそろえること | `guard-git-write.sh` を使うと |
 | --- | --- | --- | --- |
-| `aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create`・`ai-report`・`pr-review`・`docs-consistency-audit` | `tmp/<ブランチ名>/`・`tmp.md` への書き込み | `.gitignore` に `tmp/` と `tmp.md` を入れる | 止まらない |
+| `aidd` の `commit`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create`・`ai-report`・`pr-review`・`harness-audit` | `tmp/<ブランチ名>/`・`tmp.md` への書き込み | `.gitignore` に `tmp/` と `tmp.md` を入れる | 止まらない |
 | `config:plugin-feedback` | `.claude/settings.local.json` の `env` に 1 キーを足す | deny にこのファイルの `Edit` を入れない。`.gitignore` には入れる | 止まらない |
 | `config:plugin-feedback` | `gh issue create`・`gh issue comment` | deny に入れない | `create` が止まり、下書きを Web の画面に貼る手順になる |
 | `aidd:issue-start` | `gh issue develop`・`gh issue edit`・`gh issue comment` | deny に入れない | `edit`（担当者の追加と本文の更新）が止まる。本文は `tmp/` に下書きを残すところまでになる |

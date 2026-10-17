@@ -26,6 +26,7 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
 
 1. `git log --oneline origin/main..origin/develop` で入る変更を見て、上の表で版を決める
 1. Issue を作り、`develop` から `issues/<Issue番号>-<説明>`（例：`issues/60-v1-1-0`）を作る。3 つの `plugin.json` の `version` を上げ、`develop` へ PR を出してマージする
+1. 版を上げた `develop` で `/aidd:harness-audit` を動かし、リポジトリ全体が設計思想に合うかを確かめる。直す指摘があれば、`develop` への PR で直してから進む。CI は機械の検査だけで、思想との整合は見ないため
 1. Issue フォームの「リリース」で、リリースの Issue を作る。`release` ラベルが付く。書き込み権限のある人が作った Issue だけで動き、ほかの人の Issue では何も起きない
 1. `release.yml` が次を行う。終わると、Issue に PR の URL がコメントされる
    - `plugin-checks.yml` と同じ検査を `develop` で動かす
@@ -36,7 +37,7 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
 
 `main` から `develop` へ戻す PR は要らない。版は `develop` で上げてあるため。
 
-手順 4 で失敗すると、Issue に Actions のログの URL がコメントされる。原因を直したら、Actions の画面でその実行を再実行する（**Re-run jobs**）。再実行では、検査も release ブランチも、その時点の `develop` から作り直される。ただし、`release/v<version>` を作った後に失敗したときは、そのブランチを消してから再実行する。
+手順 5 で失敗すると、Issue に Actions のログの URL がコメントされる。原因を直したら、Actions の画面でその実行を再実行する（**Re-run jobs**）。再実行では、検査も release ブランチも、その時点の `develop` から作り直される。ただし、`release/v<version>` を作った後に失敗したときは、そのブランチを消してから再実行する。
 
 `plugins/` を変えずに README や docs だけを出すときは、版を上げず、Release も作らない。リリースの Issue は使わず、`develop` から `release/<YYYY-MM-DD>` を作り、`main` へ PR を出してマージする。`develop` に未リリースの `plugins/` の変更があると CI が落ちるため、そのときは次のリリースに含める。
 
