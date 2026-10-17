@@ -1,7 +1,6 @@
 ---
 paths:
   - "**/README.md"
-docs-type: people-ai-doc
 ---
 
 # README.md 規約
