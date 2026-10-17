@@ -15,7 +15,7 @@
 
 - name: "infra"
   color: "f9d0c4"
-  description: "インフラ・Terraform"
+  description: "インフラ"
 
 - name: "refactor"
   color: "c2e0c6"

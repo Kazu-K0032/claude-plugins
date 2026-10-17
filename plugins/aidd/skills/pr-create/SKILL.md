@@ -3,7 +3,7 @@ name: pr-create
 description: 現在のブランチのコミット内容とIssue情報から、リポジトリの PR テンプレートに沿ったPR本文の下書きと、レビュワー向けの検証コメントを tmp 配下に生成する。ユーザーが PR 本文作成を求めた時に使用する
 argument-hint: "[Issue番号（任意。省略時はブランチ名の issues/ の後ろの番号。取れなければ質問する）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
 
 # PR本文と検証コメントの作成
@@ -18,6 +18,8 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 | ファイル | 役割 |
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` | 検証コメントの出力フォーマットと書き方 |
+| `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 本文の長さの上限・数え方・書き方 |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 本文の文字数を数えるスクリプト |
 
 ## PR テンプレートの解決
 
@@ -38,22 +40,31 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 3. `gh issue view <Issue番号>` でIssueの内容（タイトル・本文・タスク）を取得する。`<Issue番号>` は、`$ARGUMENTS` か、「バリデーション」でブランチ名から取った番号
 4. `gh pr view --json number,baseRefName` で今のブランチの PR の番号とマージ先を取る。PR がまだ無ければ（コマンドが失敗したら）、番号なしで進める
 5. 比べるブランチ `<base>` を決め、`git log --oneline <base>..HEAD` で現在のブランチのコミット一覧を取得する
-   - マージ先は、PR があれば `baseRefName`、無ければリポジトリの規約にある PR のマージ先、それも無ければ既定ブランチ（多くは `main`）にする。`develop` に溜めてから `main` へリリースするリポジトリでは、既定ブランチと比べると未リリースの変更まで混ざるため
-   - 規約は `/aidd:issue-start` と同じ範囲（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/`）を Glob と Read で探す
+   - マージ先は、PR があれば `baseRefName`、無ければリポジトリの規約にある、今のブランチの種類のマージ先、それも無ければ既定ブランチ（多くは `main`）にする。`develop` に溜めてから `main` へリリースするリポジトリでは、既定ブランチと比べると未リリースの変更まで混ざるため
+   - 規約は `/aidd:issue-start` と同じ範囲（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`（`.github/` 配下も）・`docs/`）を Glob と Read で探す。ブランチ戦略はリポジトリごとに違う（`develop → stg → main` など）ため、今のブランチの種類（`issues/`・`develop`・`release/`・`stg` など）ごとのマージ先を読む
+   - 今のブランチが「ほかのブランチのマージ先」として書かれているだけの記述は使わない。`develop` で「普段の PR は `develop` へ」を読むと、自分自身と比べてしまうため
    - `<base>` は `origin/<マージ先>` にする。手元のブランチは、GitHub でのマージに追いつかず古くなりやすいため。先に `git fetch origin <マージ先>` で最新にし、断られたらそのまま進めて、古い可能性を報告に書く。`origin/<マージ先>` が無いときだけ、手元の `<マージ先>` を使う
 6. `git diff <base>...HEAD --stat` で変更ファイルの概要を取得する
 7. 「PR テンプレートの解決」で確定したテンプレートのセクション構成に合わせてPR本文を作成する。本文は `## 概要` から始め、タイトルは本文に含めない
 8. `git diff <base>...HEAD` で差分本体を読み、「[チェック項目の洗い出し](#チェック項目の洗い出し)」の表を上から全て当てて条件分岐を列挙する
 9. `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` に従って検証コメントを作成する。PR があれば、手順 4 で取った番号を埋める
-10. `tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md`（PR本文）と `tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md`（検証コメント）を**常に両方**出力し、2 つの出力パスと**別途 PR タイトル案（Issue のタイトルと同じ文字列。`/aidd:issue-pr-sync` の基準と揃える）**をユーザーに報告する
+10. `tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md`（PR本文）と `tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md`（検証コメント）を**常に両方**出力する
+11. 2 つのファイルを数える。超えていたら縮めて書き直し、もう一度数える。3 回直しても収まらなければ、超えた箇所を報告に書く。Node.js が無い・実行を断られたときは、数えずに進み、報告に書く
+
+    ```bash
+    node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md
+    node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" --item-only tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md
+    ```
+
+12. 2 つの出力パス、数えた結果（数えられなかったときは、その理由）、**別途 PR タイトル案（Issue のタイトルと同じ文字列。`/aidd:issue-pr-sync` の基準と揃える）**をユーザーに報告する
 
 ## PR本文の作成方針
 
-テンプレートのセクションを埋める。HTMLコメントの誘導文は最終本文に残さない。
+テンプレートのセクションを埋める。HTMLコメントの誘導文は最終本文に残さない。長さは `short-body.md` に従う。1 文・1 項目は 50 文字以内、本文全体は 500 文字以内にする（チェックリストと関連 Issue の節は数えない）。
 
 - **概要**: Why（背景・課題）/ What（実現したこと）。Issue 本文とコミットの事実に基づく
-- **変更点**: コミット一覧（手順 5）を元に箇条書き。ファイル名・関数名の羅列ではなく「何を変えたか」を書く
-- **関連 Issue**: テンプレートに合わせ `Closes #<Issue番号>` 形式で記載する（マージ時に Issue を自動クローズする。自動クローズが不要な場合のみ `Ref: Issue #<番号>` への変更をユーザーに促す）。マージ先が既定ブランチでないときは、マージしても Issue が閉じないため、マージ後に手で閉じるよう報告に書く
+- **変更点**: コミット一覧（手順 5）を元に箇条書き。ファイル名・関数名の羅列ではなく、「〇〇したとき、〇〇される」のように処理の流れで書く。細部は「Files changed」に任せる
+- **関連 Issue**: テンプレートに合わせ `Closes #<Issue番号>` 形式で記載する（マージ時に Issue を自動クローズする。自動クローズが不要な場合のみ `Ref: Issue #<番号>` への変更をユーザーに促す）。マージ先が既定ブランチでないときは、GitHub はマージで Issue を閉じない。リポジトリの規約（`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`）と `.github/workflows/` を「Issue」「閉じる」「close」で `Grep` し、マージで Issue を閉じる仕組みが無ければ、マージ後に手で閉じるよう報告に書く。仕組みがあれば書かない
 - **チェックリスト**: テンプレートの項目をそのまま残し、コミット内容から確認できた項目のみチェックを入れる。未確認はチェックを外したままにする（セクション名はテンプレート側の見出しに従う）
 - **AI を使った確認**: テンプレートにこの欄があれば、「[AI を使った確認の書き方](#ai-を使った確認の書き方)」に従って、各コマンドに番号を入れる
 
@@ -76,8 +87,8 @@ PR テンプレートに「AI を使った確認」の欄があるときだけ�
 
 - Issue の番号は、本文の「関連 Issue」に書く番号を使う。複数あれば、Issue を取るコマンドは Issue ごとに 1 行にする
 - PR の番号は、手順 4 で取った今のブランチの PR の番号を使う
-- 行の説明文はテンプレートのまま変えない。前の番号が入っていれば、今の番号に直す
-- チェックは入れない。実行したかを、本文を作る側からは確かめられないため。既に入っているチェックは外さない
+- 行の説明文はテンプレートのまま変えない。番号が無い・片方しか無い・違う番号が入っている行は、表の形に直す
+- `pr-create` は、どの行にもチェックを入れない。実行したかを、本文を作る側からは確かめられないため。既に入っているチェックは外さない。`/aidd:issue-pr-sync` だけは、実行した本人として、自分の行にチェックを入れる（入れ方は `issue-pr-sync` の本文の方針に書いてある）
 
 ## 検証コメントの作成方針
 
@@ -88,6 +99,7 @@ PR テンプレートに「AI を使った確認」の欄があるときだけ�
 3. **網羅**: 条件が分かれるものは「そうでない場合」も項目にし、1 つずつ潰せるか
 
 - 出力形式は `verify-comment-template.md` に従う。テンプレートに無いセクションを足さない
+- 1 項目は 50 文字以内にする。全体の上限は無い。項目の数は差分で決まるため（`short-body.md`）
 - 次の情報は**書かない**。それぞれ別に唯一の情報源があるため、パス表記でポインタを示すに留める
 
   | 書かない情報 | 参照先の例 |
@@ -99,7 +111,7 @@ PR テンプレートに「AI を使った確認」の欄があるときだけ�
   | デザイン目視チェック項目 | デザインシステムの規約 |
   | 公開後の確認観点 | 運用手順書 |
 
-- 実装と受け入れ基準のどちらを正とするか決めきれない論点は、検証コメントに書かず手順 10 の報告でユーザーに伝える
+- 実装と受け入れ基準のどちらを正とするか決めきれない論点は、検証コメントに書かず手順 12 の報告でユーザーに伝える
 
 ## チェック項目の洗い出し
 
@@ -138,5 +150,6 @@ PR テンプレートに「AI を使った確認」の欄があるときだけ�
 - ❌ テンプレートに無いセクションを足すこと
 - ❌ ガード節・条件分岐を触った差分で「そうでない場合」の項目が無いまま出力すること
 - ❌ チェックボックスを埋めた状態で出力すること（埋めるのはレビュワー）
+- ❌ 手順 11 で数えずに報告すること（AI は文字数を正確に数えられない）。Node.js が無い・実行を断られたときを除く
 
 $ARGUMENTS

@@ -23,7 +23,7 @@ TODO: 公開 URL とアクセス制限を表で示す。認証情報そのもの
 
 ### 検証（STG）
 
-TODO: 検証環境の URL とアクセス制限を表で示す。資格情報の保管場所（Terraform 変数・シークレットマネージャ等）だけを書き、値は書かない。
+TODO: 検証環境の URL とアクセス制限を表で示す。資格情報の保管場所（シークレットマネージャ等）だけを書き、値は書かない。
 
 | 層 | URL | アクセス制限 |
 | --- | --- | --- |
@@ -40,6 +40,7 @@ TODO: MCP サーバー・エディタ設定など、開発を支える仕組み�
 - Claude Code のプラグイン: [claude-plugins](https://github.com/Kazu-K0032/claude-plugins)
 - VS Code の推奨拡張機能: [.vscode/extensions.json](.vscode/extensions.json)
 - スペルチェックの設定と除外語: [cspell.json](cspell.json)
+- Lint・整形のツールの定義: [lefthook.yml](lefthook.yml)
 
 ## ドキュメント系
 

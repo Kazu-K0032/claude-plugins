@@ -1,6 +1,6 @@
 # config
 
-ユーザー全体（`~/.claude/`）の Claude Code 設定を整える Skill 集。どのリポジトリで作業していても共通の設定（ステータスライン・応答言語）を入れること、スコープをまたいだ設定の衝突・重複を点検すること、このマーケットプレイスのプラグインで見つけた不具合・改善案を Issue にすること、サイドバーのボタンで応答・文書の書き方とチャットモードを切り替える mod を入れることを扱う。
+ユーザー全体（`~/.claude/`）の Claude Code 設定を整える Skill 集。どのリポジトリで作業していても共通の設定（ステータスライン・応答言語）を入れること、スコープをまたいだ設定の衝突・重複を点検すること、このマーケットプレイスのプラグインで見つけた不具合・改善案を Issue にすること、サイドバーのボタンで応答・文書の書き方とチャットモードを切り替え、スキルの実行時に `SKILL.md` へのリンクを出す mod を入れることを扱う。
 
 リポジトリ単位の設定（`.claude/`・`.github/` 等）は [project](../project/README.md) の `/project:init-repo` が扱う。例外として、`/config:plugin-feedback` だけは、承認を省く切り替えを作業ディレクトリの `.claude/settings.local.json` に書き込む（理由は「設計上の決めごと」）。
 
@@ -11,7 +11,7 @@
 | `/config:setup-global` | `~/.claude/settings.json` に 2 行のステータスラインと日本語での応答（`language`）を設定 |
 | `/config:conflicts` | settings.json の各スコープ・権限ルール・フック・MCP サーバー・スキル・CLAUDE.md を横断して、衝突・重複を点検 |
 | `/config:plugin-feedback` | セッション中に見つけた、このマーケットプレイスのプラグインの不具合・改善案を、下書きの承認後に `Kazu-K0032/claude-plugins` の Issue にする（関連する Issue があればコメントで追記。承認は省くこともできる）。下書きの前に、同じ件の Issue の状況と、方針とのずれを伝える |
-| `/config:mod-output-customize` | サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を `~/.claude/mods/` に入れる。詳細は [README](skills/mod-output-customize/README.md) |
+| `/config:mod-output-customize` | サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える mod を `~/.claude/mods/` に入れる。この mod は、`aidd`・`config`・`project` のスキルの実行時に、その `SKILL.md` へのリンクも出す。詳細は [README](skills/mod-output-customize/README.md) |
 
 標準の `/doctor` とは見る観点が違う。`/doctor` はインストールの状態・壊れた設定ファイル・使われていない拡張機能・コンテキストの使用量を点検する。`/config:conflicts` は、スコープ間の上書き・deny に覆われた allow・フックや MCP の重複定義・CLAUDE.md 同士の矛盾など、**設定どうしがぶつかって効いていないもの**と、書き方の誤りで意図したコマンドに一致しない権限ルールを点検する。
 
@@ -69,8 +69,11 @@ config/
     │       └── conflicts.js   # 衝突・重複・書き方の誤りを JSON で出力する点検スクリプト
     ├── plugin-feedback/
     │   ├── SKILL.md
-    │   └── references/
-    │       └── issue-format.md  # Issue・コメントの本文の型と、公開前の点検項目
+    │   ├── references/
+    │   │   ├── issue-format.md  # Issue・コメントの本文の型と、公開前の点検項目
+    │   │   └── short-body.md    # 本文の長さの上限と数え方（aidd と同じ写し）
+    │   └── scripts/
+    │       └── body_length.js   # 本文の文字数を数える（aidd と同じ写し）
     └── mod-output-customize/
         ├── SKILL.md
         ├── README.md            # 使い方と収録物
@@ -82,6 +85,7 @@ config/
 
 - **スクリプトは Node.js で書き、外部パッケージを使わない**。ステータスラインは描画のたびに実行されるため、`jq` のような追加ツールに頼らず、Windows・macOS・Linux で同じように動くようにする。mod だけは例外で、Claude Code 自身の環境（Node.js も DOM も無い）で動く TypeScript で書く
 - **mod は config から直接読み込まず、スキルでコピーして入れる**。config を入れた全員に、既定で ON の指示がプロンプトのたびに足されるのを避け、使いたい人だけが入れられるようにする。読み込みは `~/.claude/settings.json` の `env.CLAUDE_CODE_PLUGIN_DIRS` で行い、プラグインの更新後は `/config:mod-output-customize` を再実行してコピーし直す（ステータスラインと同じ）
+- **スキルの手順書へのリンクは、mod で出す**。フックの `systemMessage` はリンクの書式を受け付けず、長い URL がそのまま出るため、mod の `ui.render` でテキストリンクとして描く。リンク先は、入れているプラグインの版のタグ（`~/.claude/plugins/installed_plugins.json` の版から作る）。タグはリリースで作られるため、版を上げてもリリース前は開けない。同じプラグインの記録が複数あって動いている版を選べないとき、手元に `SKILL.md` が無い workflow（`pr-review` など）は、リンクを出さない。止めるボタンは付けない（要らなければ mod を外す）
 - **ステータスラインのスクリプトは `~/.claude/` へコピーして使う**。プラグインは `statusLine` を設定できず、ユーザーの `settings.json` では `${CLAUDE_PLUGIN_ROOT}` が展開されないため。プラグインの更新後は `/config:setup-global` を再実行してコピーし直す
 - **既存の設定は承認なしに上書きしない**（[P1](../../docs/policies/p01-operation-boundary.md)）。`setup-global` は変更前後の値を表で見せてから書き込む
 - **`conflicts` は読み取り専用**。修正案は出すが、設定ファイルは書き換えない。`~/.claude.json` は認証情報を含むため、スクリプトが MCP の起動方法だけを抜き出して渡す

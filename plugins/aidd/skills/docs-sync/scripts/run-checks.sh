@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # docs-sync 機械チェック実行スクリプト
 # 担当: ブランチ差分の列挙 / 変更 md の 相対リンク切れ・markdown 規約 / 全走査のリンク切れ・SSOT ポインタ
-# 既定（基準）ブランチ上では停止する。docs 追従要否の LLM 判定は SKILL.md 側で実施する。
+# 基準ブランチ上と main・master では停止する。docs 追従要否の LLM 判定は SKILL.md 側で実施する。
+#
+# 使い方: run-checks.sh [--base <ref>]
+#   --base は比べるブランチ（今のブランチのマージ先）。SKILL.md が PR・規約から決めて渡す。
+#   マージ先はブランチ戦略（develop → stg → main など）で変わり、規約を読める LLM 側でしか決められないため。
+#   省略時は origin/HEAD（リモートの既定ブランチ）から決める。
 #
 # リポジトリごとに構成が違うため、次の 2 つは「規約が使われていれば検査し、無ければスキップ」する。
 #   - docs-type フロントマター（.claude/ 配下の独自メタデータ規約）
@@ -18,26 +23,59 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
 }
 cd "$ROOT"
 
+# --- 引数 -------------------------------------------------------------------
+BASE_ARG=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --base)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "ERROR: --base には比べるブランチを渡す（例: --base origin/develop）" >&2
+        exit 2
+      fi
+      BASE_ARG="$2"
+      shift 2
+      ;;
+    *)
+      echo "ERROR: 知らない引数です: $1（使い方: run-checks.sh [--base <ref>]）" >&2
+      exit 2
+      ;;
+  esac
+done
+
 # --- 基準ブランチの解決 -----------------------------------------------------
-# origin/HEAD（リモートの既定ブランチ）を最優先で見る。取れなければよくある候補を順に試す。
+# --base があればそれを使う。無ければ origin/HEAD（リモートの既定ブランチ）を見て、取れなければよくある候補を順に試す。
 BASE_REF=""
-DEFAULT_BRANCH="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)"
-if [[ -n "$DEFAULT_BRANCH" ]] && git rev-parse --verify --quiet "$DEFAULT_BRANCH" >/dev/null 2>&1; then
-  BASE_REF="$DEFAULT_BRANCH"
+BASE_SOURCE=""
+if [[ -n "$BASE_ARG" ]]; then
+  # 渡し間違いを既定ブランチへの黙った切り替えで隠さないため、見つからなければ止める
+  if ! git rev-parse --verify --quiet "${BASE_ARG}^{commit}" >/dev/null 2>&1; then
+    echo "ERROR: --base のブランチが見つかりません: $BASE_ARG（git fetch origin <ブランチ> で取ってくる）" >&2
+    exit 2
+  fi
+  BASE_REF="$BASE_ARG"
+  BASE_SOURCE="--base で指定"
 else
-  for cand in origin/main main origin/master master origin/develop develop; do
-    if git rev-parse --verify --quiet "$cand" >/dev/null 2>&1; then
-      BASE_REF="$cand"
-      break
-    fi
-  done
+  DEFAULT_BRANCH="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)"
+  if [[ -n "$DEFAULT_BRANCH" ]] && git rev-parse --verify --quiet "$DEFAULT_BRANCH" >/dev/null 2>&1; then
+    BASE_REF="$DEFAULT_BRANCH"
+    BASE_SOURCE="origin/HEAD"
+  else
+    for cand in origin/main main origin/master master origin/develop develop; do
+      if git rev-parse --verify --quiet "$cand" >/dev/null 2>&1; then
+        BASE_REF="$cand"
+        BASE_SOURCE="候補から"
+        break
+      fi
+    done
+  fi
 fi
 if [[ -z "$BASE_REF" ]]; then
   echo "ERROR: 基準ブランチが見つかりません（origin/HEAD・main・master・develop を確認）" >&2
   exit 2
 fi
 
-# 既定ブランチガード: 基準ブランチ上では差分の基準が無いため停止する
+# 基準ブランチガード: 基準ブランチ上では差分の基準が無いため停止する。
+# develop など、ほかのブランチのマージ先でも、自分のマージ先（--base）と比べるときは止めない。
 CURRENT="$(git branch --show-current)"
 BASE_NAME="${BASE_REF#origin/}"
 if [[ "$CURRENT" == "$BASE_NAME" || "$CURRENT" == "main" || "$CURRENT" == "master" ]]; then
@@ -157,7 +195,7 @@ check_links() {
 # --- 出力 -------------------------------------------------------------------
 echo "# docs-sync 機械チェック結果"
 echo
-echo "基準ブランチ: $BASE_REF / 現在: $CURRENT"
+echo "基準ブランチ: $BASE_REF（$BASE_SOURCE） / 現在: $CURRENT"
 echo "変更ファイル総数: ${#ALL_CHANGED[@]}（md: ${#MD_CHANGED[@]} / 非md: ${#CODE_CHANGED[@]}）"
 
 echo

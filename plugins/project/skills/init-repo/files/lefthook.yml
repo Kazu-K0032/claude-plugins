@@ -1,0 +1,17 @@
+# Lint・整形のツールの定義。.claude/hooks/post-edit-lint.sh が、Claude が編集したファイルを渡して claude-edit を動かす。
+# Ref: https://lefthook.dev/
+#
+# ツールの足し方:
+#   - commands に 1 つずつ書く。glob で対象の拡張子を絞り、run の {staged_files} に編集したファイルが入る
+#   - 整形のツールはファイルを書き換える形で、Lint のツールは問題があれば失敗で終える形で書く。失敗した結果だけが Claude に返る
+#   - Lint のツールは、警告でも 0 以外で終える形にする。0 で終えると、問題が Claude に返らない
+#   - 整形を先に動かすため、priority を整形 1・Lint 2 にする。書いた順ではなく、piped: true と priority で順が決まる
+#   - ツールが入っていないときは黙って飛ばす。npm で入れたツールは PATH に無いため、node_modules/.bin/ の下を指す
+#     例: run: '[ -x node_modules/.bin/<ツール> ] || exit 0; node_modules/.bin/<ツール> {staged_files}'
+#   - run に二重引用符を書かない。Windows では、二重引用符を含むコマンドが崩れる。全体を単一引用符で囲む
+#   - ツールの置き場所がルートでないときは、root にそのディレクトリを書く。{staged_files} は root からの相対パスになる
+#
+# 人のコミットにも同じ検査をかけるときは、pre-commit に同じコマンドを書き、lefthook install を実行する。
+claude-edit:
+  piped: true
+  commands: {}

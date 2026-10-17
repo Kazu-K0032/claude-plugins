@@ -6,13 +6,13 @@ WordPress のリポジトリへ「`wordpress/wp-content/` 配下のテーマと 
 
 ## 使い方
 
-導入先のリポジトリのルートで Claude Code を開き、次を実行する。`.claude/settings.json`・`CLAUDE.md` などの土台も要るなら、先に `/project:init-repo` を実行しておく。
+導入先のリポジトリのルートで Claude Code を開き、次を実行する。`.claude/settings.json`（土台）が無ければ、先に `/project:init-repo` を実行するかを Skill が聞く。
 
 ```text
 /project:wordpress
 ```
 
-衝突状況の確認 → テーマの名前とローカル環境の決定 → 計画の提示 → 承認 → コピー → 名前の置き換え → 衝突の片付け → Lint のフックへの追加、の順に進む。Docker のローカル環境を作るかは、実行中に聞かれる。
+衝突状況の確認 → テーマの名前とローカル環境の決定 → 計画の提示 → 承認 → コピー → 名前の置き換え → 衝突の片付け → フックへの PHP の Lint と Docker の検出の追加、の順に進む。Docker のローカル環境を作るかは、実行中に聞かれる。
 
 | 引数の例 | 動き |
 | --- | --- |

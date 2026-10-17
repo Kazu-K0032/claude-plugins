@@ -17,12 +17,13 @@
     "envrc",
     "frontmatter",
     "ghaction",
+    "lefthook",
+    "pycache",
+    "pythondontwritebytecode",
     "segs",
     "shellcheck",
     "ssot",
     "stoks",
-    "tfstate",
-    "tfvars",
     "toks",
     "toplevel"
   ]

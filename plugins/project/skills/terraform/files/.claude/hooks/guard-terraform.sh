@@ -50,6 +50,8 @@ deny_patterns=(
 'test'
 # state を直接書き換える
 'state[[:space:]]+(push|rm|mv|replace-provider)'
+# workspace を消す。その workspace の state も消える
+'workspace[[:space:]]+delete'
 )
 
 for p in "${deny_patterns[@]}"; do
@@ -75,6 +77,20 @@ if printf '%s' "$command" | grep -qE "${tf}plan([[:space:]]|$)"; then
     deny "terraform plan は -out=tfplan で plan を保存すること: $command
 例: terraform plan -out=tfplan"
   fi
+fi
+
+# workspace の切り替えはインフラを変えないが、誤った workspace のまま plan すると別の環境の plan ができる。
+# workspace で環境を分けている既存の構成では plan に要るため、止めずに承認を求める。
+# 同じコマンドの中の止める操作を先に判定するため、最後に置く
+if printf '%s' "$command" | grep -qE "${tf}workspace[[:space:]]+select([[:space:]]|$)"; then
+  jq -n --arg reason "terraform workspace を切り替える: $command
+切り替え先が、作業する環境の workspace かを確かめてから承認すること。" '{
+  hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "ask",
+      permissionDecisionReason: $reason
+  }
+  }'
 fi
 
 exit 0

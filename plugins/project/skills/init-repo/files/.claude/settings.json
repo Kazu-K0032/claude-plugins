@@ -20,11 +20,6 @@
       "Read(./**/.env.development)",
       "Read(./**/.env.staging)",
       "Read(./**/.env.test)",
-      "Read(./**/*.tfvars)",
-      "Read(./**/*.tfvars.json)",
-      "Read(./**/*.tfstate)",
-      "Read(./**/*.tfstate.*)",
-      "Read(./**/.terraform/**)",
       "Read(./secrets/**)",
       "Bash(git commit *)",
       "Bash(git push *)",
@@ -131,6 +126,7 @@
     ]
   },
   "env": {
-    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1"
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
   }
 }

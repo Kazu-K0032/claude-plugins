@@ -23,7 +23,6 @@ TODO: このリポジトリで使う仕組みに合わせて書き換える。�
 | アプリケーションの env | アプリの設定ローダー（`.env` の読み込み） | `.env.example` |
 | テストの env | テストランナーの設定ファイル | `.env.example` |
 | コンテナの env | `compose.yaml` | `.env.example` |
-| Terraform 変数 | `tfvars` / `TF_VAR_*` | 各環境の `terraform.tfvars.example` |
 
 ## テンプレート機構を持たない設定値
 

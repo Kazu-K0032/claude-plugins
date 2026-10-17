@@ -2,7 +2,7 @@
 
 AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作業を Skill 化したツールキット。
 
-「仕様・判断・手順をドキュメントに残しながら進める」開発スタイルを前提にしている。Issue に着手する前に記述を確かめ、ADR で判断を記録し、PR 前にドキュメントとの食い違いを潰し、コミット・PR の下書きまでを定型化する、という流れを Skill として固めたもの。
+「仕様・判断・手順をドキュメントに残しながら進める」開発スタイルを前提にしている。Issue に着手する前に記述を確かめ、ADR で判断を記録し、PR 前にドキュメントとの食い違いを潰し、コミット・PR の下書きまでを定型化する、という流れを Skill として固めたもの。統合ブランチへマージする前には、ハーネス監査で、リポジトリ全体が設計思想に合うかを確かめる。
 
 ## 収録スキル
 
@@ -16,6 +16,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
+| `/aidd:harness-audit` | リポジトリ全体が、このマーケットプレイスの設計思想と規約に合うかを監査する。init-repo からの作り直しの後や、統合ブランチへのマージ前に使う。実行前に件数とエージェント数の見込みを示して聞く |
 
 同梱エージェント。
 
@@ -27,10 +28,10 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 | Workflow | 用途 |
 | --- | --- |
-| `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証して、直す箇所を high・medium・low に分けて出力 |
-| `docs-consistency-audit` | ドキュメント間の値の矛盾・重複記述・参照方向違反を横断監査 |
+| `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証して、直す箇所を high・medium・low に分け、推奨アクションを添えて出力 |
+| `harness-audit-run` | `/aidd:harness-audit` の本体。設計思想・規約への適合、土台の仕組みの欠け、ファイル間の値の矛盾・重複記述・参照方向違反を監査する。対象の一覧・設計思想の要約・確認の印（`confirmed`）を `args` で受け取るため、スキルから呼ぶ。確認の印が無い呼び出しは走らない |
 
-収録は上記 8 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
+収録は上記 9 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
 
 ## ディレクトリ構成
 
@@ -49,12 +50,16 @@ aidd/
 │   └── research.md
 ├── workflows/           # 複数エージェントを束ねるスクリプト
 │   ├── pr-review.js
-│   └── docs-consistency-audit.js
+│   └── harness-audit-run.js
+├── scripts/             # 複数の Skill が使うスクリプト
+│   └── body_length.js   # Issue・PR の本文の文字数を数える
 └── references/          # Skill が実行時に読む共通規約
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
-    └── ai-research.md   # AI 出力を引用として扱わないための規約
+    ├── short-body.md    # Issue・PR の本文の長さ
+    ├── ai-research.md   # AI 出力を引用として扱わないための規約
+    └── harness-principles.md # 設計思想の要約（harness-audit の物差し）
 ```
 
 ## references/ とは何か
@@ -84,7 +89,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `references/` の内容は、元になったプロジェクトの `.claude/rules/` と重複する。**汎用ルールはこのプラグイン側を正**とし、規約を直すときは両方を直す。
 
-`references/markdown.md` は [project](../project/README.md) プラグインにも同じ内容のコピーがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。
+`references/markdown.md` は [project](../project/README.md) プラグインにも同じ内容のコピーがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。`references/short-body.md` と `scripts/body_length.js` も、[config](../config/README.md) の `plugin-feedback` に同じコピーがある。
 
 ## 設計上の決めごと
 
@@ -106,7 +111,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `${CLAUDE_PLUGIN_ROOT}` が frontmatter の `allowed-tools` で展開されるかは公式に記載が無い。プラグインの実体パスはインストール先で変わるため、当てにせず通常の許可プロンプトを通す（[P1](../../docs/policies/p01-operation-boundary.md)）。
 
-`ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。
+`ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。`pr-create`・`issue-start`・`issue-pr-sync` が本文を数える `scripts/body_length.js` も載せていない。
 
 ### エージェント名にプラグイン名を付けない
 
@@ -134,13 +139,14 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - 反映前に承認を取るのは、既存の記述を消す・意味を変える変更と、ほかの人に通知が届く変更だけ。追記・チェック・Issue に揃える変更は、承認なしで反映する。基準は `skills/issue-pr-sync/SKILL.md` の「承認を取る変更」
 - 反映前の本文を `tmp/` に残し、報告で出力パスを示す。承認なしで反映した変更も戻せるようにするため
 - Projects は変更しない。担当者・ラベルなど設定済みの値は、承認なしに外さない
+- PR 本文の「AI を使った確認」にチェックを入れるのは、実行した本人の `/aidd:issue-pr-sync` の行だけ。ほかのスキルの行は、確かめたと判断するのは人のため入れない（[V3](../../docs/values/v03-human-judgment.md)）。入れる条件と番号の直し方は `skills/issue-pr-sync/SKILL.md` の「「AI を使った確認」の欄」
 
 `issue-start` の歯止め。
 
 - 書き込むのは、ブランチの作成、自分を担当者に足すこと、Issue の本文の更新、着手を見送った理由のコメントだけ。ラベルと既存のコメントは変えず、既存の担当者も外さない
 - Issue の本文を書き換える前に、今の本文を `tmp/` に書き出し、報告でパスを示す
 - 確認で前提が崩れていると分かったときは、ブランチを作らずに止める。止めた理由のコメントは、ユーザーが選んだときだけ、同梱のテンプレート（`comment-template.md`）の形で投稿する。作業ツリーに未コミットの変更があるときは、ブランチを作る前に扱いを聞く。起点のブランチに push していないコミットがあるときも、新しいブランチを作る前に扱いを聞く
-- 決めることは、計画モードで選択肢の質問にし、答えを待ってから実装する。実装は手元のファイルの編集まで。コミット・push はせず、直したファイルだけをステージに置き、コミットメッセージと PR の下書きを書く
+- 決めることは、計画モードで選択肢の質問にし、計画の承認を得てから実装する。計画モードに入れないときは、`AskUserQuestion` で承認を取る。実装は手元のファイルの編集まで。コミット・push はせず、直したファイルだけをステージに置き、コミットメッセージと PR の下書きを書く
 - Issue に紐づいたブランチが既にあれば、新しく作らずにそのブランチへ移動する
 
 ### `issue-start` の要件の詰め方
@@ -149,13 +155,14 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### ブランチ名の `/` は `-` に置き換える
 
-`tmp/<ブランチ名>/` への出力の規則は [P4](../../docs/policies/p04-tmp-output.md) に従う。`allowed-tools` の書き込み先は、1 階層だけに当たる `tmp/*/` で書く。スキル名のサブディレクトリに書くスキル（`issue-start`）は、`tmp/*/<スキル名>/` と 2 階層を書く。
+`tmp/<ブランチ名>/` への出力の規則は [P4](../../docs/policies/p04-tmp-output.md) に従う。`allowed-tools` の書き込み先は、1 階層だけに当たる `tmp/*/` で書く。スキル名のサブディレクトリに書くスキル（`commit`・`issue-pr-sync`・`issue-start`）は、`tmp/*/<スキル名>/` と 2 階層を書く。Claude の作業ファイルは、スキルの出力と分けて `tmp/<ブランチ名>/work/<目的>/` に置く。
 
 ワークフロー（`.js`）にはこの README を読ませにくい。そのため、各スキル・ワークフローにも同じ 1 文を書いている。規約を変えるときは、次の箇所もそろえて直す。
 
-- `skills/` の `ai-report`・`docs-sync`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
+- `skills/` の `ai-report`・`docs-sync`・`harness-audit`・`issue-pr-sync`・`issue-start`・`pr-create` の `SKILL.md`
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
-- `workflows/` の `pr-review.js`・`docs-consistency-audit.js`
+- `workflows/` の `pr-review.js`・`harness-audit-run.js`
+- `project` の `init-repo` が配る `.claude/rules/tmp-output.md`（このリポジトリの `.claude/rules/tmp-output.md` と組）。サブディレクトリに書くスキルを増やす・改名するときも直す
 
 ### Issue 番号を省いたら、ブランチ名から取る
 
@@ -166,3 +173,18 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `skills/` の `issue-start`・`pr-create`・`issue-pr-sync` の `SKILL.md`
 - `workflows/` の `pr-review.js`
 - `project` の `init-repo` が配る `.claude/rules/branch.md`（このリポジトリの `.claude/rules/branch.md` と組）
+
+### Issue・PR の本文は 500 文字以内にする
+
+`pr-create`・`issue-start`・`issue-pr-sync` は、本文を 500 文字以内、1 文・1 項目を 50 文字以内で書く。書いたら `scripts/body_length.js` で数える。長い本文は読まれないため（[P8](../../docs/policies/p08-short-body.md)）。上限と数え方は `references/short-body.md` にある。
+
+### ハーネス監査は、設計思想を物差しにし、実行前に見込みを示す
+
+`harness-audit` は、リポジトリ全体がこのマーケットプレイスの設計思想に合うかを見る最終チェック。init-repo から作り直した後や、統合ブランチへのマージ前に使う。
+
+- 物差し：利用先には `docs/values`・`docs/policies` が配られないため、要点を `references/harness-principles.md` に同梱する（[P5](../../docs/policies/p05-standalone-plugin.md)）。価値・方針・init-repo の土台を変えたら、この要約も直す
+- 仕組みの欠け：存在するファイルを読むだけでは、土台の欠けに気づけない。そのため、init-repo の印があるリポジトリでは、要約の「土台の仕組み」を役割ごとに確かめる
+- 見込みの確認：Workflow は利用者に質問できないため、入口をスキルにし、件数・総量・エージェント数を示して続けるかを聞く
+- モデル：`workflows/harness-audit-run.js` の `MODELS` で段ごとに固定する。呼ぶ人のモデルで費用が変わらないようにするため。判断の段は opus にし、質を落とさない（[V1](../../docs/values/v01-quality-over-speed.md)）。数の多い検査は sonnet にし、誤検出は検証の段で落とす
+- 束ねる：エージェントは 1 体ごとに共通の前提を読むため、体数がそのまま費用になる。小さいファイルは束ねて 1 体で検査する（`BATCH`）
+- 2 段の突合：1 体が読む事実が多すぎると取りこぼすため、件数が多いときは、ディレクトリの群ごとに突き合わせてから全体で突き合わせる（`DETECT_GROUP`）

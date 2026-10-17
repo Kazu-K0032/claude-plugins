@@ -1,0 +1,74 @@
+name: PR に書いた Issue を閉じる
+
+# develop への PR をマージしたら、PR に書いた Issue を閉じる。GitHub は、既定ブランチ（main）へのマージでしか Issue を閉じないため。決まりは CONTRIBUTING.md
+# 閉じる Issue は、GitHub が紐づけたものと、PR 本文の Closes #<番号> などの両方から取る。develop 向けの PR では、本文に Closes があっても、GitHub が紐づけないことが多い
+# main 向けの PR は、GitHub が閉じるため対象にしない。閉じられなくても、マージには影響しない
+on:
+  pull_request:
+    types: [closed]
+    branches: [develop]
+
+permissions: {}
+
+jobs:
+  close_issues:
+    name: Issue を閉じる
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - name: PR に書いた Issue を閉じる
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # 本文は外から来る入力のため、run に埋め込まず env で渡し、番号だけを取り出す
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # GitHub が紐づけた Issue（同じリポジトリのものだけ）
+          refs=$(gh pr view "$PR_NUMBER" --json closingIssuesReferences \
+            --jq '.closingIssuesReferences[] | select((.repository.owner.login + "/" + .repository.name) == $ENV.GH_REPO) | .number') \
+            || { echo "::warning::GitHub が紐づけた Issue を読めませんでした。本文だけで進めます"; refs=""; }
+          # 本文の「キーワード #<番号>」。キーワードは GitHub が Issue を閉じるものと同じ 9 種
+          from_body=$(printf '%s\n' "$PR_BODY" \
+            | { grep -oiE '(^|[^[:alnum:]_])(close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' || true; } \
+            | { grep -oE '[0-9]+$' || true; })
+          numbers=$(printf '%s\n%s\n' "$refs" "$from_body" | { grep -E '^[0-9]+$' || true; } | sort -un)
+
+          echo "# PR #${PR_NUMBER} に書いた Issue" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$numbers" ]; then
+            echo "閉じる Issue はありません" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          failed=0
+          for n in $numbers; do
+            if ! info=$(gh issue view "$n" --json state,url --jq '[.state, .url] | @tsv'); then
+              echo "::warning::#${n} を読めないため飛ばしました"
+              echo "- #${n}: 読めないため飛ばしました" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            state=${info%%$'\t'*}
+            url=${info#*$'\t'}
+            # PR の番号を Issue と取り違えて閉じないため
+            if [[ "$url" != */issues/* ]]; then
+              echo "- #${n}: Issue ではないため飛ばしました" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            if [ "$state" != "OPEN" ]; then
+              echo "- #${n}: 閉じているため飛ばしました" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            # fork からの PR では、トークンが読み取り専用で失敗する。残りの Issue は続けて閉じる
+            if gh issue close "$n" --reason completed; then
+              echo "- #${n}: 閉じました" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::error::#${n} を閉じられませんでした。手で閉じてください"
+              echo "- #${n}: 閉じられませんでした" >> "$GITHUB_STEP_SUMMARY"
+              failed=1
+            fi
+          done
+          exit "$failed"
