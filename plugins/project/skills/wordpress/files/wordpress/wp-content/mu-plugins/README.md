@@ -17,4 +17,4 @@
 ## 書き方
 
 - 1 つの機能を 1 つのファイルにする。ファイルを足したら、上の表に行を足す
-- 規約は [.claude/rules/wordpress.md](../../../.claude/rules/wordpress.md) にある
+- 規約は [.claude/rules/wordpress.md](../../../.claude/rules/wordpress.md)・[wordpress-security.md](../../../.claude/rules/wordpress-security.md)・[wordpress-templates.md](../../../.claude/rules/wordpress-templates.md) にある

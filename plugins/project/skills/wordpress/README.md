@@ -16,7 +16,7 @@ WordPress のリポジトリへ「`wordpress/wp-content/` 配下のテーマと 
 
 | 引数の例 | 動き |
 | --- | --- |
-| `規約だけ` | `.claude/rules/wordpress.md` だけを入れる |
+| `規約だけ` | `.claude/rules/` の 3 つの規約（`wordpress.md`・`wordpress-security.md`・`wordpress-templates.md`）だけを入れる |
 | `Lint だけ` | `composer.json`・`phpcs.xml.dist` だけを入れ、フックに PHP の Lint を足す |
 | `Docker なし` | Docker のローカル環境を入れない |
 | `既存は置き換えない` | 既存ファイルに触らない |
@@ -34,7 +34,9 @@ bash <plugin>/scripts/install.sh --skill wordpress --apply  # 未存在のファ
 
 | パス | 内容 | 導入後の調整 |
 | --- | --- | --- |
-| `files/.claude/rules/wordpress.md` | 置き場所（テーマ・mu-plugins・初期データ・ローカル環境）・出力のエスケープ・入力の検証・国際化・テンプレートパーツ・クエリ・PHPDoc・Lint の規約 | そのまま使える（プラグインを Git で管理しているリポジトリでは、Skill がプラグインの行を直す） |
+| `files/.claude/rules/wordpress.md` | 置き場所（テーマ・mu-plugins・初期データ・ローカル環境）・名前・PHPDoc・Lint の規約 | そのまま使える（プラグインを Git で管理しているリポジトリでは、Skill がプラグインの行を直す） |
+| `files/.claude/rules/wordpress-security.md` | 出力のエスケープ・入力の検証（nonce・権限・SQL のプレースホルダ）の規約。`wordpress.md` と同じファイルを開いたときに読み込まれる | そのまま使える |
+| `files/.claude/rules/wordpress-templates.md` | 国際化・テンプレートパーツ・テンプレートの中の繰り返し・クエリ・ページテンプレートの構造・アセットの読み込みの規約。`wordpress.md` と同じファイルを開いたときに読み込まれる | そのまま使える |
 | `files/wordpress/README.md` | `wordpress/` の案内板 | ファイルを足したら行を足す |
 | `files/wordpress/.gitignore` | WordPress 本体・アップロード・サードパーティのプラグイン・`.env`・Composer の依存の除外 | そのまま使える（プラグインを Git で管理しているリポジトリでは、Skill が `/wp-content/plugins/` を外す） |
 | `files/wordpress/compose.yaml` | ローカル環境（MySQL・WordPress・WP-CLI）。テーマと mu-plugins だけをマウントする。入れるかは実行時に聞く | イメージのタグを本番の版に合わせる |
@@ -60,7 +62,7 @@ Lint の設定を入れたときは、規則を決めた理由の ADR（`adr/php
 | 除外したもの | 理由 |
 | --- | --- |
 | ローカル環境の周辺のサービスと設定（メールの捕捉・アップロードの上限・コンテナの中から自分の URL へつなぐ設定） | 使うプラグインと運用で要るかが変わる。要るときに `compose.yaml` に足す |
-| 初期データと取り込みのスクリプト | 投稿タイプ・カスタムフィールドがプロジェクトごとに違う。規約の「初期データ」に書き方だけを書いている |
+| 初期データと取り込みのスクリプト | 投稿タイプ・カスタムフィールドがプロジェクトごとに違う。規約の「初期データを作る場合」に書き方だけを書いている |
 | ビルド（Vite など）・JS と CSS の Lint の設定 | 使うかどうか、どのツールを使うかがプロジェクトごとに違う |
 | PHPStan（型の検査） | 使うプラグインごとに、型の情報（スタブ）を足す手間がかかる。入れるかはプロジェクトごとに決める |
 | 投稿タイプなどの mu-plugins の雛形 | 中身がプロジェクトごとに違う |

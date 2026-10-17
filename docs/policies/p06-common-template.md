@@ -26,7 +26,7 @@
 | `.claude/hooks/post-edit-lint.sh` の言語別のブロック（前の版の形だけ） | その技術の Lint。`lefthook` を呼ばない前の版のフックが残る利用先との互換のため |
 | `.claude/hooks/guard-destructive.sh` の `patterns` | その技術の破壊的な操作 |
 | `cspell.json` の `words` | テンプレートが使う語 |
-| `.claude/rules/<技術>.md` | その技術の規約（新しいファイル） |
+| `.claude/rules/<技術>.md` | その技術の規約（新しいファイル）。5,000 文字に収まらなければ、同じ `paths` を付けた `<技術>-<話題>.md` に分ける（[P9](p09-readable-ai-docs.md)） |
 | `docs/adr/` | その技術の判断の ADR |
 
 技術別のスキルは、次を守る。

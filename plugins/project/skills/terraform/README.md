@@ -34,7 +34,7 @@ bash <plugin>/scripts/install.sh --skill terraform --apply  # 未存在のファ
 | パス | 内容 | 導入後の調整 |
 | --- | --- | --- |
 | `files/.claude/rules/terraform.md` | 置き場所・ファイルの分け方・変数と出力・秘匿値・実行の手順（Claude は plan まで）・`check` ブロック・`.tftpl` のエスケープ・コメントの規約 | そのまま使える（既存の構成に入れたときは、Skill が場所を合わせる） |
-| `files/.claude/hooks/guard-terraform.sh` | Claude がインフラや state を変えるコマンド（apply・destroy・`test`・`workspace delete` など。一覧は規約の「実行」）と、`-out` の無い plan・`-target` を止める PreToolUse フック。`workspace select` は承認を求める | 止めるコマンドを足すときは `deny_patterns` に追記する |
+| `files/.claude/hooks/guard-terraform.sh` | Claude がインフラや state を変えるコマンド（apply・destroy・`test`・`workspace delete` など。一覧は規約の「コマンドを実行する場合」）と、`-out` の無い plan・`-target` を止める PreToolUse フック。`workspace select` は承認を求める | 止めるコマンドを足すときは `deny_patterns` に追記する |
 | `files/infra/README.md` | `infra/` の案内板 | 環境を足したら行を足す |
 | `files/infra/.gitignore` | `.terraform/`・state・保存した plan・変数の値（`*.tfvars`）の除外 | そのまま使える |
 | `files/infra/modules/README.md` | modules の案内板 | モジュールを足したら行を足す |
