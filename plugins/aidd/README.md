@@ -54,6 +54,8 @@ aidd/
 ├── scripts/             # 複数の Skill が使うスクリプト
 │   └── body_length.js   # Issue・PR の本文の文字数を数える
 └── references/          # Skill が実行時に読む共通規約
+    ├── ai-check-lines.md # PR 本文の「AI を使った確認」の欄
+    ├── base-branch.md   # マージ先（比べるブランチ）の決め方
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
@@ -136,10 +138,10 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 `issue-pr-sync` の歯止め。
 
-- 反映前に承認を取るのは、既存の記述を消す・意味を変える変更と、ほかの人に通知が届く変更だけ。追記・チェック・Issue に揃える変更は、承認なしで反映する。基準は `skills/issue-pr-sync/SKILL.md` の「承認を取る変更」
+- 反映前に承認を取るのは、既存の記述を消す・意味を変える変更と、ほかの人に通知が届く変更だけ。追記・チェック・Issue に揃える変更は、承認なしで反映する。基準は `skills/issue-pr-sync/approval-rules.md`
 - 反映前の本文を `tmp/` に残し、報告で出力パスを示す。承認なしで反映した変更も戻せるようにするため
 - Projects は変更しない。担当者・ラベルなど設定済みの値は、承認なしに外さない
-- PR 本文の「AI を使った確認」にチェックを入れるのは、実行した本人の `/aidd:issue-pr-sync` の行だけ。ほかのスキルの行は、確かめたと判断するのは人のため入れない（[V3](../../docs/values/v03-human-judgment.md)）。入れる条件と番号の直し方は `skills/issue-pr-sync/SKILL.md` の「「AI を使った確認」の欄」
+- PR 本文の「AI を使った確認」にチェックを入れるのは、実行した本人の `/aidd:issue-pr-sync` の行だけ。ほかのスキルの行は、確かめたと判断するのは人のため入れない（[V3](../../docs/values/v03-human-judgment.md)）。入れる条件と番号の直し方は `references/ai-check-lines.md`
 
 `issue-start` の歯止め。
 
@@ -170,7 +172,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ブランチ名の形を変えるときは、次の箇所もそろえて直す。
 
-- `skills/` の `issue-start`・`pr-create`・`issue-pr-sync` の `SKILL.md`
+- `skills/` の `pr-create`・`issue-pr-sync` の `SKILL.md` と、`issue-start` の `branch-setup.md`
 - `workflows/` の `pr-review.js`
 - `project` の `init-repo` が配る `.claude/rules/branch.md`（このリポジトリの `.claude/rules/branch.md` と組）
 
