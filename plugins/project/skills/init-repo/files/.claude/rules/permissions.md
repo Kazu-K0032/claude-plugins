@@ -3,7 +3,6 @@ paths:
   - ".claude/settings.json"
   - ".claude/settings.local.json"
   - ".claude/hooks/**"
-docs-type: people-ai-doc
 ---
 
 # 権限の設定（deny・フック）に関するルール
@@ -49,11 +48,14 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 - 秘匿ファイルの deny（`Read(./.env)` など）は、このリポジトリの秘匿ファイルの置き場所に合わせて足す
 - Terraform の秘匿ファイル（変数の値・state など）の deny は、`/project:terraform` が足す
 - deny は、ルールの形に当たるコマンドしか止められない（例：`bash -c 'rm …'` は止まらない）。deny で止まらない操作も、この線引きに従う
+- `Bash(...)` の規則は、PowerShell のツールには効かない。そのため、`git`・`gh` の deny は `PowerShell(...)` の形でも同じ数だけ置く。削除のコマンドは別名（`rm`・`del`・`rmdir`・`rd`・`ri`・`erase`・`Remove-Item`）も置く。足す・外すときは、`Bash(...)` と `PowerShell(...)` の組でそろえる
 
 ## フックを配線する場合
 
+- コマンドを見るフック（PreToolUse）は、`matcher` を `Bash|PowerShell` にする。`Bash` だけだと、PowerShell のツールで打ったコマンドを見逃すため
+- フックは `bash` で動くため、Git Bash の無い Windows では動かない。フックで止まらない操作も、上の線引きに従う
 - `guard-git-write.sh` は、`git commit`・`git push` と、`gh` での Issue・PR などの作成・更新・クローズ・マージ・削除を止める。既定では `settings.json` に登録していない
 - 登録すると、Issue・PR の作成・更新も止まり、それを使うスキル（`/aidd:issue-start` など）が途中で止まる。登録するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
-- `guard-destructive.sh` は、破壊的なコマンドを見つけて承認を求める。このプロジェクト固有の破壊的な操作は、`patterns` に足す
+- `guard-destructive.sh` は、破壊的なコマンドを見つけて承認を求める。このプロジェクト固有の破壊的な操作は、`patterns` に足す。`patterns` は大文字小文字を区別せずに当てる。PowerShell は区別しないため
 - `post-edit-lint.sh` は、編集したファイルに `lefthook.yml` の `claude-edit` をかける。`lefthook run` は既定で `.git/` の下を書き換えるため、`--no-auto-install` を付けて呼ぶ。外さない
 - `guard-terraform.sh`（`/project:terraform` が配る）は、Claude が Terraform でインフラや state を変えるコマンドを止める。反映は人が行うため

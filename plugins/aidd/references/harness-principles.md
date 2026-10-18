@@ -25,6 +25,7 @@
 | P4 | スキルの下書きやレポートは tmp に出し、コミットに混ぜないこと | レポート・下書きは `tmp/<ブランチ名>/`、コミットメッセージは `tmp.md` に書き、どちらも `.gitignore` に入れる。作業ファイルは `tmp/<ブランチ名>/work/<目的>/` に置く |
 | P7 | README には本文を書かず、どこに何があるかの案内にとどめること | 手順・設計・仕様は `docs/` などに 1 か所だけ書き、README からはリンクで案内する。ルートの README から `docs/` へは `docs/README.md` だけを案内する |
 | P8 | Issue・PR の本文は、人が読み切れる長さにすること | 本文は 500 文字以内、1 文・1 項目は 50 文字以内。テンプレートに上限を示す |
+| P9 | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・規約は冒頭に要約を置き、見出しの並びをそろえ、本筋と細部を分ける。本文は 5,000 文字以内。理由は消さない |
 
 DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ書き、ほかからはリンクで指す（SSOT）。
 
@@ -34,9 +35,9 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 
 | 仕組み | 確かめる手がかり | 欠けたときの重大度 |
 | --- | --- | --- |
-| コミット・push・削除・権限の変更・深刻な外部操作を止める | `.claude/settings.json` の `permissions.deny`（`git commit`・`git push`・`rm`・`gh pr merge`・`gh release` など） | high |
+| コミット・push・削除・権限の変更・深刻な外部操作を止める | `.claude/settings.json` の `permissions.deny`（`git commit`・`git push`・`rm`・`gh pr merge`・`gh release` など。PowerShell の形（`PowerShell(...)`）も） | high |
 | 秘匿ファイルの読み取りを止める | `permissions.deny` の `Read(./.env)` など | high |
-| 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など） | high |
+| 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など。`matcher` は `Bash\|PowerShell`） | high |
 | コミット・PR に Claude の署名を付けない | `settings.json` の `attribution` が空 | low |
 | 秘密の混入を CI で止める | シークレットスキャン（gitleaks など）の CI | high |
 | 操作の線引きと理由を、利用先の Claude に伝える | `.claude/rules/permissions.md` など | low |
@@ -45,6 +46,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | 判断を残し、毎回読む | ADR の一覧（`docs/adr/README.md` など）と、`CLAUDE.md` での読み込み、ADR の規約 | low |
 | Claude への指示の入口 | `CLAUDE.md`（禁止事項・手順・唯一の情報源の一覧） | low |
 | README を案内板にする | `.claude/rules/readme.md` などと `docs/README.md` | low |
+| AI が読む文書の書き方を伝える | `.claude/rules/ai-docs.md` など | low |
 | Issue・PR の定型 | Issue・PR のテンプレート（本文の長さの上限を示す） | low |
 | 編集後に Lint・整形を動かす | PostToolUse のフックと、その定義（`lefthook.yml` など） | low |
 | コミット規約を検証する（Node のプロジェクトだけ） | `commitlint.config.*` など | low |

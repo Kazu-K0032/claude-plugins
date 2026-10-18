@@ -14,10 +14,14 @@
 | `init-repo` の `CLAUDE.md`（「実装がひと区切りついたとき」） | `git add <ファイル>`（その区切りで直したファイルだけ）と、`tmp.md` への書き込み | deny に `git add` を入れない | 止まらない |
 | `init-repo` の `post-edit-lint.sh` | 編集したファイルに `lefthook run claude-edit` をかける。整形のツールはファイルを書き換える。`--no-auto-install` を付け、`.git/` は書き換えない | なし（フックは deny の対象外） | 止まらない |
 | `project:wordpress` | `lefthook.yml`（古い形では `.claude/hooks/post-edit-lint.sh`）への PHP の Lint の追加と、`.claude/hooks/guard-destructive.sh` への `docker compose down -v` の追加（どちらも承認を得てから）、コピーしたテーマのディレクトリの `mv`、`<ADR_DIR>` への ADR の作成と一覧への 1 行の追加 | deny にこれらのファイル・`<ADR_DIR>` の `Edit` と `mv` を入れない | 止まらない |
-| `project:terraform` | `.claude/settings.json` の PreToolUse への `guard-terraform.sh` の登録と `permissions.deny` への秘匿ファイル（`*.tfvars`・`*.tfstate` など）の追加、`lefthook.yml`（古い形では `.claude/hooks/post-edit-lint.sh`）への `terraform fmt` の追加（どれも承認を得てから） | deny にこれらのファイルの `Edit` を入れない | 止まらない |
+| `project:terraform` | `.claude/settings.json` の PreToolUse への `guard-terraform.sh` の登録（古い形の `matcher` は `Bash\|PowerShell` に直す）と `permissions.deny` への秘匿ファイル（`*.tfvars`・`*.tfstate` など）の追加、`lefthook.yml`（古い形では `.claude/hooks/post-edit-lint.sh`）への `terraform fmt` の追加と、`cspell.json` の `words` への語の追加（どれも承認を得てから） | deny にこれらのファイルの `Edit` を入れない | 止まらない |
 | `aidd:adr` | `<ADR_DIR>`（`docs/adr/` など）への ADR の作成と、一覧（`README.md`）の作成・更新 | deny にこのディレクトリへの書き込み（`Edit`）を入れない | 止まらない |
 | `aidd:issue-pr-sync` | `gh issue edit`・`gh pr edit` | deny に入れない | 反映が止まり、下書きを出すところまでになる |
+| `project:gas` | 既存のコードの `git mv` による `src/` への移動（承認を得てから）、`src/`・`.claude/rules/gas.md`・`.clasp.json` の作成と、`rootDir`・`paths` の書き換え、`.gitignore` への `.clasprc.json` などの追記 | deny に `git mv` と、これらのファイルの `Edit` を入れない | 止まらない |
+| `config:setup-global` | `~/.claude/settings.json` と `~/.claude/statusline/statusline.js`（と `.bak`）への書き込み。置いた `statusline.js` は環境変数 `CLAUDE_STATUSLINE_PLAIN` を読む | なし（どちらもリポジトリの外。deny は `./` で始まるパスだけを止める） | 関係しない |
+| `config` のフック | 環境変数 `CLAUDE_PLUGIN_DATA` を読み、そのフォルダに印のファイル `plugin-feedback-notice-shown` を書く | なし（リポジトリの外） | 関係しない |
 | `config` のフック・`config:plugin-feedback` | 環境変数 `CLAUDE_PLUGIN_FEEDBACK`・`CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` を読む | `settings.json` の `env` に入れない（利用者が決める値のため） | 関係しない |
+| `config:mod-output-customize` | `~/.claude/mods/` への `mv`・`cp -r` と、`~/.claude/settings.json` の `env.CLAUDE_CODE_PLUGIN_DIRS` の書き換え。mod を外すときの `rm -rf ~/.claude/mods/mod-output-customize` は、Claude は実行せず、利用者に示す | なし（どちらもリポジトリの外）。`rm` は deny の `Bash(rm *)` が止めるため、人が実行する | 関係しない |
 | `config:mod-output-customize` が入れる mod | 環境変数 `USERPROFILE`・`HOME` と、`~/.claude/plugins/installed_plugins.json` を読む（リンク先の版を知るため） | なし（どちらもリポジトリの外） | 関係しない |
 
 `config:plugin-feedback` が書き込みを止められたときは、書かずに `off` として続ける。
@@ -30,4 +34,4 @@
 
 ### Q. `init-repo` の deny やフックに操作を足したい
 
-足す前に、この表でその操作を使うスキルを探す。止まるスキルがあれば、利用者に伝えてから決める。
+足す前に、この表でその操作を使うスキルを探す。止まるスキルがあれば、利用者に伝えてから決める。`git`・`gh` の deny は、`Bash(...)` と `PowerShell(...)` の組で足す（[P1](p01-operation-boundary.md)）。

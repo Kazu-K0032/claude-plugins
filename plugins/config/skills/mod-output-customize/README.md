@@ -10,7 +10,7 @@
 /config:mod-output-customize
 ```
 
-現状の確認 → 計画の提示 → 承認 → コピーと設定 → `claude plugin validate` での確認、の順に進む。Claude Code を起動し直すと、サイドバー（置けないときは入力欄の上）にボタンが出る。ボタンの動きと既定は [SKILL.md](SKILL.md) の「mod の機能」を参照。
+現状の確認 → 計画の提示 → 承認 → コピーと設定 → `claude plugin validate` での確認、の順に進む。Claude Code を起動し直すと、サイドバー（置けないときは入力欄の上）にボタンが出る。ボタンの動きと既定は [features.md](features.md) を参照。
 
 | 引数の例 | 動き |
 | --- | --- |

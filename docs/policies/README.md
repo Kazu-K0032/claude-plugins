@@ -14,6 +14,7 @@
 | [P6](p06-common-template.md) | 土台には設計思想だけを入れ、技術に依るものは技術別のスキルで重ねること | テンプレートにファイルを足すとき、技術別のスキルが土台のファイルに足すとき、`init-repo` が配らないファイルを別のスキルで作るとき |
 | [P7](p07-readme-guide.md) | README には本文を書かず、どこに何があるかの案内にとどめること | README のひな形・規約を直すとき、README を作るスキルを足すとき |
 | [P8](p08-short-body.md) | Issue・PR の本文は、人が読み切れる長さにすること | Issue・PR の本文やコメントを書く手順・テンプレートを直すとき |
+| [P9](p09-readable-ai-docs.md) | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・参照ファイル・規約を書く・直すとき |
 
 スキルの操作と、`init-repo` が配る権限設定との対応は [permissions.md](permissions.md) にまとめる。
 
@@ -28,7 +29,7 @@
 
 ## ファイルの書き方
 
-方針を足すときは、次の形で 1 方針 1 ファイルを作り、上の一覧と `.claude/rules/plugin-changes.md` の一覧に行を足す。
+方針を足すときは、次の形で 1 方針 1 ファイルを作り、上の一覧と `.claude/rules/plugin-policies.md` の一覧に行を足す。
 
 ```markdown
 # P<番号> <方針>

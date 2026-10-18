@@ -8,9 +8,7 @@
 #   マージ先はブランチ戦略（develop → stg → main など）で変わり、規約を読める LLM 側でしか決められないため。
 #   省略時は origin/HEAD（リモートの既定ブランチ）から決める。
 #
-# リポジトリごとに構成が違うため、次の 2 つは「規約が使われていれば検査し、無ければスキップ」する。
-#   - docs-type フロントマター（.claude/ 配下の独自メタデータ規約）
-#   - SSOT 一覧テーブルのポインタ存在
+# リポジトリごとに構成が違うため、SSOT 一覧テーブルのポインタ存在は「一覧があれば検査し、無ければスキップ」する。
 # 使っていない規約で FAIL を出さないための措置。
 #
 # リンク検査（変更 md・全走査）は、リポジトリ直下の .docs-sync-link-ignore に当たるファイルを対象から外す。
@@ -99,7 +97,6 @@ mapfile -t ALL_CHANGED < <(git diff --name-only "$MERGE_BASE")
 MD_CHANGED=()      # 変更された md 全部（一覧表示用）
 CODE_CHANGED=()    # 変更された非 md（docs 追従判定の入力）
 DOC_MD=()          # 散文 md（markdown 規約の対象。リンクの対象は除外指定を除いた DOC_MD_LINK）
-META_MD=()         # .claude/rules/*.md・.claude/skills/*/SKILL.md（docs-type の対象）
 for f in "${ALL_CHANGED[@]}"; do
   [[ -z "$f" ]] && continue
   case "$f" in
@@ -110,9 +107,6 @@ for f in "${ALL_CHANGED[@]}"; do
       elif printf '%s\n' "$f" | grep -qE "$DOC_PATTERN"; then
         DOC_MD+=("$f")
       fi
-      case "$f" in
-        .claude/rules/*.md|.claude/skills/*/SKILL.md) META_MD+=("$f") ;;
-      esac
       ;;
     *) CODE_CHANGED+=("$f") ;;
   esac
@@ -120,7 +114,7 @@ done
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-touch "$TMP/links.txt" "$TMP/md.txt" "$TMP/doctype.txt" "$TMP/links_all.txt" "$TMP/ssot.txt"
+touch "$TMP/links.txt" "$TMP/md.txt" "$TMP/links_all.txt" "$TMP/ssot.txt"
 
 # 全走査用: 差分に関係なく全散文 md を列挙する。
 # 既存ファイルの壊れリンク・壊れ SSOT ポインタは差分に現れないため、ここだけはリポジトリ全体を対象にする。
@@ -149,17 +143,6 @@ DOC_LINK_SKIPPED=$(( ${#DOC_MD[@]} - ${#DOC_MD_LINK[@]} ))
 ALL_LINK_SKIPPED=$(( ${#ALL_DOC_MD[@]} - ${#ALL_DOC_MD_LINK[@]} ))
 
 # --- 規約の使用有無を検出 ---------------------------------------------------
-# docs-type: .claude/ 配下のファイルが実際にこのフィールドを使っているかを見る。
-# 1 つも使っていなければ、このリポジトリの規約ではないと判断して検査をスキップする。
-DOCTYPE_IN_USE=0
-while IFS= read -r f; do
-  [[ -z "$f" ]] && continue
-  if head -20 "$f" 2>/dev/null | grep -q '^docs-type:'; then
-    DOCTYPE_IN_USE=1
-    break
-  fi
-done < <(git ls-files | grep -E '^\.claude/(rules/.*\.md|skills/[^/]+/SKILL\.md)$')
-
 # SSOT 一覧テーブル: 「唯一の情報源」列を持つテーブルがあるファイルを探す。
 # 候補は索引になりやすいファイルに限る（本文中の言及を誤検出しないため）。
 SSOT_FILE=""
@@ -200,7 +183,7 @@ echo "変更ファイル総数: ${#ALL_CHANGED[@]}（md: ${#MD_CHANGED[@]} / 非
 
 echo
 echo "## 変更された md"
-echo "リンク・markdown 規約は散文 md（docs 配下・README 等）のみ、docs-type は .claude の rules/SKILL.md のみに適用する。"
+echo "リンク・markdown 規約は散文 md（docs 配下・README 等）のみに適用する。"
 if [[ ${#MD_CHANGED[@]} -gt 0 ]]; then printf -- '- %s\n' "${MD_CHANGED[@]}"; else echo "（なし）"; fi
 
 echo
@@ -237,31 +220,7 @@ for f in "${DOC_MD[@]}"; do
 done
 if [[ -s "$TMP/md.txt" ]]; then cat "$TMP/md.txt"; else echo "PASS"; fi
 
-# 3. docs-type フロントマター（この規約を使っているリポジトリのみ）
-echo
-echo "## docs-type フロントマター"
-if [[ $DOCTYPE_IN_USE -eq 0 ]]; then
-  echo "SKIP: このリポジトリは docs-type 規約を使っていないため検査しない。"
-else
-  VALID_TYPES="people-doc ai-doc people-ai-doc"
-  for f in "${META_MD[@]}"; do
-    [[ -e "$f" ]] || continue
-    first_line=$(head -1 "$f")
-    if [[ "$first_line" != "---" ]]; then
-      echo "FAIL: $f フロントマターなし" >> "$TMP/doctype.txt"
-      continue
-    fi
-    docs_type=$(awk '/^---$/{c++; if(c==2)exit} c==1 && /^docs-type:/{gsub(/^docs-type:[[:space:]]*/,""); gsub(/[[:space:]]*$/,""); print; exit}' "$f")
-    if [[ -z "$docs_type" ]]; then
-      echo "FAIL: $f docs-type フィールドなし" >> "$TMP/doctype.txt"
-    elif ! echo "$VALID_TYPES" | grep -qw "$docs_type"; then
-      echo "FAIL: $f docs-type の値が不正: '$docs_type'（有効値: people-doc / ai-doc / people-ai-doc）" >> "$TMP/doctype.txt"
-    fi
-  done
-  if [[ -s "$TMP/doctype.txt" ]]; then cat "$TMP/doctype.txt"; else echo "PASS"; fi
-fi
-
-# 4. 全 docs リンク切れ（全走査・差分非依存）
+# 3. 全 docs リンク切れ（全走査・差分非依存）
 echo
 echo "## 全 docs リンク切れ（全走査）"
 echo "差分に含まれない既存ファイルの壊れリンクも検出する。対象は全散文 md（${#ALL_DOC_MD_LINK[@]} 件）。"
@@ -271,7 +230,7 @@ fi
 if [[ ${#ALL_DOC_MD_LINK[@]} -gt 0 ]]; then check_links "$TMP/links_all.txt" "${ALL_DOC_MD_LINK[@]}"; fi
 if [[ -s "$TMP/links_all.txt" ]]; then cat "$TMP/links_all.txt"; else echo "PASS"; fi
 
-# 5. SSOT 一覧ポインタ存在（全走査・差分非依存）
+# 4. SSOT 一覧ポインタ存在（全走査・差分非依存）
 echo
 echo "## SSOT 一覧ポインタ存在（全走査）"
 if [[ -z "$SSOT_FILE" ]]; then
@@ -309,7 +268,6 @@ fi
 # --- サマリ -----------------------------------------------------------------
 LINK_FAIL=$(wc -l < "$TMP/links.txt" | tr -d ' ')
 MD_FAIL=$(wc -l < "$TMP/md.txt" | tr -d ' ')
-DOCTYPE_FAIL=$(wc -l < "$TMP/doctype.txt" | tr -d ' ')
 ALLLINK_FAIL=$(wc -l < "$TMP/links_all.txt" | tr -d ' ')
 SSOT_FAIL=$(wc -l < "$TMP/ssot.txt" | tr -d ' ')
 
@@ -317,11 +275,6 @@ echo
 echo "## サマリ"
 echo "リンク切れ FAIL（変更 md）: ${LINK_FAIL:-0}"
 echo "markdown 規約 FAIL: ${MD_FAIL:-0}"
-if [[ $DOCTYPE_IN_USE -eq 0 ]]; then
-  echo "docs-type FAIL: スキップ（規約未使用）"
-else
-  echo "docs-type FAIL: ${DOCTYPE_FAIL:-0}"
-fi
 echo "全 docs リンク切れ FAIL（全走査）: ${ALLLINK_FAIL:-0}"
 if [[ -z "$SSOT_FILE" ]]; then
   echo "SSOT ポインタ FAIL（全走査）: スキップ（SSOT 一覧なし）"
@@ -329,7 +282,7 @@ else
   echo "SSOT ポインタ FAIL（全走査）: ${SSOT_FAIL:-0}"
 fi
 
-TOTAL=$((LINK_FAIL + MD_FAIL + DOCTYPE_FAIL + ALLLINK_FAIL + SSOT_FAIL))
+TOTAL=$((LINK_FAIL + MD_FAIL + ALLLINK_FAIL + SSOT_FAIL))
 if [[ $TOTAL -gt 0 ]]; then
   exit 1
 fi

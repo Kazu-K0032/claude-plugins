@@ -1,20 +1,17 @@
----
-docs-type: people-ai-doc
----
-
 # ブランチ名に関するルール
 
-このリポジトリでは、ブランチ名を `issues/<Issue番号>-<説明>` にする。どの Issue の作業かを、名前から読み取れるようにするため。Issue 番号を受け取るスキル（`/aidd:pr-create` など）を使うときも、番号をブランチ名から取れる。
+このリポジトリでは、Issue の作業ブランチの名前を `issues/<Issue番号>-<説明>` にし、リリース済みの版の急ぎの修正は `hotfix/<Issue番号>-<説明>` にする。どの Issue の作業かを名前から読み取れるようにし、Issue 番号を受け取るスキル（`/aidd:pr-create` など）を使うときも、番号をブランチ名から取れるようにするため。
 
 ## ブランチを作る場合
 
-- 名前は `issues/<Issue番号>-<説明>` にする（例：`issues/5-argument-hint`）
+- 名前は `issues/<Issue番号>-<説明>` にする（例：`issues/5-argument-hint`）。急ぎの修正だけは `hotfix/<Issue番号>-<説明>` にする
 - 説明には、Issue の要点を英語 2〜4 語で書く。小文字にし、語の間は `-` でつなぐ
 - `gh issue develop` で作るときも、`--name` でこの名前を渡す。渡さないと、GitHub が決めた名前になるため
 - Issue 番号が分からないときは、利用者に聞く。番号を推測で入れない
 - 対応する Issue が無いときは、Issue を作るかを利用者に聞く
+- `release/` のブランチの名前と、`hotfix/` の作成元・マージ先は、`CONTRIBUTING.md` などのブランチの決まりに従う
 
 ## Issue 番号が要る場合
 
-- スキルの引数やコミットの `Ref:` に今の作業の Issue 番号が要るときは、ブランチ名の `issues/` の後ろの番号を使う（例：`issues/5-argument-hint` なら 5）
-- ブランチ名がこの形でないときは、利用者に聞く
+- スキルの引数やコミットの `Ref:` に今の作業の Issue 番号が要るときは、ブランチ名の `issues/` か `hotfix/` の後ろの番号を使う（例：`issues/5-argument-hint` なら 5）
+- ブランチ名がこの形でないとき（`release/` など）は、利用者に聞く

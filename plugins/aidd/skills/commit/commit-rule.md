@@ -2,6 +2,18 @@
 
 Conventional Commits の形式に従い、日本語でコミットメッセージを記述する。
 
+## 目次
+
+- 基本形式
+- commitlint の制約（必ず守る）
+- subject（件名）のルール
+- body（本文）のルール
+- footer（フッター）のルール
+- CI の失敗を直すコミット
+- コミットタイプと例（feat・fix・docs・refactor・test・chore・perf）
+- 禁止事項
+- 適用範囲外
+
 ## 基本形式
 
 ```bash

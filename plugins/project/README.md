@@ -32,26 +32,35 @@ project/
 ├── scripts/
 │   └── install.sh          # 全 Skill 共通のインストーラ（--skill <Skill 名> でコピー元を切り替える）
 ├── references/
-│   └── markdown.md         # markdownlint 準拠の書式（aidd と同じ内容のコピー）
+│   ├── markdown.md         # markdownlint 準拠の書式（aidd と同じ内容のコピー）
+│   ├── install-flow.md     # 全 Skill 共通のコピーの流れ（NEW / SAME / DIFF・--only・衝突の片付け・テンプレートのリンク）
+│   ├── init-repo-first.md  # 技術スタック別の Skill が、先に init-repo を入れるかを聞く手順
+│   └── lint-hook-shapes.md # wordpress・terraform が、Lint のフックの形を見分けて足す手順
 └── skills/                 # 1 ディレクトリ 1 Skill
     ├── init-repo/
     │   ├── SKILL.md
+    │   ├── *.md            # SKILL.md が手順の中で読む参照ファイル（収録物と要否・マージ方針など）
     │   ├── README.md       # 収録物の一覧・除外したもの
     │   └── files/          # 導入先リポジトリのルートへ置く一式
     ├── gas/
     │   ├── SKILL.md
+    │   ├── *.md
     │   ├── README.md
     │   └── files/
     ├── wordpress/
     │   ├── SKILL.md
+    │   ├── *.md
     │   ├── README.md
     │   ├── adr/            # 利用先の ADR の置き場所へ書く ADR の元
     │   └── files/
     └── terraform/
         ├── SKILL.md
+        ├── *.md
         ├── README.md
         └── files/
 ```
+
+`SKILL.md` には手順の本筋だけを書き、細部（判定の表・マージ方針・フックに足す定義・導入後にやること）は同じフォルダの参照ファイルか `references/` に分ける。`SKILL.md` の「参照ファイル」の表から 1 段で指し、いつ読むかを書く（[P9](../../docs/policies/p09-readable-ai-docs.md)）。
 
 ## 設計上の決めごと
 
@@ -71,7 +80,7 @@ Claude Code の `.claude/rules/`（対象ファイルを開いた時に自動適
 
 テンプレートを持つ Skill は、`skills/<Skill 名>/files/` にコピー元を置き、`scripts/install.sh --skill <Skill 名>` で導入する。状態判定（NEW / SAME / DIFF）と「既存ファイルは `--only` の明示指定なしに上書きしない」動き（[P1](../../docs/policies/p01-operation-boundary.md)）を、全 Skill で揃えるため。
 
-技術スタック別の Skill を足すときは、`skills/<Skill 名>/` に `SKILL.md`・`README.md`（`files/...` の収録物表）・`files/` を置く。
+技術スタック別の Skill を足すときは、`skills/<Skill 名>/` に `SKILL.md`・`README.md`（`files/...` の収録物表）・`files/` を置く。コピーや衝突の片付けなど、4 つの Skill で重なる手順は `references/`（`install-flow.md`・`init-repo-first.md`・`lint-hook-shapes.md`）を使う。
 
 ### プラグインをまたぐファイルはコピーで持つ
 

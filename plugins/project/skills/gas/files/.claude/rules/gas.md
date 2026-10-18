@@ -3,14 +3,15 @@ paths:
   - "src/**/*.js"
   - "src/**/*.html"
   - "src/appsscript.json"
-docs-type: people-ai-doc
 ---
 
-# Google Apps Script（GAS）の実装ルール
+# Google Apps Script（GAS）の実装に関するルール
 
-`.clasp.json` の `rootDir` 配下（テンプレートでは `src/`）を clasp で Apps Script のプロジェクトへ push する構成を前提にする。コードは JavaScript（V8 ランタイム）で書く。
+`.clasp.json` の `rootDir` 配下（テンプレートでは `src/`）を clasp で push する GAS のコードの、ファイルの書き分け・関数の命名・GAS 特有の注意点を決める。コードは JavaScript（V8 ランタイム）で書く。全ファイルが 1 つのグローバル空間を共有し、名前で外から呼ばれる関数も多いため、置き場所と名前をそろえる。
 
-## ファイルの書き分け
+実行時間とトリガーの決まりは `.claude/rules/gas-runtime.md` にある。
+
+## コードを置く場合
 
 置き場所は「そのコードを使う範囲」で決める。1 つの機能のコードは 1 つのファイルにまとめ、共通のファイルには複数の機能が使うものだけを置く。機能を足すたびに共通のファイルが伸び、1 つの機能のコードが複数のファイルに散らばるのを防ぐため。
 
@@ -22,7 +23,7 @@ docs-type: people-ai-doc
 | 複数の機能が使う外部サービスの操作 | サービスのファイル | メール・チャットへの通知、カレンダーへの登録など |
 | トリガーから呼ばれる入口 | `trigger.js` | `onOpen`・`onEdit`・定期実行の入口・`setupTriggers` |
 
-### 共通のファイル
+共通のファイルには、次のものだけを置く。
 
 | ファイル | 置くもの | 置かないもの |
 | --- | --- | --- |
@@ -31,18 +32,18 @@ docs-type: people-ai-doc
 | `trigger.js` | トリガーの登録・削除、トリガーから呼ばれる入口関数 | 処理の本体（入口は機能ファイルの関数を呼ぶ 1〜3 行だけにする） |
 | `main.js` | 中心となる業務フローの入口（処理の流れだけ） | 細かい処理 |
 
-- `trigger.js` は「いつ何が動くか」の一覧として読めるようにする。入口の名前（トリガーに登録した名前）は `trigger.js` 側に置き、機能ファイル側の本体は入口と同じ名前の末尾に `_` を付けた名前にする（「入口と本体の名前」を参照）
+- `trigger.js` は「いつ何が動くか」の一覧として読めるようにする。入口の名前（トリガーに登録した名前）は `trigger.js` 側に置き、機能ファイル側の本体は入口と同じ名前の末尾に `_` を付けた名前にする（下の「入口と本体の名前」）
 - `main.js` は、プロジェクトに中心となる業務フローが 1 つある場合だけ使う。独立した機能が並ぶプロジェクトでは使わない
 
-### ファイルを増やす・分けるとき
+## ファイルを増やす・分ける場合
 
-- 機能を足すときは、機能ファイルを 1 つ作り、トリガーから動かすなら入口を `trigger.js` に足す。インストール型トリガーで動かす場合は、`TRIGGERS` にも項目を足して `setupTriggers` を実行し直す（「トリガーは登録用の関数から作る」を参照）。毎日決まった時刻以外（編集時など）は、項目に種類を表すキーを足し、`setupTriggers` を種類ごとに作り分けるよう直す。ファイル名は機能を表す小文字の英単語をハイフンでつなぐ
+- 機能を足すときは、機能ファイルを 1 つ作り、トリガーから動かすなら入口を `trigger.js` に足す。インストール型トリガーで動かす場合は、`TRIGGERS` にも項目を足して `setupTriggers` を実行し直す（`gas-runtime.md` の「トリガーを作る・変える場合」）。毎日決まった時刻以外（編集時など）は、項目に種類を表すキーを足し、`setupTriggers` を種類ごとに作り分けるよう直す。ファイル名は機能を表す小文字の英単語をハイフンでつなぐ
 - 1 つの機能だけで使っていた定数・関数を別の機能でも使うようになったら、共通のファイル（`constants.js`・`utils.js`・サービスのファイル）へ移す
 - 機能ファイルが大きくなったら（目安 300 行）、機能の中で分ける
 - 機能ファイルが多くなったら（目安 10 個）、`rootDir` の下に機能の種類ごとのフォルダを作って分ける。clasp はサブフォルダも push し、エディタ上ではフォルダ名を含んだファイル名で表示される
 - 全ファイルが同じグローバル空間を共有するため、機能ファイルの関数・定数の名前には機能名を入れる
 
-## 関数の命名
+## 関数に名前を付ける場合
 
 外から呼ぶ関数かどうかを、名前の末尾の `_` で区別する。
 
@@ -55,11 +56,9 @@ docs-type: people-ai-doc
 | HTML（`google.script.run`）から呼ぶ関数 | — | `_` を付けない | 機能ファイル |
 | 上記以外（内部の処理） | `formatDate_`・`getScriptProperty_` | `_` を付ける | 使う範囲に応じたファイル |
 
-トリガー・カスタムメニュー・`google.script.run` から呼ぶ関数は、トップレベルの関数宣言（グローバル関数）にする。オブジェクトのメソッドや名前空間の中に置くと、名前で呼び出せない。
-
-末尾が `_` の関数は private として扱われ、`google.script.run` から呼べず、名前もクライアントへ送られない。Ref: [HTML Service: Communicate with Server Functions](https://developers.google.com/apps-script/guides/html/communication)
-
-末尾が `_` の関数は、エディタの「実行する関数」のプルダウンにも表示されず、エディタから選んで実行できない。手動で実行したい処理（動作確認・初期化など）は、本体を `_` 付きのままにして、`_` なしの入口（`trigger.js` の入口・初期化用の関数）から呼ぶ。Ref: [Google Apps Script: Hiding Helper Functions](http://googleappsscript.blogspot.com/2010/06/hiding-helper-functions.html)
+- トリガー・カスタムメニュー・`google.script.run` から呼ぶ関数は、トップレベルの関数宣言（グローバル関数）にする。オブジェクトのメソッドや名前空間の中に置くと、名前で呼び出せないため
+- 末尾が `_` の関数は private として扱われ、`google.script.run` から呼べず、名前もクライアントへ送られない。Ref: [HTML Service: Communicate with Server Functions](https://developers.google.com/apps-script/guides/html/communication)
+- 末尾が `_` の関数は、エディタの「実行する関数」のプルダウンにも表示されず、エディタから選んで実行できない。手動で実行したい処理（動作確認・初期化など）は、本体を `_` 付きのままにして、`_` なしの入口（`trigger.js` の入口・初期化用の関数）から呼ぶ。Ref: [Google Apps Script: Hiding Helper Functions](http://googleappsscript.blogspot.com/2010/06/hiding-helper-functions.html)
 
 ### 入口と本体の名前
 
@@ -68,50 +67,20 @@ docs-type: people-ai-doc
 - 手順書・README に関数名を書くときは、入口（`_` なし）の名前を、置いてあるファイル（`trigger.js` など）と一緒に書く。本体の名前を書くと、手動で実行するときにプルダウンで見つからず、どの関数を選べばよいか迷うため
 - 定期実行をやめて手動実行だけにする関数は、`trigger.js` の入口と `TRIGGERS` の項目を消し、機能ファイルの本体から `_` を外して置く。外した後は、いつもと同じアカウントで `setupTriggers` を実行し直し、登録済みのトリガーを消す
 
-## GAS 特有の注意点
-
-### 全ファイルが同じグローバル空間を共有する
+## トップレベルにコードを書く場合
 
 全ファイルは 1 つのグローバル空間で実行される。トップレベルのコードはファイルの読み込み順に依存するため、トップレベルでは定数と関数の定義だけを行い、処理を実行しない。Ref: [V8 runtime overview](https://developers.google.com/apps-script/guides/v8-runtime)
 
-- 同じ名前の関数・定数を別のファイルで定義しない。関数は後から読み込まれた方で上書きされ、`const` は宣言の重複でエラーになる
+- 同じ名前の関数・定数を別のファイルで定義しない。関数は後から読み込まれた方で上書きされ、`const` は宣言の重複でエラーになるため
 - 定数の値に他ファイルの関数の戻り値を使わない。使う必要がある場合は関数の中で取得する
 
-### 秘匿値はスクリプトプロパティに置く
+## 秘匿値を使う場合
 
-API キー・Webhook URL・トークンはコードに書かず、スクリプトプロパティに置く。キー名を `constants.js` の `PROPERTY_KEYS` に定義し、値は `getScriptProperty_` で取得する。値はリポジトリにコミットしない。
+- API キー・Webhook URL・トークンはコードに書かず、スクリプトプロパティに置く。秘匿値の流出を防ぐため
+- キー名を `constants.js` の `PROPERTY_KEYS` に定義し、値は `getScriptProperty_` で取得する。値はリポジトリにコミットしない
 
-### 実行時間の上限を前提に作る
-
-実行時間には、呼び出し元ごとの上限がある。超えると、処理は途中で止まる。Ref: [Simple triggers](https://developers.google.com/apps-script/guides/triggers)・[Quotas for Google Services](https://developers.google.com/apps-script/guides/services/quotas)
-
-| 呼び出し元 | 上限 |
-| --- | --- |
-| シンプルトリガー（`onOpen`・`onEdit`） | 1 回 30 秒 |
-| カスタム関数（セルの数式から呼ぶ関数） | 1 回 30 秒 |
-| 上記以外の実行（インストール型トリガー・カスタムメニュー・`google.script.run` など） | 1 回 6 分 |
-| 時間主導型トリガーの合計 | 1 日 90 分（個人アカウント）・6 時間（Google Workspace） |
-
-- シートの読み書きは `getValues` / `setValues` でまとめて行い、セル・行・列ごとのループで API を呼ばない。書式や結合も、`setBackgrounds`・`setNumberFormats`・`mergeAcross` のように範囲や配列でまとめて呼ぶ
-- 書き込みの合間に読み取り（`getValue`・`getColumnWidth` など）を挟まない。読んだ値や自分で決めた値は変数に控えて使い回す。読み書きを交互に行うと遅い。Ref: [Best Practices](https://developers.google.com/apps-script/guides/support/best-practices)
-- 行数・列数で呼び出しが増える処理は、想定する最大のデータ量で呼び出しの数を見積もる。かかる時間が上限の半分（シンプルトリガーなら 15 秒、それ以外の実行なら 3 分）以内に収まる作りにする
-- 上限を超えうる処理には、締め切りの判定を置く。締め切りは上限の 8 割（シンプルトリガーなら 24 秒、それ以外の実行なら 4 分 48 秒）とし、過ぎたら一部を省いて必ず終える（例：装飾を省き、値の書き込みだけで終える）
-- 開始時刻を控え、終わったら、かかった秒数を `console.log` に残す。時刻は `SpreadsheetApp.flush()` で書き込みを反映してから見る。反映前に見ると、かかった時間を少なく見積もる。Ref: [SpreadsheetApp.flush()](https://developers.google.com/apps-script/reference/spreadsheet/spreadsheet-app#flush())
-- 作り直す処理は、新しい内容を作り終えてから古いものを消す。消してから描き直すと、途中で止まったときに空のシートが残る
-- 6 分を超えうる処理は分割する。処理済みの位置をスクリプトプロパティに保存し、時間主導型トリガーで続きから再開する
-- シンプルトリガーが 30 秒に収まらないときは、まず呼び出しを減らす。インストール型トリガーに変えて 6 分に延ばす場合は、`TRIGGERS` に項目を足して `setupTriggers` を実行し直す（「トリガーは登録用の関数から作る」を参照）。実行し直すまで動かず、登録を忘れても何も起きない。編集時などは、`setupTriggers` が日次のトリガーしか作らないため、項目に種類を表すキーを足し、種類ごとに作り分けるよう直す
-
-### トリガーは登録用の関数から作る
-
-- トリガーは `trigger.js` の `setupTriggers` で登録する。登録するトリガーは `trigger.js` の 1 つの一覧（`TRIGGERS`）にまとめ、`setupTriggers` は実行したアカウントのトリガーをすべて消してから一覧の分だけ作り直す。何度実行しても重複せず、一覧から外したトリガーも消えるため、廃止したトリガーを消すための仕組みを別に持たなくてよい
-- トリガーを足す・やめるときは、`TRIGGERS` と入口の関数を直して push した後、`setupTriggers` を実行し直す
-- `setupTriggers` は毎回同じ Google アカウントで実行する。消えるのは、実行したアカウントがこのプロジェクトで作ったインストール型トリガーだけのため。別のアカウント（ほかの人・同じ人の別のアカウント）で作ったトリガーは残り、一覧から外しても動き続けたり、同じ処理が 2 回動いたりする。シンプルトリガー（`onOpen`・`onEdit`）も消えない。Ref: [Class ScriptApp](https://developers.google.com/apps-script/reference/script/script-app#getProjectTriggers())
-- `setupTriggers` を実行した後は、エディタの「トリガー」画面の件数が `TRIGGERS` の件数と合うかを確かめる。多い分は、オーナーが「他のユーザー」と表示される、別のアカウントのトリガー。要らなければ、作ったアカウントで画面を開いて消す。どのアカウントかは画面に出ない
-- エディタの「トリガー」画面で手作業でトリガーを作らない。同じアカウントで作ったものは `setupTriggers` で消え、別のアカウントで作ったものは残り続ける
-- 処理の中でトリガーを毎回作らない。1 つのスクリプトで 1 ユーザーが持てるトリガーは 20 個まで
-
-## clasp の運用
+## clasp で反映する場合
 
 - push の対象は `.clasp.json` の `rootDir` 配下（`.claspignore` があれば、そこで除外したものを除く）。`rootDir` の外にある `.claude/` やドキュメントは push されない
-- スクリプトエディタで直接編集しない。`clasp push` でエディタ側の内容が上書きされる。エディタで直した場合は、push の前に `clasp pull` で取り込む
+- スクリプトエディタで直接編集しない。`clasp push` でエディタ側の内容が上書きされるため。エディタで直した場合は、push の前に `clasp pull` で取り込む
 - TypeScript は使わない。clasp は TypeScript を変換しないため、使うにはバンドラーの導入が要る
