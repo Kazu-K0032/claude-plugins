@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | `rule-form` | `allowed-tools` に `Write()` / `NotebookEdit()` / `MultiEdit()` / `Glob()` のパス規則がある | 書き込みは `Edit(<パス>)`、検索は `Read(<パス>)` に置き換える。これらのパス規則は権限判定に使われない |
 | `deny-conflict` | スキルが `allowed-tools` で事前許可するコマンドが、テンプレートの deny の Bash 規則に一致する（`PowerShell()`・`Edit()` などの規則は照合しない） | スキル側のコマンドを読み取り系に変えるか、deny の見直しをユーザーに確認する（**deny を無断で緩めない**） |
+| `deny-powershell` | `settings.json`（このリポジトリとテンプレート）の deny に、`Bash(git ...)`・`Bash(gh ...)` の組になる `PowerShell(...)` が無い、または削除の別名（`Remove-Item`・`rm`・`rmdir`・`del`・`rd`・`ri`・`erase`）の `PowerShell(<名前> *)` が無い。`Bash(...)` の規則は PowerShell のツールには効かないため | 組を足す（P1） |
 | `plugin-root-ref` | `${CLAUDE_PLUGIN_ROOT}/...` の参照先が無い | パスの誤り・ファイルの移動漏れを直す |
 | `catalog` | スキル名・README の一覧・`marketplace.json` の source がずれている、または `plugins/` 配下のプラグインが `marketplace.json` に登録されていない | 実体に合わせて README か名前を直す。未登録なら `marketplace.json` の `plugins` にエントリを追加する |
 | `template-inventory` | テンプレートを持つスキル（`skills/<スキル名>/files/`）の README にある `files/...` が存在しない、または README が無い | 収録物表か実ファイルのどちらが正かを判断して揃える |
@@ -20,6 +21,7 @@
 WARN は 1 件ずつ見て、直すか残すかを決める。
 
 - `deny-conflict`（本文）— スキルが手順として読む md の本文にあるコマンドが、deny に一致する。見るのは、各スキルのフォルダの md（`SKILL.md` とサブフォルダの md も含む。`README.md` と `files/` は除く）と `plugins/<プラグイン>/references/*.md`。手順の細部を参照ファイルへ移しても、見落とさないため。そのコマンドを **Claude に実行させる**のか、**人が手で実行する例示**なのかで判断する。実行させるなら deny との整合が要る。例示なら残してよい
+- `deny-sync` — 2 つの `settings.json`（このリポジトリとテンプレート）の deny が食い違う、または `plugins/aidd/references/harness-principles.md` の「土台の仕組み」の例に当たる deny がテンプレートに無い。食い違いは、もう片方にも入れるか、意図した違いかを確かめる。物差しの例に当たる deny が無いときは、物差しの例を直すか、deny を戻す
 - `output-path` — 書き込み許可のパスが `tmp/` の外にある。出力先を固定できているか、白紙委任になっていないかを確認する
 - `template-inventory` — テンプレートに増やしたファイルが、そのスキルの README の収録物表に載っていない。表に行を足す
 - `duplicated-files` — 重複ファイルの組の内容が違う。片方の変更をもう片方にも入れるか、意図的な差分なら `duplicated-files.md` の表の「意図的な差分」に理由を書く。理由を書いた組は frontmatter を除いて比べるため、本文の差分は WARN のまま残る

@@ -73,6 +73,7 @@ WARN を 1 件ずつ見て、直すか残すかを決める。WARN は、機械�
 - プラグインを追加・改名した場合、起票の対象として名前を挙げている箇所（`plugins/config/hooks/plugin-feedback.md` と、`plugins/config/skills/plugin-feedback/SKILL.md` の `description`）も直したか
 - 変更が `docs/policies/` の方針に反していないか。新しく決めた方針・認めた例外を、方針のファイルと一覧（`docs/policies/README.md`・`.claude/rules/plugin-policies.md`）に書いたか
 - スキル・フックが利用先で触れるもの（`tmp/` 以外への書き込み・設定ファイル・`gh` / `git` の書き込み系・環境変数）か、`init-repo` の権限・フック・`.gitignore` を変えた場合、`docs/policies/permissions.md` を直し、ほかのプラグインの操作を止めていないかを確かめたか（機械チェックは `allowed-tools` と本文のコマンドだけを見る）
+  - deny・フックの線引きを変えた場合は、配る規約 `plugins/project/skills/init-repo/files/.claude/rules/permissions.md` と、監査の物差し `plugins/aidd/references/harness-principles.md`（「土台の仕組み」）も直したか（機械チェックの `deny-sync` は、物差しの例に当たる deny がテンプレートに残っているかだけを見る）
 
 ### 6. マニフェストを検証し、テストを動かす
 

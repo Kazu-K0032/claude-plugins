@@ -12,7 +12,7 @@
 
 ## 権限設定や、スキルが利用先で触れるものを変更する場合
 
-次のどちらかを変えたら、[docs/policies/permissions.md](../../docs/policies/permissions.md) の対応表を直す。deny・フックの線引きを変えたら、`init-repo` が配る `files/.claude/rules/permissions.md` と、監査の物差しの `plugins/aidd/references/harness-principles.md`（「土台の仕組み」）も直す。
+次のどちらかを変えたら、[docs/policies/permissions.md](../../docs/policies/permissions.md) の対応表を直す。deny・フックの線引きを変えたら、`init-repo` が配る `files/.claude/rules/permissions.md` と、監査の物差しの `plugins/aidd/references/harness-principles.md`（「土台の仕組み」）も直す。直したかは、`/marketplace-update` の手順 5 で確かめる。`check.py` の `deny-sync` が見るのは、2 つの `settings.json` の deny の食い違いと、物差しの例に当たる deny がテンプレートに残っているかだけ。
 
 - `init-repo` の `settings.json`（deny）・フック・`.gitignore`
 - スキルが利用先で触れるもの（`tmp/` 以外への書き込み・設定ファイル・`gh` や `git` での書き込み・環境変数）
