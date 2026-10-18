@@ -1,7 +1,7 @@
 ---
 name: pr-create
 description: 現在のブランチのコミット内容とIssue情報から、リポジトリの PR テンプレートに沿ったPR本文の下書きと、レビュワー向けの検証コメントを tmp 配下に生成する。ユーザーが PR 本文作成を求めた時に使用する
-argument-hint: "[Issue番号（任意。省略時はブランチ名の issues/・hotfix/ の後ろの番号。取れなければ質問する）]"
+argument-hint: "[Issue番号（任意。省略時はブランチ名の issues/・hotfix/ の後ろの番号。取れなければ質問する。複数なら空白で区切る）]"
 disable-model-invocation: true
 allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
@@ -27,7 +27,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show
 
 ## 想定している引数
 
-`$ARGUMENTS` は Issue 番号。空なら、ブランチ名から取る。`git branch --show-current` のブランチ名が `issues/<番号>-` か `hotfix/<番号>-` で始まれば、その `<番号>` を使う（例：`issues/36-polish-files` なら 36。`/aidd:issue-start` が作るブランチの形）。この形でなければ質問する。番号は `gh issue view` で実在を確かめる。ブランチ名から取ったときは、報告でそのことを示す。
+`$ARGUMENTS` は Issue 番号。閉じる Issue が複数あれば、空白で区切って全て渡す（例：`108 111`）。空なら、ブランチ名から取る。`git branch --show-current` のブランチ名が `issues/<番号>-` か `hotfix/<番号>-` で始まれば、その `<番号>` を使う（例：`issues/36-polish-files` なら 36。`/aidd:issue-start` が作るブランチの形）。この形でなければ質問する。番号は、番号ごとに `gh issue view` で実在を確かめる。ブランチ名から取ったときは、報告でそのことを示す。
 
 ## 出力先
 
@@ -48,7 +48,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show
 
 ### 3. Issue を読む
 
-`gh issue view <Issue番号>` で、Issue のタイトル・本文・タスクを取る。`<Issue番号>` は、`$ARGUMENTS` か、ブランチ名から取った番号。
+`gh issue view <Issue番号>` で、Issue のタイトル・本文・タスクを取る。`<Issue番号>` は、`$ARGUMENTS` か、ブランチ名から取った番号。番号が複数あれば、番号ごとに取る。
 
 ### 4. PR の番号とマージ先を取る
 
@@ -89,7 +89,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" --item-only tmp/<ブラン�
 
 ### 12. 報告する
 
-2 つの出力パスと、数えた結果（数えられなかったときは、その理由）を伝える。パスの前後は、半角スペースか改行で区切る（規約は `aidd` の `README.md` の「出力先のパスは、前後を区切って伝える」）。別に、PR タイトルの案も伝える。タイトルの案は Issue のタイトルと同じ文字列にする。`/aidd:issue-pr-sync` の基準とそろえるため。
+2 つの出力パスと、数えた結果（数えられなかったときは、その理由）を伝える。パスの前後は、半角スペースか改行で区切る（規約は `aidd` の `README.md` の「出力先のパスは、前後を区切って伝える」）。別に、PR タイトルの案も伝える。Issue が 1 つなら、タイトルの案は Issue のタイトルと同じ文字列にする。`/aidd:issue-pr-sync` の基準とそろえるため。Issue が複数なら、全ての Issue の中身が伝わる案にし、PR を作るときに人が決めるよう添える。Release の説明は PR のタイトルの一覧のため、1 つの Issue のタイトルではほかの変更が載らない。
 
 ## 禁止事項
 
