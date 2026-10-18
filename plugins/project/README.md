@@ -37,19 +37,23 @@ project/
     ├── init-repo/
     │   ├── SKILL.md
     │   ├── README.md       # 収録物の一覧・除外したもの
+    │   ├── *.md            # 細部（scope・existing-files・tooling・after-copy）。SKILL.md の表から読む
     │   └── files/          # 導入先リポジトリのルートへ置く一式
     ├── gas/
     │   ├── SKILL.md
     │   ├── README.md
+    │   ├── *.md            # 細部（existing-code・conflicts・post-install）
     │   └── files/
     ├── wordpress/
     │   ├── SKILL.md
     │   ├── README.md
+    │   ├── *.md            # 細部（install-scope・detection・names・conflicts・hooks・add-adr・post-install）
     │   ├── adr/            # 利用先の ADR の置き場所へ書く ADR の元
     │   └── files/
     └── terraform/
         ├── SKILL.md
         ├── README.md
+        ├── *.md            # 細部（existing-files・settings-and-hooks・post-install）
         └── files/
 ```
 

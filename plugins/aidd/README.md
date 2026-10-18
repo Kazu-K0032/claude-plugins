@@ -44,8 +44,9 @@ aidd/
 │   │   ├── SKILL.md
 │   │   ├── _template.md        # 詳細版の雛形
 │   │   ├── _template-short.md  # 簡易版の雛形（本文 10 行未満の文章を目安）
-│   │   └── _template-mini.md   # 極小の雛形（題と 1〜2 文）
-│   └── ...              # 各 Skill が補助ファイル・scripts/ を持つ
+│   │   ├── _template-mini.md   # 極小の雛形（題と 1〜2 文）
+│   │   └── *.md                # 細部（adr-format・decision-scope・change-existing・review）。SKILL.md の表から読む
+│   └── ...              # 各 Skill が補助ファイル（細部の *.md）・scripts/ を持つ
 ├── agents/              # サブエージェント定義
 │   └── research.md
 ├── workflows/           # 複数エージェントを束ねるスクリプト
@@ -93,7 +94,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `references/` の内容は、元になったプロジェクトの `.claude/rules/` と重複する。**汎用ルールはこのプラグイン側を正**とし、規約を直すときは両方を直す。
 
-`references/markdown.md` は [project](../project/README.md) プラグインにも同じ内容のコピーがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。`references/short-body.md` と `scripts/body_length.js` も、[config](../config/README.md) の `plugin-feedback` に同じコピーがある。
+`references/` や `scripts/` のファイルには、[project](../project/README.md) や [config](../config/README.md) に同じ内容のコピーがあるものがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する。組の一覧は、このリポジトリの [duplicated-files.md](../../.claude/rules/duplicated-files.md) が管理する。
 
 ## 設計上の決めごと
 
@@ -140,11 +141,11 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 どちらも `gh` の書き込み系サブコマンドを `allowed-tools` に載せず、通常の許可プロンプトを通す。`gh issue develop` は一覧の表示（`--list`）とブランチの作成が同じ前方一致になるため、一覧の表示も含めて載せない。
 
-`issue-pr-sync`・`issue-start` の歯止め（承認を取る変更・反映前の本文を `tmp/` に残すこと・書き込む対象を限ることなど）は、各 `SKILL.md` の手順と禁止事項が正典。PR 本文の「AI を使った確認」で、チェックを入れてよいのは実行した本人の `/aidd:issue-pr-sync` の行だけ。確かめたと判断するのは人のため（[V3](../../docs/values/v03-human-judgment.md)）。決まりは `references/ai-check.md` にある。
+`issue-pr-sync`・`issue-start` の歯止め（承認を取る変更・反映前の本文を `tmp/` に残すこと・書き込む対象を限ることなど）は、各 `SKILL.md` の手順・禁止事項と、そこから指す参照ファイル（`issue-pr-sync` の `approval.md`、`issue-start` の `implementation.md` など）が正典。PR 本文の「AI を使った確認」で、チェックを入れてよいのは実行した本人の `/aidd:issue-pr-sync` の行だけ。確かめたと判断するのは人のため（[V3](../../docs/values/v03-human-judgment.md)）。決まりは `references/ai-check.md` にある。
 
 ### `issue-start` の要件の詰め方
 
-決めることを依存関係の木にし、前提が決まった問いだけを回ごとにまとめて聞く。考え方は [mattpocock/skills の grilling](https://github.com/mattpocock/skills/blob/main/docs/productivity/grilling.md) を参考にした。別のプラグインのため呼び出さず、手順に書き込んでいる（[P5](../../docs/policies/p05-standalone-plugin.md)）。
+決めることを依存関係の木にし、前提が決まった問いだけを回ごとにまとめて聞く。考え方は [mattpocock/skills の grilling](https://github.com/mattpocock/skills/blob/main/docs/productivity/grilling.md) を参考にした。別のプラグインのため呼び出さず、手順（`issue-start` の `requirements.md`）に書き込んでいる（[P5](../../docs/policies/p05-standalone-plugin.md)）。
 
 ### ブランチ名の `/` は `-` に置き換える
 
@@ -159,11 +160,11 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### Issue 番号を省いたら、ブランチ名から取る
 
-`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名が `issues/<番号>-` の形のときだけ番号を取る。ほかの形なら、番号を推測せず Issue 無しでレビューする。
+`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` か `hotfix/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名が `issues/<番号>-` か `hotfix/<番号>-` の形のときだけ番号を取る。ほかの形なら、番号を推測せず Issue 無しでレビューする。
 
 ブランチ名の形を変えるときは、次の箇所もそろえて直す。
 
-- `skills/` の `issue-start`・`pr-create`・`issue-pr-sync` の `SKILL.md`
+- `skills/` の `pr-create`・`issue-pr-sync` の `SKILL.md` と、`issue-start` の `branch.md`
 - `workflows/` の `pr-review.js`
 - `project` の `init-repo` が配る `.claude/rules/branch.md`（このリポジトリの `.claude/rules/branch.md` と組）
 

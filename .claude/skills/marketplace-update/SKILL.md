@@ -8,11 +8,22 @@ argument-hint: "[重点的に見たい範囲（任意。省略時はすべての
 
 # マーケットプレイス更新チェック
 
-このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。対象は `plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）と、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）、`SKILL.md` と規約（`.claude/rules/` と配る規約）の本文の長さ、各プラグインの版（`version`）、スキルが同梱する mod（`claude plugin validate`・`claude plugin test`）。
+このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直す。`init-repo` が配るテンプレートは導入先で常時効く deny を持ち、スキルが deny に一致するコマンドを使うと導入先でそのスキルだけ動かなくなるが、両者は別ファイルで、片方だけ直すとずれるため。
 
-## なぜ必要か
+- 外へ書き込むもの：NG・WARN を直すための、このリポジトリのファイル（`plugins/`・`.claude/`・README・`marketplace.json` など）
+- 人がすること：`--base` を使うときの `git fetch origin`、コミットと push、テンプレートの `permissions.deny` を緩める承認
 
-`init-repo` が配るテンプレートは、導入先で**常時効く deny**を持つ。スキル側が deny に一致するコマンドを使うと、導入先でそのスキルだけ動かなくなる。両者は別ファイルのため、片方だけ直すとずれる。
+## 参照ファイル
+
+| ファイル | いつ読むか |
+| --- | --- |
+| `categories.md` | 手順 3 で NG を直すとき、手順 4 で WARN を判断するとき。検査の対象の一覧も、ここにある |
+
+## 想定している引数
+
+重点的に見たい範囲（任意）を受け取る。省略時は、すべてのチェックを同じ重さで見る。
+
+$ARGUMENTS
 
 ## 手順
 
@@ -22,6 +33,8 @@ argument-hint: "[重点的に見たい範囲（任意。省略時はすべての
 git status --short
 git diff
 ```
+
+`git diff` は `--output` で書き込めるため、`allowed-tools` に入れていない（P1 の「確認なしで任せる操作」）。
 
 ### 2. 機械チェックを実行する
 
@@ -39,27 +52,12 @@ python .claude/skills/marketplace-update/scripts/check.py --base origin/main
 
 ### 3. NG を直す
 
-| カテゴリ | 内容 | 直し方 |
-| --- | --- | --- |
-| `rule-form` | `allowed-tools` に `Write()` / `NotebookEdit()` / `MultiEdit()` / `Glob()` のパス規則がある | 書き込みは `Edit(<パス>)`、検索は `Read(<パス>)` に置き換える。これらのパス規則は権限判定に使われない |
-| `deny-conflict` | スキルが事前許可するコマンドが、テンプレートの deny の Bash 規則に一致する（`PowerShell()`・`Edit()` などの規則は照合しない） | スキル側のコマンドを読み取り系に変えるか、deny の見直しをユーザーに確認する（**deny を無断で緩めない**） |
-| `allowed-prefix` | `allowed-tools` に、書き込み・実行のオプションを持つコマンド（`git diff`・`git log`・`git show`・`git grep`・`gh api`）の前方一致か、`Bash(git branch:*)` がある | 外して許可プロンプトを通すか、`Bash(git branch --show-current)` のように完全一致で書く（P1 の「確認なしで任せる操作」） |
-| `plugin-root-ref` | `${CLAUDE_PLUGIN_ROOT}/...` の参照先が無い | パスの誤り・ファイルの移動漏れを直す |
-| `catalog` | スキル名・README の一覧・`marketplace.json` の source がずれている、または `plugins/` 配下のプラグインが `marketplace.json` に登録されていない | 実体に合わせて README か名前を直す。未登録なら `marketplace.json` の `plugins` にエントリを追加する |
-| `template-inventory` | テンプレートを持つスキル（`skills/<スキル名>/files/`）の README にある `files/...` が存在しない、または README が無い | 収録物表か実ファイルのどちらが正かを判断して揃える |
-| `duplicated-files` | 重複ファイルの組の片方が存在しない、または `duplicated-files.md` の `paths` に載っていない | 表と `paths` を実際のパスに合わせる |
-| `argument-hint` | 入力ヒントの引数が `[]` か `<>` で囲まれていない、`[]` に「（任意。省略時は」が無い、または `<>` に「任意」「省略」がある | `.claude/rules/argument-hint.md` の書き方に直す。省略時の動きは本文を読んで確かめてから書く |
-| `version` | `plugin.json` の版が `X.Y.Z` でない・プラグインの間でそろっていない、`marketplace.json` に版がある。`--base` を付けたときは、`plugins/` を変えたのに版が上がっていない | 3 つの `plugin.json` を同じ版にし、`marketplace.json` から消す。版を上げるのは、リリースの前に版を上げる PR と hotfix だけ（`docs/release.md`） |
+NG は、`categories.md` の「NG を直す」の表で、カテゴリごとの直し方を確かめて直す。
 
 ### 4. WARN を判断する
 
-WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直すか残すかを決める。
+WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直すか残すかを決める。カテゴリごとの判断は、`categories.md` の「WARN を判断する」に従う。`doc-length` だけは、ここに書く。
 
-- `deny-conflict`（本文）— そのコマンドを **Claude に実行させる**のか、**人が手で実行する例示**なのかで判断する。実行させるなら deny との整合が要る。例示なら残してよい
-- `output-path` — 書き込み許可のパスが `tmp/` の外にある。出力先を固定できているか、白紙委任になっていないかを確認する
-- `template-inventory` — テンプレートに増やしたファイルが、そのスキルの README の収録物表に載っていない。表に行を足す
-- `duplicated-files` — 重複ファイルの組の内容が違う。片方の変更をもう片方にも入れるか、意図的な差分なら `duplicated-files.md` の表の「意図的な差分」に理由を書く。理由を書いた組は frontmatter を除いて比べるため、本文の差分は WARN のまま残る
-- `argument-hint` — 本文で `$ARGUMENTS` を使うのに入力ヒントが無い。引数を受け取るならヒントを書き、受け取らないなら `$ARGUMENTS` を消して本文に「引数は受け取らない」と書く
 - `doc-length` — `SKILL.md` か規約の本文が 5,000 文字を超える。今の変更で超えたなら、細部を別ファイルに分ける（`.claude/rules/ai-docs.md`）。前から超えているものは、縮めるかを利用者に聞き、縮めるならほかの変更と分ける
 
 ### 5. 機械チェックが見ない箇所を確認する
@@ -70,8 +68,9 @@ WARN は機械的に白黒を付けられないもの。1 件ずつ見て、直�
 - テンプレート（`files/`）に、導入先で書き換える箇所として `TODO:` が残っているか（プロジェクト固有の値を埋め込んでいないか）
 - 入力ヒントに書いた「省略時は〜」が、本文の実際の動きと合っているか（機械チェックは書き方だけを見る）
 - プラグインを追加・改名した場合、起票の対象として名前を挙げている箇所（`plugins/config/hooks/plugin-feedback.md` と、`plugins/config/skills/plugin-feedback/SKILL.md` の `description`）も直したか
-- 変更が `docs/policies/` の方針に反していないか。新しく決めた方針・認めた例外を、方針のファイルと一覧（`docs/policies/README.md`・`.claude/rules/plugin-changes.md`）に書いたか
+- 変更が `docs/policies/` の方針に反していないか。新しく決めた方針・認めた例外を、方針のファイルと一覧（`docs/policies/README.md`・`.claude/rules/policy-lookup.md`）に書いたか
 - スキル・フックが利用先で触れるもの（`tmp/` 以外への書き込み・設定ファイル・`gh` / `git` の書き込み系・環境変数）か、`init-repo` の権限・フック・`.gitignore` を変えた場合、`docs/policies/permissions.md` を直し、ほかのプラグインの操作を止めていないかを確かめたか（機械チェックは `allowed-tools` と本文のコマンドだけを見る）
+  - deny・フックの線引きを変えた場合は、配る規約 `plugins/project/skills/init-repo/files/.claude/rules/permissions.md` と、監査の物差し `plugins/aidd/references/harness-principles.md`（「土台の仕組み」）も直したか（機械チェックの `deny-sync` は、物差しの例に当たる deny がテンプレートに残っているかだけを見る）
 
 ### 6. マニフェストを検証し、テストを動かす
 
@@ -102,8 +101,6 @@ claude plugin test plugins/config/skills/mod-output-customize/files/mod-output-c
 - ❌ このスキルからコミット・push を実行する
 - ❌ NG を「実害が無さそう」で見送る。直すか、直さない理由をユーザーに説明して判断を仰ぐ
 
-## 参考
+## 保守
 
 権限規則の仕様（`Edit()` と `Read()` だけが判定に使われること、deny → ask → allow の評価順、allow で deny の例外を作れないこと）は [Configure permissions](https://code.claude.com/docs/ja/permissions) が正典。
-
-$ARGUMENTS

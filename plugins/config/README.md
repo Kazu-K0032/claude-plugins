@@ -61,21 +61,29 @@ config/
 └── skills/
     ├── setup-global/
     │   ├── SKILL.md
+    │   ├── statusline-display.md  # ステータスラインの各項目の意味と、動作確認のコマンド
     │   └── scripts/
     │       └── statusline.js  # ステータスラインの本体（~/.claude/statusline/ へコピーして使う）
     ├── conflicts/
     │   ├── SKILL.md
+    │   ├── background.md      # 設定のスコープの上書きの仕組みと、`/doctor` との違い
     │   └── scripts/
     │       └── conflicts.js   # 衝突・重複・書き方の誤りを JSON で出力する点検スクリプト
     ├── plugin-feedback/
     │   ├── SKILL.md
     │   ├── references/
-    │   │   ├── issue-format.md  # Issue・コメントの本文の型と、公開前の点検項目
-    │   │   └── short-body.md    # 本文の長さの上限と数え方（aidd と同じ写し）
+    │   │   ├── github-write.md      # `gh` の確認・承認の設定・承認の取り方・作成のコマンド・書き込めない場合
+    │   │   ├── triage.md            # 起票する件の種類・対象外・原因の分け方
+    │   │   ├── research.md          # 既存の Issue の探し方と状況の伝え方、方針との照らし方、起票の形
+    │   │   ├── check-and-report.md  # 利用先の特定・本文を数える手順・報告の項目
+    │   │   ├── issue-format.md      # Issue・コメントの本文の型と、公開前の点検項目
+    │   │   └── short-body.md        # 本文の長さの上限と数え方（aidd と同じ写し）
     │   └── scripts/
-    │       └── body_length.js   # 本文の文字数を数える（aidd と同じ写し）
+    │       └── body_length.js       # 本文の文字数を数える（aidd と同じ写し）
     └── mod-output-customize/
         ├── SKILL.md
+        ├── mod-features.md      # mod のボタンと表示の決まり、報告に書く項目
+        ├── uninstall.md         # mod を外す手順
         ├── README.md            # 使い方と収録物
         └── files/
             └── mod-output-customize/  # mod の本体（~/.claude/mods/ へコピーして使う）
@@ -98,10 +106,10 @@ config/
   - スキルを直接呼んだことは、起票への同意とはみなすが、下書きの承認とはみなさない。公開リポジトリに載る本文（公開前に言い換えた後のもの）を、ユーザーはまだ見ていないため
   - 承認を省く切り替えは、提案を止める `CLAUDE_PLUGIN_FEEDBACK` とは別の変数にする。同じ変数に値を足すと、「提案は止める」と「承認は省く」を同時に指定できないため
   - 初めての実行で `settings.local.json` に既定値（`off`）を書き込み、実行のたびに今の値と変え方を伝える。切り替えがあることに、README を読まなくても気づけるようにするため。書き込むときは通常の許可プロンプトを通し、ほかのキーは変えない
-  - この書き込みは、[P1](../../docs/policies/p01-operation-boundary.md)（`settings.local.json` への書き込みの条件）に沿う。切り替えをプロジェクトごとの見える場所に置き、その場で変えられるようにするため
+  - この書き込みは、[P1](../../docs/policies/p01-operation-boundary.md)（`settings.local.json` への書き込みの条件）に沿う
   - ほかの場所で既に設定していれば、`settings.local.json` には書き込まない。`settings.local.json` はユーザー全体の設定より優先されるため、書き込むと `~/.claude/settings.json` の設定を上書きしてしまう
   - 値は、環境変数より先に `settings.local.json` から読む。環境変数はセッションの開始時に決まるため、途中でファイルを書き換えた値を拾えない
 - **下書きの前に、同じ件の Issue の状況と方針とのずれを伝える**。作者が Issue を読んでから、対応待ちの件・対応しないと決めた件・方針とずれる件だと気づく手間を省くため
-  - 方針（`docs/values/`・`docs/policies/`）は、`gh api` で GitHub から読む。`docs/` はプラグインと一緒に配られないため（[P5](../../docs/policies/p05-standalone-plugin.md) の例外）。`gh api` は書き込みもできるため、`allowed-tools` には入れない
+  - 方針（`docs/values/`・`docs/policies/`）は、`gh api` で GitHub から読む（[P5](../../docs/policies/p05-standalone-plugin.md) の例外）。`gh api` は書き込みもできるため、`allowed-tools` には入れない
   - ずれの判断は Claude の判断のため、起票は止めない。ずれを伝え、承知で求める理由をユーザーに書いてもらう。承認を省く設定でも、この問いは省かない
 - **起票先は `--repo Kazu-K0032/claude-plugins` に固定する**。既存の Issue の本文・ラベルは変えない。公開リポジトリのため、利用先のリポジトリ名・トークン・業務のファイルの中身は下書きから消す

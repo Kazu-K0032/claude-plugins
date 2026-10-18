@@ -4,6 +4,14 @@
 
 `files/` の中身がそのまま導入先リポジトリのルートに置かれる。
 
+## 目次
+
+- [使い方](#使い方)
+- [収録物](#収録物)
+- [前提と制約](#前提と制約)
+- [除外したもの](#除外したもの)
+- [なぜ Skill として配るのか](#なぜ-skill-として配るのか)
+
 ## 使い方
 
 導入先のリポジトリのルートで Claude Code を開き、次を実行する。
@@ -21,7 +29,7 @@
 | `既存は置き換えない` | 既存ファイルに触らず、パスが違っても同じ役割のものがあればそのテンプレートは入れない |
 | `docs/spec.md の要件を満たす最小限` / `<URL> の要求を満たすものは最低限` | 参照先の要件を読み、満たすのに要るテンプレートだけを入れる |
 
-判定の基準（各テンプレートの役割・入れる条件・依存関係）は [SKILL.md](SKILL.md) の「引数の解釈」にある。既存ファイルは承認なしに上書きされない。手順の詳細は [SKILL.md](SKILL.md) を参照。
+判定の基準（各テンプレートの役割・入れる条件・依存関係）は [scope.md](scope.md) にある。既存ファイルは承認なしに上書きされない。手順の詳細は [SKILL.md](SKILL.md) を参照。
 
 Claude を介さず手で入れる場合は、スクリプトを直接叩いてもよい（リポジトリのルートで実行する）。
 
@@ -48,7 +56,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/rules/branch.md` | ブランチ名を `issues/<Issue番号>-<説明>` にし、スキルの引数などに要る Issue 番号をブランチ名から取る規約 | 名前の形が違うリポジトリでは書き換える |
 | `files/.claude/rules/tmp-output.md` | `tmp/<ブランチ名>/` の置き方の規約。スキルの出力と、Claude の作業ファイル（`work/<目的>/`）を分け、Python は `-B` で実行する | そのまま使える |
 | `files/.claude/rules/ai-docs.md` | `SKILL.md`・規約・`CLAUDE.md` など AI が読む文書を、人も読み切れる形で書く規約（`SKILL.md`・規約の骨組み・本筋と細部を分ける・本文 5,000 文字以内） | そのまま使える |
-| `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / リファクタ / リリース / AIDD 振り返り）。先頭に本文の長さの上限を示す | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[SKILL.md](SKILL.md) の手順 6） |
+| `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / リファクタ / リリース / AIDD 振り返り）。先頭に本文の長さの上限を示す | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[after-copy.md](after-copy.md) の「導入後にやること」） |
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト）。本文の長さの上限をコメントで示す | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
@@ -80,7 +88,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
 - `.gitignore`・`.vscode/`・`cspell.json`・`.claude/settings.json`・`lefthook.yml` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
-- `pr-checks.yml` のスペルチェックは、`npx` で版を固定した cspell を取得して動かす。版は `files/.github/workflows/pr-checks.yml` と、Skill の候補の洗い出しのコマンド（[SKILL.md](SKILL.md) の手順 5）の 2 か所に書いてある。版を上げるときは両方をそろえる
+- `pr-checks.yml` のスペルチェックは、`npx` で版を固定した cspell を取得して動かす。版は `files/.github/workflows/pr-checks.yml` と、Skill の候補の洗い出しのコマンド（[tooling.md](tooling.md)）の 2 か所に書いてある。版を上げるときは両方をそろえる
 - `commitlint.config.mjs` は設定だけ。ESM の形式（`.mjs`）のため、`package.json` の `type` に関係なく読み込める。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る。Node のプロジェクトが前提だが、コミット規約の検証は土台の考え方のため配る（[P6](../../../../docs/policies/p06-common-template.md) の例外）
 
 ## 除外したもの

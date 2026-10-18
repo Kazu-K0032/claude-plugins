@@ -16,7 +16,7 @@ Google Apps Script（GAS）のリポジトリへ「clasp で push する `src/` 
 
 | 引数の例 | 動き |
 | --- | --- |
-| `規約だけ` | `.claude/rules/gas.md` だけを入れる |
+| `規約だけ` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md` だけを入れる |
 | `src だけ` | `src/` 配下だけを入れる |
 | `既存は置き換えない` | 既存ファイルに触らない |
 
@@ -39,7 +39,8 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 | `files/src/trigger.js` | 登録するトリガーの一覧（`TRIGGERS`）、実行したアカウントのトリガーをすべて消して一覧の分だけ作り直す登録（`setupTriggers`）・すべての削除（`deleteTriggers`）と、毎日決まった時刻に呼ばれる入口（`onDailySchedule`） | 一覧と入口を直して、動かす時刻・間隔を変える。定期実行を使わないなら消す |
 | `files/src/appsscript.json` | マニフェスト（タイムゾーン `Asia/Tokyo`・V8 ランタイム） | 使うサービス・権限に応じて追記する |
 | `files/.clasp.json` | clasp の設定（`rootDir` を `src` にする） | `scriptId` を書き込む |
-| `files/.claude/rules/gas.md` | ファイルの書き分け（使う範囲で置き場所を決める）・関数の命名・GAS 特有の注意点・clasp の運用 | そのまま使える |
+| `files/.claude/rules/gas.md` | ファイルの書き分け（使う範囲で置き場所を決める）・関数の命名・clasp の運用 | そのまま使える |
+| `files/.claude/rules/gas-runtime.md` | GAS 特有の注意点（グローバル空間・秘匿値・実行時間の上限・トリガーの登録）。`gas.md` と同じ `paths` を持つ | そのまま使える |
 
 ## 前提と制約
 

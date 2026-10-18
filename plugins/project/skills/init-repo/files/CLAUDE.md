@@ -106,7 +106,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 <repository-name>/
 ├── .claude/
 │   ├── hooks/                            # Claude Code のフック（ガード・Lint・セッション通知）
-│   ├── rules/                            # 常時適用の規約（コメント・環境変数・README・GitHub Actions・ADR・ブランチ名・権限・tmp への出力・AI が読む文書）
+│   ├── rules/                            # 規約（コメント・環境変数・README・GitHub Actions・ADR・ブランチ名・権限・tmp への出力・AI が読む文書）。`paths` を持つものは、対象のファイルを開いたときだけ読み込まれる
 │   └── settings.json                     # 権限・フックの設定（コミット対象）
 ├── .vscode/                              # エディタ設定（推奨拡張機能・保存時の整形）
 ├── .github/
