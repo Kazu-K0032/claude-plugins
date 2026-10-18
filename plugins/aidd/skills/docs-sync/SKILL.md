@@ -2,7 +2,7 @@
 name: docs-sync
 description: 現在のブランチと、そのマージ先との差分を分析し、コード・インフラ変更に追従して更新すべき md ドキュメントを特定して更新を提案する。ブランチの変更にドキュメントが追従しているか点検したい時に使用する。マージ先が無いブランチ（既定ブランチなど）と main・master では停止する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
+allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
 ---
 
 # ドキュメント追従チェック（docs-sync）
@@ -22,6 +22,7 @@ allowed-tools: Read, Glob, Grep, Bash(git branch:*), Bash(git diff:*), Bash(gh p
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/docdd-design.md` | 手順 2 の出力を読むとき、手順 3 で追従を判定するとき、手順 4 で重さを分けるとき（役割分担・チェック対象・判定範囲・重大度） |
 | `${CLAUDE_PLUGIN_ROOT}/references/document.md` | 手順 3 で追従を判定するとき（重複排除（SSOT）・文体・構造のルール） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/output-template.md` | 手順 4 でレポートを書くとき |
+| `${CLAUDE_PLUGIN_ROOT}/references/report-format.md` | 手順 4 でレポートを書くとき（見出しの構成・推奨アクションの決まり） |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 手順 4 でレポートを書くとき（markdown の書式） |
 
 ## 想定している引数
@@ -67,7 +68,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比
 - 冒頭の文に、手順 2 の基準ブランチと変更ファイル数を入れる
 - 手順 1 で決めた根拠と、`git fetch` を断られたときはその旨を、冒頭の文の直後に注記で書く。比べる先を取り違えていないかを、読み手が確かめられるようにするため
 - `SKIP` にした項目と、手順 3 で参照した規約も、同じ注記に書く。PASS は書かない
-- 推奨アクションに、直す順の番号付きの一覧（最大 5 件）を書く
+- 推奨アクションは `report-format.md` の決まりで書く
 
 ## 禁止事項
 

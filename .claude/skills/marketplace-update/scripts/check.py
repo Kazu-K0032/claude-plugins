@@ -19,6 +19,8 @@
  11. このリポジトリと init-repo テンプレートの settings.json の deny が、Bash(git ...)・Bash(gh ...) の組の PowerShell(...) と
      削除の別名を持つか（Bash(...) の規則は PowerShell のツールには効かない）。2 つの settings.json の deny が食い違わないか。
      harness-principles.md の「土台の仕組み」が例に挙げるコマンドが、テンプレートの deny に残っているか
+ 12. 各スキル（plugins/ 配下と .claude/skills/）の allowed-tools に、書き込み・実行のオプション（--output など）も
+     確認なしで通す前方一致の Bash 規則が無いか（docs/policies/p01-operation-boundary.md の「確認なしで任せる操作」）
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>] [--base <比べる ref>]
 終了コード: NG が 1 件でもあれば 1、それ以外は 0（WARN は 0 のまま）
@@ -129,6 +131,7 @@ def main():
     check_duplicated_files(repo)
     check_argument_hints(repo)
     check_deny_sync(repo)
+    check_allowed_prefixes(repo)
     base = sys.argv[sys.argv.index("--base") + 1] if "--base" in sys.argv else None
     check_doc_lengths(repo, base)
     check_versions(repo, market, base)
@@ -392,6 +395,32 @@ def check_deny_sync(repo):
                         add("WARN", "deny-sync",
                             "%s の例 `%s` に当たる deny が、テンプレートの settings.json に無い。物差しを直すか、deny を戻す"
                             % (PRINCIPLES_FILE, ex))
+
+
+# 書き込み・実行のオプション（git diff・git log・git show の --output、git grep の -O、gh api の -X など）を持つコマンド。
+# 許可の規則はオプションを見ずに前方一致で当たるため、後ろにどんな引数があっても前方一致の許可には入れない（P1）
+WRITE_OPTION_COMMANDS = ("git diff", "git log", "git show", "git grep", "gh api")
+# 引数の無い前方一致だけが書き込み（ブランチの作成・改名）も通すコマンド。--list などに絞れば読み取りだけになる
+BARE_PREFIX_COMMANDS = ("git branch",)
+
+
+def check_allowed_prefixes(repo):
+    """12: allowed-tools に、書き込み・実行のオプションも確認なしで通す前方一致の Bash 規則が無いか。"""
+    paths = glob.glob(os.path.join(repo, "plugins", "*", "skills", "*", "SKILL.md"))
+    paths += glob.glob(os.path.join(repo, ".claude", "skills", "*", "SKILL.md"))
+    for path in sorted(paths):
+        rel = os.path.relpath(path, repo).replace(os.sep, "/")
+        for rule in split_rules(frontmatter(read(path)).get("allowed-tools", "")):
+            m = re.match(r"^Bash\((.+)\)$", rule)
+            if not m or "*" not in m.group(1):
+                continue
+            # 最初のワイルドカードより前が、許可が必ず当たるコマンドの頭
+            head = re.sub(r"(:\*| \*|\*).*$", "", m.group(1)).strip()
+            if head in BARE_PREFIX_COMMANDS or any(
+                    head == c or head.startswith(c + " ") for c in WRITE_OPTION_COMMANDS):
+                add("NG", "allowed-prefix",
+                    "%s: allowed-tools の Bash(%s) は、書き込み・実行のオプションも確認なしで通す。"
+                    "外すか、完全一致で書く（P1）" % (rel, m.group(1)))
 
 
 # 人が読み切れる本文の長さの上限（P9）。変えるときは P9 の Q&A「上限の数を変えたい」の場所もそろえる

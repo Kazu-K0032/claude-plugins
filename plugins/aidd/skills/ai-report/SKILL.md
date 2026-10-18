@@ -11,8 +11,8 @@ argument-hint: "[開始日 終了日（任意。省略時は期間を質問す�
 
 このリポジトリのセッションログを、指定の期間で分析してレポートにする。定量の集計・図表・ファイルの出力は `analyze.py` が担い、Claude は typed プロンプトを読んで定性パート（総評サマリ・トークン効率／コスト最適化・完了時間／手戻り削減・ワークフローの仕組み化／短縮・プロンプト改善提案）だけを書く。
 
-- 外へ書き込むもの：`tmp/<ブランチ名>/` の下のレポートと、途中のファイル（定性パート・`analyze.py` の中間データ）
-- 人がすること：期間を選ぶ（引数で渡さないとき）。レポートを読む
+- 外へ書き込むもの：`tmp/<ブランチ名>/` の下のレポートと、途中のファイル（定性パート・`analyze.py` の中間データ。消さずに残す）
+- 人がすること：期間を選ぶ（引数で渡さないとき）。レポートを読む。`tmp/` の中間ファイルを削除する
 
 ## 参照ファイル
 
@@ -59,7 +59,7 @@ argument-hint: "[開始日 終了日（任意。省略時は期間を質問す�
 ### 3. 集計する（collect）
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> --pricing '<手順 1 で組み立てた JSON>'
+python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> --pricing '<手順 1 で組み立てた JSON>'
 ```
 
 標準出力に、定量のサマリ・typed プロンプトの一覧・出力先のパスが出る。出力の冒頭の「走査対象ログ（カバレッジ）」を必ず確かめ、`log-coverage.md` に従って、意図したディレクトリが含まれているかを見る。
@@ -77,7 +77,7 @@ typed プロンプトの一覧・昇格候補エージェントの関連プロ�
 手順 4 の Write を終えてから実行する。同じメッセージで並列に実行しない。並列だと定性パートを読む前に走り、定性が「（未記入）」になるため。
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" report <START> <END>
+python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" report <START> <END>
 ```
 
 標準出力に出たレポートのパスを、ユーザーに伝える。

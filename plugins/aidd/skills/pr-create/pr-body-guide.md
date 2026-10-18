@@ -4,9 +4,7 @@
 
 ## テンプレートを探す
 
-1. `.github/PULL_REQUEST_TEMPLATE.md` があれば、それを使う
-1. 無ければ、`.github/pull_request_template.md`・`.github/PULL_REQUEST_TEMPLATE/*.md`・`docs/PULL_REQUEST_TEMPLATE.md` を Glob で探す
-1. どれも無ければ、「概要 / 変更点 / 関連 Issue / チェックリスト」の 4 つの節で書き、テンプレートが無かったことを報告に含める
+`references/pr-template.md` の順で探す。見つからなければ、同じファイルの 4 つの節で書き、テンプレートが無かったことを報告に含める。
 
 ## 全体
 

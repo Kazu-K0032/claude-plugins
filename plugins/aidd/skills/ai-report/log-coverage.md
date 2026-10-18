@@ -16,6 +16,6 @@
 意図した作業ディレクトリが抜けている、または無関係なリポジトリが混ざっている場合は、`--project-dirs` で対象を明示して `collect` をやり直す（ディレクトリ名でも絶対パスでも可）。
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> \
+python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> \
   --pricing '<JSON>' --project-dirs -home-user-repo -home-user-repo-2
 ```

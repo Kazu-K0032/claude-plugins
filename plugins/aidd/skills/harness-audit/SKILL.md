@@ -2,7 +2,7 @@
 name: harness-audit
 description: リポジトリ全体が、本マーケットプレイスの設計思想（AIDD × DocDD）とそのリポジトリの規約に合うかを監査する。規約違反・価値に反する箇所・規約のずれ・土台の仕組みの欠けと、ファイル間の値の矛盾・重複記述・参照方向違反を見る。実行前に対象の件数・総量・エージェント数の見込みを示して続けるかを聞き、Workflow（harness-audit-run）で各指摘を敵対的に検証して tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md に出力する。init-repo から作り直した後や、統合ブランチ（develop・stg・main）へのマージ前の最終チェックに使用する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git grep:*), AskUserQuestion
+allowed-tools: Read, Glob, Grep, AskUserQuestion
 argument-hint: "[対象のパス（任意。省略時は追跡中の全テキストファイル。例: plugins/aidd docs）]"
 ---
 

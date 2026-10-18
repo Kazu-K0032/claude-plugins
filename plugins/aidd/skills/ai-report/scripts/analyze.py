@@ -2117,7 +2117,8 @@ def cmd_report(start, end, pricing=None):
     """report サブコマンド。一時データと Claude 執筆の定性パートを結合し、タイムスタンプ付きレポートを新規出力する。
 
     期間・単価とも collect 済みデータを正とする（期間の引数とのズレは警告）。
-    出力後に一時ファイルを削除する。
+    中間ファイルは消さない（削除は人が行う。P1）。そのため、前の実行の定性パートを使わないよう、
+    DATA_FILE より古い QUAL_FILE は読まない。
     """
     data_path = os.path.join(out_dir(), DATA_FILE)
     if not os.path.exists(data_path):
@@ -2139,7 +2140,10 @@ def cmd_report(start, end, pricing=None):
     mechanization_md = ""
     reasons_dict = {}
     qual_path = os.path.join(out_dir(), QUAL_FILE)
-    if os.path.exists(qual_path):
+    if os.path.exists(qual_path) and os.path.getmtime(qual_path) < os.path.getmtime(data_path):
+        print(f"警告: {qual_path} は collect より前に書かれたため、前の実行の定性パートとみなして読みません。"
+              f"定性パートを Write し直してから report を実行してください。", file=sys.stderr)
+    elif os.path.exists(qual_path):
         qual = open(qual_path, encoding="utf-8").read()
         ms, mp = SUMMARY_RE.search(qual), PROMPTS_RE.search(qual)
         mr = PROMOTION_REASONS_RE.search(qual)
@@ -2212,11 +2216,6 @@ def cmd_report(start, end, pricing=None):
     fpath = os.path.join(out_dir(), fname)
     with open(fpath, "w", encoding="utf-8") as fh:
         fh.write(report)
-
-    # 一時ファイルを掃除
-    for tmp in (data_path, qual_path):
-        if os.path.exists(tmp):
-            os.remove(tmp)
 
     print(f"レポートを出力しました: {fpath}")
 

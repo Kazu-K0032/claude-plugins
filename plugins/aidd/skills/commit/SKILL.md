@@ -2,7 +2,7 @@
 name: commit
 description: ステージング済みの差分を分析し、Conventional Commits 形式のコミットメッセージを提案する。コミットメッセージの作成やステージング済み変更のレビューを求められた時に使用する
 disable-model-invocation: true
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git apply --check:*), Bash(date:*), Bash(gh pr checks:*), Read, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
+allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(git apply --check:*), Bash(date:*), Bash(gh pr checks:*), Read, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
 argument-hint: "[補足指示（任意。省略時はステージ済みの差分と会話の経緯から提案する。例: Issue#5 を参照に付ける / 1 コミットにまとめる）]"
 ---
 
@@ -30,7 +30,7 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 ## 出力先
 
 - コミットメッセージ：プロジェクトルート直下の `tmp.md`
-- パッチ：`tmp/<ブランチ名>/commit/<ts>_<N>.patch`。ファイルの中の変更を分けるときだけ書く。`<ブランチ名>` は `git branch --show-current` で取り、`/` は `-` に置き換える（例：`issues/5-sample` → `issues-5-sample`）。`<ts>` は `date +%Y%m%d_%H%M%S` で取る
+- パッチ：`tmp/<ブランチ名>/commit/<ts>_<N>.patch`。ファイルの中の変更を分けるときだけ書く。`<ブランチ名>` は `git branch --show-current` で取り、`/` は `-` に置き換える（例：`issues/5-sample` → `issues-5-sample`。規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。`<ts>` は `date +%Y%m%d_%H%M%S` で取る
 
 ## 手順
 

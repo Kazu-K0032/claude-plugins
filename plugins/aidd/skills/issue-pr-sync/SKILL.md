@@ -3,7 +3,7 @@ name: issue-pr-sync
 description: 指定した Issue（省くとブランチ名の番号）と PR（省くと今のブランチの PR）を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える）・ラベル等のサイドバーを直接反映する（既存の記述を消すなどの重要な変更だけ、反映前に承認を取る）。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
 argument-hint: "[Issue番号|URL（任意。省略時はブランチ名の issues/ の後ろの番号。取れなければ質問する）] [PR番号|URL（任意。省略時は今のブランチの PR）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(gh api:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
 ---
 
 # Issue / PR の同期更新
@@ -21,6 +21,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/body-policy.md` | 手順 3 で、本文の更新後の全文を作るとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/title-and-sidebar.md` | 手順 3 でタイトル・サイドバーの変更案を作るとき、手順 5 でサイドバーを反映するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 3 で、PR 本文を作る・直すとき（テンプレートに「AI を使った確認」の欄があるときも） |
+| `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | 手順 3 で、PR 本文を新しく作るとき（節の構成） |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 手順 3 で、本文を書くとき（markdown の書式） |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 手順 3 で、本文を書く・数えるとき（長さの上限・数え方・書き方） |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 手順 3 で、本文を数えるとき |

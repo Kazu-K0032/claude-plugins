@@ -40,4 +40,4 @@
 
 ## 既知の食い違い
 
-- `aidd:ai-report` の同梱スクリプトが、`tmp/` に自分で書いた途中のファイル（`.ai-report-data.json`・`.ai-report-qualitative.md`）を、レポートを作った後に消している。P1 の「削除は禁止」と食い違う。スクリプトの中で消すため、deny では止まらない
+なし

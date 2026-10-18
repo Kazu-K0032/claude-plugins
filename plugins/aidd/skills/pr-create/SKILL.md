@@ -3,7 +3,7 @@ name: pr-create
 description: 現在のブランチのコミット内容とIssue情報から、リポジトリの PR テンプレートに沿ったPR本文の下書きと、レビュワー向けの検証コメントを tmp 配下に生成する。ユーザーが PR 本文作成を求めた時に使用する
 argument-hint: "[Issue番号（任意。省略時はブランチ名の issues/ の後ろの番号。取れなければ質問する）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
 
 # PR本文と検証コメントの作成
@@ -18,7 +18,8 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git log:*), Bash(
 | ファイル | いつ読むか |
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 5 で、比べるブランチを決めるとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/pr-body-guide.md` | 手順 7 で、PR 本文を書くとき（テンプレートの探し方・節ごとの書き方） |
+| `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | 手順 7 で、PR テンプレートを探すとき（探す順と、無いときの節） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/pr-body-guide.md` | 手順 7 で、PR 本文を書くとき（節ごとの書き方） |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 7 で、PR テンプレートに「AI を使った確認」の欄があるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` | 手順 8・9 で、チェック項目を洗い出し、検証コメントを書くとき（方針・洗い出しの表・出力の形） |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 手順 7・9 で書くとき、手順 11 で数えるとき（長さの上限・数え方・書き方） |

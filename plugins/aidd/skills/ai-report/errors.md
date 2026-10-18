@@ -10,6 +10,10 @@
 
 `family` では表せない。勝手にどちらかを採用せず、ユーザーに報告して判断を仰ぐ。
 
-## 定性が「（未記入）」になった・`report` が「`.ai-report-data.json` が無い」で失敗したとき
+## 定性が「（未記入）」になったとき
 
-手順 3 の `collect` からやり直す。`report` を単独で実行し直しても直らない。`report` は、`collect` が書く中間データ `.ai-report-data.json` と定性パート `.ai-report-qualitative.md` を読み、レポートを作った後に両方を消すため（consume-and-delete）。
+手順 4 の Write をやり直してから、`report` を実行する。`report` は、`collect` が書く中間データ `.ai-report-data.json` と定性パート `.ai-report-qualitative.md` を読む。両ファイルは消さずに残す（削除は人が行う）。前の実行の定性パートを使わないよう、中間データより古い定性パートは読まない。
+
+## `report` が「`.ai-report-data.json` が無い」で失敗したとき
+
+手順 3 の `collect` からやり直す。
