@@ -398,20 +398,42 @@ def check_deny_sync(repo):
     principles = os.path.join(repo, PRINCIPLES_FILE)
     template = denies.get(SETTINGS_FILES[1])
     if os.path.isfile(principles) and template is not None:
+        found = False
         for line in read(principles).splitlines():
             if line.startswith("| コミット・push・削除・権限の変更・深刻な外部操作を止める"):
+                found = True
                 for ex in re.findall(r"`([a-z][a-z -]*[a-z])`", line):
                     if not any(re.match(r"^Bash\(%s[ *)]" % re.escape(ex), r) for r in template):
                         add("WARN", "deny-sync",
                             "%s の例 `%s` に当たる deny が、テンプレートの settings.json に無い。物差しを直すか、deny を戻す"
                             % (PRINCIPLES_FILE, ex))
+        if not found:
+            add("WARN", "deny-sync",
+                "%s に「コミット・push・削除・権限の変更・深刻な外部操作を止める」で始まる表の行が無い。"
+                "行頭の文言を直したときは、check.py の文言も直す。物差しと deny の食い違いを確かめられていない"
+                % PRINCIPLES_FILE)
 
 
-# 書き込み・実行のオプション（git diff・git log・git show の --output、git grep の -O、gh api の -X など）を持つコマンド。
+# 書き込み・実行のオプション（git diff・git log・git show の --output、git grep の -O、gh api の -X、
+# git apply の --apply など）を持つコマンド。
 # 許可の規則はオプションを見ずに前方一致で当たるため、後ろにどんな引数があっても前方一致の許可には入れない（P1）
-WRITE_OPTION_COMMANDS = ("git diff", "git log", "git show", "git grep", "gh api")
-# 引数の無い前方一致だけが書き込み（ブランチの作成・改名）も通すコマンド。--list などに絞れば読み取りだけになる
-BARE_PREFIX_COMMANDS = ("git branch",)
+WRITE_OPTION_COMMANDS = ("git diff", "git log", "git show", "git grep", "git apply", "gh api")
+# 引数の無い前方一致だけが書き込み（ブランチの作成・改名）も通すコマンド。--list などに絞れば読み取りだけになる。
+# git・gh だけの前方一致は、すべてのサブコマンドを通す
+BARE_PREFIX_COMMANDS = ("git branch", "git", "gh")
+# git のサブコマンドの前に置ける、値を取るオプション（git -C <場所> log のように、サブコマンドを後ろへずらす）
+GIT_OPTIONS_WITH_VALUE = ("-C", "-c", "--git-dir", "--work-tree", "--namespace")
+
+
+def command_head(head):
+    """許可の頭のコマンドから、git の前置きのオプションを除く（git -C . log → git log）。"""
+    words = head.split()
+    if words[:1] == ["git"]:
+        i = 1
+        while i < len(words) and words[i].startswith("-"):
+            i += 2 if words[i] in GIT_OPTIONS_WITH_VALUE else 1
+        words = ["git"] + words[i:]
+    return " ".join(words)
 
 
 def check_allowed_prefixes(repo):
@@ -425,7 +447,7 @@ def check_allowed_prefixes(repo):
             if not m or "*" not in m.group(1):
                 continue
             # 最初のワイルドカードより前が、許可が必ず当たるコマンドの頭
-            head = re.sub(r"(:\*| \*|\*).*$", "", m.group(1)).strip()
+            head = command_head(re.sub(r"(:\*| \*|\*).*$", "", m.group(1)).strip())
             if head in BARE_PREFIX_COMMANDS or any(
                     head == c or head.startswith(c + " ") for c in WRITE_OPTION_COMMANDS):
                 add("NG", "allowed-prefix",

@@ -65,7 +65,7 @@ Claude が実行してよい操作と、人が行う操作の線引きを決め�
 
 スキルの `allowed-tools`（許可を聞かずに実行してよい操作の一覧）には、読み取りと、書き込み先が `tmp/` の下か `tmp.md` に決まっているものだけを入れる。書き込み先が決まらない操作、`gh` の書き込み、同梱スクリプトの実行は入れない。確認なしで任せる範囲を、取り返しのつく所に限るため。
 
-読み取りのコマンドでも、書き込み・実行のオプションを持つもの（`git diff`・`git log` の `--output`、`git grep` の `-O`、`gh api` の `-X` など）は、前方一致（`Bash(git diff:*)`）で入れない。許可の規則はオプションを見ないため、前方一致ではそのオプションを除けないから。入れるのは、完全一致で読み取りだけに絞れるもの（`Bash(git branch --show-current)` など）だけにする。前方一致が入っていないかは、`/marketplace-update` の機械チェック（`check.py` の `allowed-prefix`）が見る。
+読み取りのコマンドでも、書き込み・実行のオプションを持つもの（`git diff`・`git log` の `--output`、`git grep` の `-O`、`gh api` の `-X`、`git apply --check` の後ろの `--apply` など）は、前方一致（`Bash(git diff:*)`）で入れない。許可の規則はオプションを見ないため、前方一致ではそのオプションを除けないから。入れるのは、完全一致で読み取りだけに絞れるもの（`Bash(git branch --show-current)` など）だけにする。前方一致が入っていないかは、`/marketplace-update` の機械チェック（`check.py` の `allowed-prefix`）が見る。
 
 ## 変えたいとき
 

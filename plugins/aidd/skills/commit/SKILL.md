@@ -2,7 +2,7 @@
 name: commit
 description: ステージング済みの差分を分析し、Conventional Commits 形式のコミットメッセージを提案する。コミットメッセージの作成やステージング済み変更のレビューを求められた時に使用する
 disable-model-invocation: true
-allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(git apply --check:*), Bash(date:*), Bash(gh pr checks:*), Read, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
+allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(date:*), Bash(gh pr checks:*), Read, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
 argument-hint: "[補足指示（任意。省略時はステージ済みの差分と会話の経緯から提案する。例: Issue#5 を参照に付ける / 1 コミットにまとめる）]"
 ---
 
@@ -85,6 +85,6 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 ## 保守
 
 - `allowed-tools` に `check-symlinks.sh` の `Bash` パターンを含めていない。プラグインの実体パスは `${CLAUDE_PLUGIN_ROOT}` で解決するが、この変数が `allowed-tools` の frontmatter で展開されるかは公式に記載がないため、当てにせず通常の許可プロンプトを通す
-- `git apply` は、`--check` を付けた形だけを `allowed-tools` に載せている。`--check` が無いと、ステージを書き換えるため
+- `git apply` は `allowed-tools` に載せていない。`--check` を付けても、後ろに `--apply` を付けるとパッチを当て、ステージを書き換えるため、前方一致では許可できない。パッチの確かめ（`git apply --check`）は、許可プロンプトを通す
 
 $ARGUMENTS
