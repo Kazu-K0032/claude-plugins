@@ -9,8 +9,10 @@
 1. 数える。超えていたら縮めて作り直し、もう一度数える。3 回直しても収まらなければ、超えた箇所を報告に書いて反映する。Node.js が無い・実行を断られたときは、数えずに反映し、報告に書く
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/issue-start/<ts>_issue.md
+   node <body_length.js のパス> tmp/<ブランチ名>/issue-start/<ts>_issue.md
    ```
+
+   `<body_length.js のパス>` は、`SKILL.md` の「参照ファイル」の表にあるパスにする。場所を表す変数は `SKILL.md` の中でしか置き換わらないため、この文書では使わない。
 
 1. 反映する
 

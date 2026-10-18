@@ -21,6 +21,8 @@
      harness-principles.md の「土台の仕組み」が例に挙げるコマンドが、テンプレートの deny に残っているか
  12. 各スキル（plugins/ 配下と .claude/skills/）の allowed-tools に、書き込み・実行のオプション（--output など）も
      確認なしで通す前方一致の Bash 規則が無いか（docs/policies/p01-operation-boundary.md の「確認なしで任せる操作」）
+ 13. 参照ファイル（スキルのフォルダの md と plugins/<p>/references/）に ${CLAUDE_PLUGIN_ROOT} が無いか
+     （置き換わるのは SKILL.md の中だけのため。WARN）
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>] [--base <比べる ref>]
 終了コード: NG が 1 件でもあれば 1、それ以外は 0（WARN は 0 のまま）
@@ -215,6 +217,14 @@ def check_plugin(repo, plugin_name, plugin, prefixes):
                     "%s:%d 本文の `%s` はテンプレートの deny (%s) に一致する。"
                     "Claude に実行させるのか、人が実行する例示なのかを確認する"
                     % (os.path.relpath(path, repo).replace(os.sep, "/"), num, stripped, pre))
+
+    # 13: 場所の変数は SKILL.md の中でしか置き換わらない。参照ファイルに書くと、コマンドが空の場所で動く（WARN）
+    for path in instruction_files(plugin, skills_dir, skill_names):
+        if os.path.basename(path) != "SKILL.md" and "${CLAUDE_PLUGIN_ROOT}" in read(path):
+            add("WARN", "plugin-root-in-reference",
+                "%s: 参照ファイルに ${CLAUDE_PLUGIN_ROOT} がある。置き換わるのは SKILL.md の中だけのため、"
+                "SKILL.md の表にあるパスを指すか、<プラグインの場所> と書いて定義を添える"
+                % os.path.relpath(path, repo).replace(os.sep, "/"))
 
     # 4: ${CLAUDE_PLUGIN_ROOT} の参照先が実在するか
     targets = []
