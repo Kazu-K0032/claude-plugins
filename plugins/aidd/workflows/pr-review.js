@@ -526,8 +526,12 @@ const report = await agent(
   { label: 'report', phase: 'Report', schema: REPORT_SCHEMA }
 )
 
+// 戻り値を受け取って利用者に伝えるのは呼び出し元の Claude のため、パスの伝え方を戻り値に添える。
+// 規約は aidd の README.md の「出力先のパスは、前後を区切って伝える」。
 return {
   file: report.path,
+  fileNote:
+    'file のパスは、前後を半角スペースか改行で区切って伝える。全角の「：」などが続くと、その文字までリンクに含まれ、Ctrl + クリックで開けないため',
   pr,
   dimensions: active.map((d) => d.key),
   small: isSmall,

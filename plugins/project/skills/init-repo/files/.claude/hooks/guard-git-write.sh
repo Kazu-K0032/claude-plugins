@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# git の commit / push を Claude に実行させないためのガバナンスガード（PreToolUse: Bash）。
+# git の commit / push を Claude に実行させないためのガバナンスガード（PreToolUse: Bash|PowerShell）。
 #
 # なぜ必要か:
 #   settings.json の permissions.deny はルールの形に当たるコマンドしか判定しないため、

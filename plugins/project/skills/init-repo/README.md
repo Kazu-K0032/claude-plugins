@@ -44,7 +44,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | --- | --- | --- |
 | `files/.claude/settings.json` | 権限（秘匿ファイル・コミット / push・削除・権限の変更・深刻な外部操作の deny と、`*.example` の allow）・フックの設定と、Python のキャッシュを作らない環境変数（`PYTHONDONTWRITEBYTECODE`） | 秘匿ファイルの deny パスをプロジェクトに合わせる |
 | `files/.claude/hooks/guard-destructive.sh` | 破壊的コマンドを検出して承認へエスカレーションする PreToolUse フック | `patterns` にプロジェクト固有の破壊的操作を追記する |
-| `files/.claude/hooks/guard-git-write.sh` | `git commit` / `git push` / `gh` 書き込みを Claude に実行させないガード（既定では未配線） | 使う場合は settings.json の PreToolUse に追加する |
+| `files/.claude/hooks/guard-git-write.sh` | `git commit` / `git push` / `gh` 書き込みを Claude に実行させないガード（既定では未配線） | 使う場合は settings.json の PreToolUse（`matcher` は `Bash\|PowerShell`）に追加する |
 | `files/.claude/hooks/post-edit-lint.sh` | 編集後に `lefthook.yml` の Lint・整形を動かし、失敗した結果を Claude へ返す PostToolUse フック（非ブロッキング） | 検査の対象を絞るときは冒頭の `TARGET_PREFIX` を直す |
 | `files/.claude/hooks/session-start.sh` | セッション開始時に運用ルールを通知する SessionStart フック | 文言を変えるだけ |
 | `files/.claude/rules/comment.md` | インラインコメントの規約（なぜを書く・読み手を選ばない言葉）。言語を問わないため、常に読み込まれる | そのまま使える |

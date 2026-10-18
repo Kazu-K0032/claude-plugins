@@ -83,7 +83,7 @@ typed プロンプトの一覧・昇格候補エージェントの関連プロ�
 python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" report <START> <END>
 ```
 
-標準出力に出たレポートのパスを、ユーザーに伝える。
+標準出力に出たレポートのパスを、ユーザーに伝える。パスの前後は、半角スペースか改行で区切る（規約は `aidd` の `README.md` の「出力先のパスは、前後を区切って伝える」）。
 
 ## 保守
 
