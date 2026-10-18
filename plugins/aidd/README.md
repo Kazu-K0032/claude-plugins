@@ -140,7 +140,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 どちらも `gh` の書き込み系サブコマンドを `allowed-tools` に載せず、通常の許可プロンプトを通す。`gh issue develop` は一覧の表示（`--list`）とブランチの作成が同じ前方一致になるため、一覧の表示も含めて載せない。
 
-`issue-pr-sync`・`issue-start` の歯止め（承認を取る変更・反映前の本文を `tmp/` に残すこと・書き込む対象を限ることなど）は、各スキルの `SKILL.md` と参照ファイルが正典。PR 本文の「AI を使った確認」で、チェックを入れてよいのは実行した本人の `/aidd:issue-pr-sync` の行だけ。確かめたと判断するのは人のため（[V3](../../docs/values/v03-human-judgment.md)）。決まりは `references/ai-check-lines.md` にある。
+`issue-pr-sync`・`issue-start` の歯止め（承認を取る変更・反映前の本文を `tmp/` に残すこと・書き込む対象を限ることなど）は、各スキルの `SKILL.md` と参照ファイルが正典。PR 本文の「AI を使った確認」で、チェックを入れてよいのは、実行した本人の `/aidd:issue-pr-sync` の行と、同じ会話で Claude が実行して結果を見たコマンドの行だけ。それ以外を確かめたと判断するのは人のため（[V3](../../docs/values/v03-human-judgment.md)）。入れたときは根拠を報告に書き、人が確かめて外せるようにする。決まりは `references/ai-check-lines.md` にある。
 
 ### `issue-start` の要件の詰め方
 
