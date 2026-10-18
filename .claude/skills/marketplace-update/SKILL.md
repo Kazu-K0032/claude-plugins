@@ -45,7 +45,7 @@ python .claude/skills/marketplace-update/scripts/check.py
 ```
 
 - `python3` しか無い環境では、そちらで実行する
-- 見るのは、`plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）、`plugins/project/skills/init-repo/files/` が配る `.claude/settings.json`、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）、`SKILL.md` と規約（`.claude/rules/` と配る規約）の本文の長さ、各プラグインの版（`version`）
+- 見るのは、`plugins/` 配下の全プラグイン（`aidd`・`config`・`project`）、このリポジトリと `plugins/project/skills/init-repo/files/` が配る 2 つの `.claude/settings.json`（deny の `PowerShell(...)` の組・2 つの食い違い）、`.claude/rules/duplicated-files.md` に載っている重複ファイルの組、各スキル（`.claude/skills/` を含む）の入力ヒント（`argument-hint`）と `allowed-tools` の前方一致、`SKILL.md` と規約（`.claude/rules/` と配る規約）の本文の長さ、各プラグインの版（`version`）
 - deny との衝突は、`allowed-tools` と、スキルが手順として読む md の本文を見る（範囲は `ng-warn.md` の `deny-conflict`）
 - 版を上げるブランチ（リリースの前に版を上げる PR と `hotfix/`）と `release/` のブランチでは、`--base origin/main` を付けて版の上げ忘れも見る。先に利用者に `git fetch origin` を頼み、`origin/main` を最新にしておく
 
