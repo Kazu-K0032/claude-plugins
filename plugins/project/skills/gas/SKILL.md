@@ -20,7 +20,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 | `${CLAUDE_PLUGIN_ROOT}/references/init-repo-first.md` | 手順 1 の最初 |
 | `${CLAUDE_PLUGIN_ROOT}/references/install-flow.md` | 手順 1・2・4・5 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/existing-layout.md` | 既存のコードがあり、`rootDir` が `src` 以外のとき（手順 1・3・4） |
-| `${CLAUDE_PLUGIN_ROOT}/skills/gas/merge-policy.md` | 手順 5 で `DIFF` のファイルがあるとき（選択肢を示す前から） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/gas/merge-policy.md` | 手順 5 で `DIFF` のファイルがあるとき（選択肢を示す前から）・導入済みの `gas.md` が 1 ファイル版のとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/existing-code.md` | 手順 6 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/files/.claude/rules/gas.md` | 手順 6 で、振り分けの基準（ファイルの書き分け・関数の命名）を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/after-install.md` | 手順 8 |
@@ -35,7 +35,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 | --- | --- |
 | `規約だけ` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md` だけ |
 | `src だけ` | `src/` 配下だけ |
-| `既存は置き換えない` | `DIFF` はすべて据え置き、手順 5 を飛ばす |
+| `既存は置き換えない` | `DIFF` はすべて据え置き、手順 5 の衝突の片付けを飛ばす。古い 1 ファイル版の規約の片付けは行う |
 
 ## 手順
 
@@ -61,7 +61,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 ### 5. 衝突したファイルを片付ける
 
-`install-flow.md` の「衝突したファイルを片付ける」に従い、マージは `merge-policy.md` の方針で行う。
+`install-flow.md` の「衝突したファイルを片付ける」に従い、マージは `merge-policy.md` の方針で行う。導入済みの `.claude/rules/gas.md` が 1 ファイル版なら、`merge-policy.md` の「古い 1 ファイル版の片付け」にも従う（`既存は置き換えない` のときも）。
 
 ### 6. 既存コードを振り分ける（既存の GAS コードがある場合）
 

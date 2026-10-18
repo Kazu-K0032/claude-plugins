@@ -21,7 +21,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 | `${CLAUDE_PLUGIN_ROOT}/references/install-flow.md` | 手順 1・3・4・6 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/existing-layout.md` | 手順 1 で状態を決めるとき・手順 7 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/placeholder-names.md` | 手順 2・5・6・7・9（仮の名前を置き換えるとき） |
-| `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/merge-policy.md` | 手順 6 で `DIFF` のファイルがあるとき（選択肢を示す前から）・手順 7 で既存のファイルに足すとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/merge-policy.md` | 手順 6 で `DIFF` のファイルがあるとき（選択肢を示す前から）・導入済みの `wordpress.md` が 1 ファイル版のとき・手順 7 で既存のファイルに足すとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/lint-hook-shapes.md` | 手順 8 で、フックの形を見分けるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/hooks.md` | 手順 8 で、足す定義を書くとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/adr-steps.md` | 手順 9 |
@@ -40,7 +40,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 | `規約だけ` | `.claude/rules/wordpress.md`・`wordpress-security.md`・`wordpress-templates.md` だけ |
 | `Lint だけ` | `wordpress/composer.json`・`wordpress/phpcs.xml.dist` だけ（手順 8 のフックも対象）。`vendor/`・`auth.json` が Git の対象外になっていなければ、`.gitignore` に足す案を出す |
 | `Docker なし` | `wordpress/compose.yaml`・`wordpress/.env.example` を入れない。手順 2 で聞かない |
-| `既存は置き換えない` | `DIFF` はすべて据え置き、手順 6 を飛ばす。手順 8 のフックと手順 9 の ADR の一覧は、既存のファイルでも追記する |
+| `既存は置き換えない` | `DIFF` はすべて据え置き、手順 6 の衝突の片付けを飛ばす。古い 1 ファイル版の規約の片付けは行う。手順 8 のフックと手順 9 の ADR の一覧は、既存のファイルでも追記する |
 
 ## 手順
 
@@ -84,7 +84,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 ### 6. 衝突したファイルを片付ける
 
-`install-flow.md` の「衝突したファイルを片付ける」に従い、マージは `merge-policy.md` の方針で行う。テンプレートは仮の名前のままのため、名前だけの差分は差分として扱わない。
+`install-flow.md` の「衝突したファイルを片付ける」に従い、マージは `merge-policy.md` の方針で行う。テンプレートは仮の名前のままのため、名前だけの差分は差分として扱わない。導入済みの `.claude/rules/wordpress.md` が 1 ファイル版なら、`merge-policy.md` の「古い 1 ファイル版の片付け」にも従う（`既存は置き換えない` のときも）。
 
 ### 7. 今の場所に合わせる（C の場合）
 
