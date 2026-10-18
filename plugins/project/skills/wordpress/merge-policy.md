@@ -4,7 +4,7 @@
 
 | ファイル | マージ方針 |
 | --- | --- |
-| `.claude/rules/wordpress.md`・`wordpress-security.md`・`wordpress-templates.md` | 既存の規約に足りない項目だけを、仮の名前を置き換えてから足す。導入済みの `wordpress.md` が 1 ファイル版なら、下の「古い 1 ファイル版の片付け」も行う |
+| `.claude/rules/wordpress.md`・`wordpress-security.md`・`wordpress-templates.md` | 既存の規約に足りない項目だけを、仮の名前を置き換えてから足す |
 | `wordpress/compose.yaml` | 上書きしない。既存のローカル環境を正とする |
 | `wordpress/.env.example` | 足りない変数だけを足す |
 | `wordpress/composer.json` | 既存を正とする。`require-dev` の 3 つのパッケージ、`config.allow-plugins`、`scripts` の `lint`・`lint:fix` のうち、無いものだけを足す。既にある版は変えない |
@@ -13,9 +13,9 @@
 | README（`wordpress/README.md` など） | 既存の一覧に、足したファイルの行だけを足す |
 | テーマのファイル | 上書きしない |
 
-## 古い 1 ファイル版の片付け
+## 古い 1 ファイル版
 
-規約は、前は `wordpress.md` の 1 ファイルだった。今は、出力と入力の節を `wordpress-security.md` に、テンプレートの節を `wordpress-templates.md` に分けている。導入済みの `wordpress.md` に次の節があれば、1 ファイル版として扱う。
+前の版の `wordpress.md` には、出力・入力・テンプレートの節があった。今は `wordpress-security.md` と `wordpress-templates.md` に移している。
 
 | 古い `wordpress.md` の節 | 移した先 |
 | --- | --- |
@@ -28,7 +28,4 @@
 | ページテンプレートの構造 | `wordpress-templates.md` の「ページテンプレートを書く場合」 |
 | アセットの読み込みと参照 | `wordpress-templates.md` の「CSS・JS・画像を使う場合」 |
 
-- 2 つの新しいファイルは新規で入るため、`既存は置き換えない` のときも、同じ規則が複数のファイルに残る。`DIFF` の選択肢を示す前に、このことを伝える
-- 移した節を `wordpress.md` から消すかを、利用者に聞く。残すと、片方だけ直したときに規則が食い違うため
-- 消すと決まったら、`Edit` で節を消す。利用先が行を足していれば、消す前に移した先へ移すかを聞く
-- 節の名前が変わっていて見つけられないときは、消さずに、重なっていそうな節を示して利用者に任せる
+`wordpress.md` を上書きしないとき（手でマージ・据え置き）は、古い `wordpress.md` に移した節が残り、同じ規則が複数の場所になる。重なる節を消すかを、利用者に聞く。
