@@ -62,7 +62,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比
 
 ### 4. レポートを書く
 
-`output-template.md` に従い、手順 2 のスクリプトの出力と手順 3 の判定を合わせて書き、出力パスをユーザーに伝える。
+`output-template.md` に従い、手順 2 のスクリプトの出力と手順 3 の判定を合わせて書き、出力パスをユーザーに伝える。パスの前後は、半角スペースか改行で区切る（規約は `aidd` の `README.md` の「出力先のパスは、前後を区切って伝える」）。
 
 - 機械チェックの FAIL と手順 3 の指摘を合わせ、`docdd-design.md` の「重大度」に従って high・medium・low に分ける。総合判定（PASS / FAIL）は出さない。スクリプトの終了コードだけで指摘の有無を決めない
 - 冒頭の文に、手順 2 の基準ブランチと変更ファイル数を入れる

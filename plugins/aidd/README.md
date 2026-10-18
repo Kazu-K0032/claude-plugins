@@ -180,6 +180,16 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `workflows/pr-review.js` の Report の段
 - `workflows/harness-audit-run.js` の Report の段
 
+### 出力先のパスは、前後を区切って伝える
+
+書き出したファイルのパスを伝えるときは、パスの前後を半角スペースか改行で区切る（例：「レポート： `tmp/<ブランチ名>/pr-review_<ts>.md`」）。全角の「：」などがパスに続くと、その文字までリンクに含まれ、Ctrl + クリックで開けないため。
+
+ワークフローにはこの README を読ませにくい。そのため、各スキル・ワークフローにも同じ 1 文を書いている。規約を変えるときは、次の箇所もそろえて直す。
+
+- `skills/` の `ai-report`・`docs-sync`・`harness-audit`・`pr-create` の `SKILL.md`
+- `skills/issue-pr-sync/result-format.md`・`skills/issue-start/result-template.md`
+- `workflows/pr-review.js` の戻り値
+
 ### ハーネス監査は、設計思想を物差しにし、実行前に見込みを示す
 
 `harness-audit` は、リポジトリ全体がこのマーケットプレイスの設計思想に合うかを見る最終チェック。init-repo から作り直した後や、統合ブランチへのマージ前に使う。
