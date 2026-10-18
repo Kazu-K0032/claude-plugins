@@ -11,7 +11,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い・Lint と整�
 同梱テンプレート（`${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/`）を実行中のリポジトリのルートへコピーし、エディタ設定・Lint と整形のツール・スペルチェックの除外語をプロジェクトに合わせる。**既存ファイルは承認なしに上書きしない**。
 
 - 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.vscode/`・`cspell.json`・`lefthook.yml` など）
-- 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、コミット、導入後の作業（手順 6）。フックは `jq` を使い、無いと失敗する。編集後の Lint・整形は lefthook（1.6.11 以降）で動かし、無いとフックは何もしない
+- 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、コミット、導入後の作業（手順 6）。フックは `jq` を使い、無いと失敗する。編集後の Lint・整形は lefthook で動かし（最低の版は `README.md` の「前提と制約」）、無いとフックは何もしない
 
 ## 参照ファイル
 
@@ -22,7 +22,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い・Lint と整�
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/merge-policy.md` | 手順 4 で `DIFF` のファイルがあるとき（選択肢を示す前から）・既存の `CLAUDE.md` があるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/tooling.md` | 手順 5 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/after-install.md` | 手順 6 |
-| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/README.md` | 収録物・除外したもの・導入後の調整を確かめるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/README.md` | 収録物・除外したもの・導入後の調整を確かめるとき。手順 6 で、lefthook の最低の版を伝えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | Markdown を書く・直すとき。その規約に従う |
 
 ## 想定している引数
@@ -88,5 +88,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い・Lint と整�
 
 - 手順 7 に、スキルの一覧を書かない。スキルが増えても古くならないようにするため
 - `allowed-tools` の `gh issue view`・`gh pr view` は、要件からの逆算で Issue・PR を読むためのもの
+- lefthook の最低の版は、`README.md` の「前提と制約」だけに書く。ほかの文書には書かず、README を指す
+- cspell の版は、`files/.github/workflows/pr-checks.yml` と `tooling.md` のコマンドの 2 か所に書く。コマンドに版が要るため、上げるときは両方をそろえる
 
 $ARGUMENTS

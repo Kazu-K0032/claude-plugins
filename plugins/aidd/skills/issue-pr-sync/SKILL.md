@@ -1,7 +1,7 @@
 ---
 name: issue-pr-sync
 description: 指定した Issue（省くとブランチ名の番号）と PR（省くと今のブランチの PR）を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える）・ラベル等のサイドバーを直接反映する（既存の記述を消すなどの重要な変更だけ、反映前に承認を取る）。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
-argument-hint: "[Issue番号|URL（任意。省略時はブランチ名の issues/ の後ろの番号。取れなければ質問する）] [PR番号|URL（任意。省略時は今のブランチの PR）]"
+argument-hint: "[Issue番号|URL（任意。省略時はブランチ名の issues/・hotfix/ の後ろの番号。取れなければ質問する）] [PR番号|URL（任意。省略時は今のブランチの PR）]"
 disable-model-invocation: true
 allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
 ---
@@ -11,7 +11,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 既存の Issue と PR の**根幹（背景・目的・解決方針）は正しい**前提で、着手後の追加対応やレビュー対応で増えた差分に、本文・タイトル・サイドバーを追従させて直接反映する。PR 本文が空なら、Issue と差分から新しく作る。
 
 - 外へ書き込むもの：Issue・PR の本文・タイトル・サイドバー（`gh` で直接反映する）。反映する本文と反映前の本文を `tmp/<ブランチ名>/issue-pr-sync/` に書く
-- 人がすること：既存の記述を消すなどの重要な変更（承認を取る変更）を承認する
+- 人がすること：既存の記述を消すなどの重要な変更（承認を取る変更）を承認する。PR 本文の「AI を使った確認」で、`/aidd:issue-pr-sync` 以外の行にチェックを入れる
 
 ## 参照ファイル
 
@@ -20,10 +20,10 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/errors.md` | 手順 1 で Issue・PR が取れない・PR が閉じていたとき、手順 3 で根幹が変わった・更新が要らないと判断したとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/body-policy.md` | 手順 3 で、本文の更新後の全文を作るとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/title-and-sidebar.md` | 手順 3 でタイトル・サイドバーの変更案を作るとき、手順 5 でサイドバーを反映するとき |
-| `${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 3 で、PR 本文を作る・直すとき（テンプレートに「AI を使った確認」の欄があるときも） |
+| `${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 3 で、PR 本文に「AI を使った確認」の欄があるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | 手順 3 で、PR 本文を新しく作るとき（節の構成） |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 手順 3 で、本文を書くとき（markdown の書式） |
-| `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 手順 3 で、本文を書く・数えるとき（長さの上限・数え方・書き方） |
+| `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 手順 3 で、本文を書く・数えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 手順 3 で、本文を数えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/approval-rules.md` | 手順 3・4 で、変更が承認を取るものかを決めるとき・承認を求めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/result-format.md` | 手順 6 で、結果を伝えるとき |
@@ -32,7 +32,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 
 - `$ARGUMENTS` の 1 つ目を Issue、2 つ目を PR の識別子とする。PR だけを指定するときも、Issue を先に書く
 - 識別子は番号でも URL でもよい。`gh` は両方を受け付けるため、パースせずそのまま渡す
-- Issue を省いた場合は、ブランチ名から取る。`git branch --show-current` のブランチ名が `issues/<番号>-` で始まれば、その `<番号>` を使う（例：`issues/36-polish-files` なら 36。`/aidd:issue-start` が作るブランチの形）。この形でなければ質問する
+- Issue を省いた場合は、ブランチ名から取る。`git branch --show-current` のブランチ名が `issues/<番号>-` か `hotfix/<番号>-` で始まれば、その `<番号>` を使う（例：`issues/36-polish-files` なら 36。`/aidd:issue-start` が作るブランチの形）。この形でなければ質問する
 - ブランチ名から取ったときは、手順 1 で取った PR 本文の Issue への参照（`Closes #<番号>` など）と比べる。参照があるのにその番号が含まれなければ、`AskUserQuestion` でどの Issue を使うかを聞き、選ばれた Issue で `gh issue view` をやり直す。違う Issue の本文を書き換えないため
 - PR を省いた場合は、今のブランチの PR を使う（`gh pr view` に識別子を渡さない）
 
@@ -86,7 +86,7 @@ gh pr view <PR> --json body -q .body | node "${CLAUDE_PLUGIN_ROOT}/scripts/body_
 1. Issue・PR のタイトルの変更案
 1. サイドバーの変更案
 
-本文を `<ts>_issue.md`・`<ts>_pr.md` に書き出し、`short-body.md` の「確かめ方」で数える。超えていたら縮めて書き直し、もう一度数える。3 回直しても収まらなければ、手順 4 で超えた箇所を示す。Node.js が無い・実行を断られたときは、数えずに進み、手順 6 で伝える。
+本文を `<ts>_issue.md`・`<ts>_pr.md` に書き出し、`short-body.md` の「確かめ方」で数える。超えていたら縮めて書き直し、もう一度数える。3 回直しても収まらなければ、手順 4 で超えた箇所を示す。
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/issue-pr-sync/<ts>_issue.md

@@ -1,6 +1,6 @@
 # Lint の規則を決めた理由を ADR に足す
 
-`wordpress` の手順 9 で、この実行で `phpcs.xml.dist` を入れたときに使う。元にする ADR は `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/adr/php-coding-standards.md`。あとから「なぜ整形の規則を外したか」を確かめられるようにするため、規則を決めた理由を利用先の ADR として足す。
+`wordpress` の手順 9 で、この実行で `phpcs.xml.dist` を入れたときに使う。元にする ADR は `${CLAUDE_PLUGIN_ROOT}/skills/wordpress/adr/php-coding-standards.md`。あとから「なぜ整形の規則を外したか」を確かめられるようにするため、規則を決めた理由を利用先の ADR として足す。コメントを日本語で書くために外した規則（`Squiz.Commenting.InlineComment.InvalidEndChar`・`Generic.Commenting.DocComment.LongNotCapital`・`Squiz.Commenting.FunctionComment.ParamCommentFullStop`）の理由は、`phpcs.xml.dist` のコメントにある。
 
 ## 手順
 

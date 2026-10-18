@@ -93,7 +93,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `references/` の内容は、元になったプロジェクトの `.claude/rules/` と重複する。**汎用ルールはこのプラグイン側を正**とし、規約を直すときは両方を直す。
 
-`references/markdown.md` は [project](../project/README.md) プラグインにも同じ内容のコピーがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する（このリポジトリの `.claude/rules/duplicated-files.md` が対象のファイルの組を管理する）。`references/short-body.md` と `scripts/body_length.js` も、[config](../config/README.md) の `plugin-feedback` に同じコピーがある。
+`references/` や `scripts/` のファイルには、[project](../project/README.md) や [config](../config/README.md) に同じ内容のコピーがあるものがある（プラグインをまたいでファイルを参照できないため）。片方を直したときは、もう片方も直すかを検討する。組の一覧は、このリポジトリの [duplicated-files.md](../../.claude/rules/duplicated-files.md) が管理する。
 
 ## 設計上の決めごと
 
@@ -159,7 +159,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### Issue 番号を省いたら、ブランチ名から取る
 
-`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名が `issues/<番号>-` の形のときだけ番号を取る。ほかの形なら、番号を推測せず Issue 無しでレビューする。
+`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` か `hotfix/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名が `issues/<番号>-` か `hotfix/<番号>-` の形のときだけ番号を取る。ほかの形なら、番号を推測せず Issue 無しでレビューする。
 
 ブランチ名の形を変えるときは、次の箇所もそろえて直す。
 

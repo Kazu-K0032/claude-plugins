@@ -1,7 +1,7 @@
 ---
 name: pr-create
 description: 現在のブランチのコミット内容とIssue情報から、リポジトリの PR テンプレートに沿ったPR本文の下書きと、レビュワー向けの検証コメントを tmp 配下に生成する。ユーザーが PR 本文作成を求めた時に使用する
-argument-hint: "[Issue番号（任意。省略時はブランチ名の issues/ の後ろの番号。取れなければ質問する）]"
+argument-hint: "[Issue番号（任意。省略時はブランチ名の issues/・hotfix/ の後ろの番号。取れなければ質問する）]"
 disable-model-invocation: true
 allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
@@ -27,7 +27,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show
 
 ## 想定している引数
 
-`$ARGUMENTS` は Issue 番号。空なら、ブランチ名から取る。`git branch --show-current` のブランチ名が `issues/<番号>-` で始まれば、その `<番号>` を使う（例：`issues/36-polish-files` なら 36。`/aidd:issue-start` が作るブランチの形）。この形でなければ質問する。番号は `gh issue view` で実在を確かめる。ブランチ名から取ったときは、報告でそのことを示す。
+`$ARGUMENTS` は Issue 番号。空なら、ブランチ名から取る。`git branch --show-current` のブランチ名が `issues/<番号>-` か `hotfix/<番号>-` で始まれば、その `<番号>` を使う（例：`issues/36-polish-files` なら 36。`/aidd:issue-start` が作るブランチの形）。この形でなければ質問する。番号は `gh issue view` で実在を確かめる。ブランチ名から取ったときは、報告でそのことを示す。
 
 ## 出力先
 

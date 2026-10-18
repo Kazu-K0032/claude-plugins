@@ -38,6 +38,9 @@ argument-hint: "[開始日 終了日（任意。省略時は期間を質問す�
 
 - `your-ai-report-<YYYYMMDD-HHMMSS>.md`：レポート（手順 5 で `analyze.py` が書く）
 - `.ai-report-qualitative.md`：定性パート（手順 4 で Claude が書く）
+- `.ai-report-data.json`：中間データ（手順 3 の `collect` が書く）
+
+中間データと定性パートは、`work/<目的>/` ではなく、レポートと同じ `tmp/<ブランチ名>/` の直下に置く。`analyze.py` の `collect` と `report` が `out_dir()` の直下の決まった名前で 2 つを受け渡し、`allowed-tools` の `Edit(tmp/*/.ai-report-qualitative.md)` も 1 階層だけに当たるため。
 
 ## 手順
 

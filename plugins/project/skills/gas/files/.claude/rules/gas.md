@@ -76,7 +76,7 @@ paths:
 
 ## 秘匿値を使う場合
 
-- API キー・Webhook URL・トークンはコードに書かず、スクリプトプロパティに置く
+- API キー・Webhook URL・トークンはコードに書かず、スクリプトプロパティに置く。秘匿値の流出を防ぐため
 - キー名を `constants.js` の `PROPERTY_KEYS` に定義し、値は `getScriptProperty_` で取得する。値はリポジトリにコミットしない
 
 ## clasp で反映する場合

@@ -19,7 +19,7 @@ WordPress のリポジトリへ「`wordpress/wp-content/` 配下のテーマと 
 | `規約だけ` | `.claude/rules/` の 3 つの規約（`wordpress.md`・`wordpress-security.md`・`wordpress-templates.md`）だけを入れる |
 | `Lint だけ` | `composer.json`・`phpcs.xml.dist` だけを入れ、フックに PHP の Lint を足す |
 | `Docker なし` | Docker のローカル環境を入れない |
-| `既存は置き換えない` | 既存ファイルに触らない |
+| `既存は置き換えない` | 既存のファイルと内容が違うもの（`DIFF`）は、すべて据え置く。フックへの PHP の Lint と Docker の検出の追記と、ADR の一覧への行の追加は、既存のファイルにも行う |
 
 既にテーマがある場合は、テーマの雛形を入れない。WordPress が `wordpress/wp-content/` 以外の場所にある場合は、ファイルを動かさず、規約と Lint の設定を今の場所に合わせて入れる。手順の詳細は [SKILL.md](SKILL.md) を参照。
 
@@ -42,7 +42,7 @@ bash <plugin>/scripts/install.sh --skill wordpress --apply  # 未存在のファ
 | `files/wordpress/compose.yaml` | ローカル環境（MySQL・WordPress・WP-CLI）。テーマと mu-plugins だけをマウントする。入れるかは実行時に聞く | イメージのタグを本番の版に合わせる |
 | `files/wordpress/.env.example` | ローカル環境の DB の接続情報とポートの雛形 | 変えるときだけ `.env` にコピーする |
 | `files/wordpress/composer.json` | Lint のツール（WordPress のコーディング規約・PHP の版の互換性）と、`composer lint`・`composer lint:fix` | そのまま使える |
-| `files/wordpress/phpcs.xml.dist` | Lint の規則。WordPress の規約を土台に、整形の規則だけ外す。対象はテーマと mu-plugins | `testVersion`・`minimum_wp_version` を本番の版に合わせる |
+| `files/wordpress/phpcs.xml.dist` | Lint の規則。WordPress の規約を土台に、整形の規則と、日本語のコメントやテンプレートの 1 行の PHP に合わない規則を外す。対象はテーマと mu-plugins | `testVersion`・`minimum_wp_version` を本番の版に合わせる |
 | `files/wordpress/wp-content/mu-plugins/README.md` | mu-plugins の案内板 | ファイルを足したら行を足す |
 | `files/wordpress/wp-content/themes/my-theme/` | クラシックテーマの最小構成（`style.css`・`functions.php`・`inc/`・`header.php`・`footer.php`・`index.php`・`template-parts/`・案内板の `README.md`） | `style.css` の `Description` と版を書く |
 
@@ -53,7 +53,7 @@ Lint の設定を入れたときは、規則を決めた理由の ADR（`adr/php
 - クラシックテーマ（PHP のテンプレート）だけを対象にする。ブロックテーマ（`theme.json`・HTML のテンプレート）は、規約の前提（`get_template_part()`・PHP でのエスケープ）が合わないため対象外
 - WordPress のファイルは `wordpress/` 配下に置く前提にしている。リポジトリのルートに `docs/`・インフラの設定などを並べても、WordPress のファイルと混ざらないようにするため。既存の構成が別の場所にある場合は、ファイルを動かさず規約の側を合わせる
 - サードパーティのプラグインは Git で管理しない前提にしている。版の追跡と、再配布のライセンスの確認を避けるため。自分で書く処理は mu-plugins に置く
-- Lint の規則は、WordPress の規約から整形の規則（インデント・配列の書き方・Yoda 条件・括弧の内側の空白）を外している。エディタの整形と食い違いやすいため。エスケープ・nonce・国際化の規則は残している
+- Lint の規則は、WordPress の規約から整形の規則（インデント・配列の書き方・Yoda 条件・括弧の内側の空白・項目の縦揃え）を外している。エディタの整形と食い違いやすいため。あわせて、コメントを日本語で書くための規則（句読点・大文字）と、テンプレートの 1 行の PHP（`<?php foo(); ?>`）を認めるための規則も外している。エスケープ・nonce・国際化の規則は残している。外した規則の理由は、`phpcs.xml.dist` のコメントにある
 - ローカル環境は Docker で動かす前提の雛形にしている。Local・wp-env など別の方法を使うなら、実行時に「作らない」を選ぶ
 - `composer install`・ローカル環境の起動・WordPress の初期設定・テーマの有効化は、Skill は行わない（人が行う）。依存やイメージの取得、DB の書き換えを伴うため
 
