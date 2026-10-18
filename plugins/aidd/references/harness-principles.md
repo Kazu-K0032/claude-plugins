@@ -35,7 +35,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 
 | 仕組み | 確かめる手がかり | 欠けたときの重大度 |
 | --- | --- | --- |
-| コミット・push・削除・権限の変更・深刻な外部操作を止める | `.claude/settings.json` の `permissions.deny`（`git commit`・`git push`・`rm`・`gh pr merge`・`gh release` など） | high |
+| コミット・push・削除・権限の変更・深刻な外部操作を止める | `.claude/settings.json` の `permissions.deny`（`git commit`・`git push`・`rm`・`gh pr merge`・`gh release` など。PowerShell の形（`PowerShell(...)`）も） | high |
 | 秘匿ファイルの読み取りを止める | `permissions.deny` の `Read(./.env)` など | high |
 | 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など） | high |
 | コミット・PR に Claude の署名を付けない | `settings.json` の `attribution` が空 | low |

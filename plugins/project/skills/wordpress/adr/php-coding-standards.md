@@ -3,7 +3,7 @@ status: "承認済み"
 date: YYYY-MM-DD
 ---
 
-# ADR YYYY-MM-DD: php-coding-standards: WordPress Coding Standards を使い、整形の規則だけ外す
+# ADR YYYY-MM-DD: php-coding-standards: WordPress Coding Standards を使い、整形などの規則を外す
 
 ---
 
@@ -45,7 +45,7 @@ date: YYYY-MM-DD
 
 ## 決定
 
-決定：WordPress Coding Standards（WPCS）を使う。ただし、整形の規則（インデント・配列の書き方・Yoda 条件・括弧の内側の空白）は外す
+決定：WordPress Coding Standards（WPCS）を使う。ただし、整形の規則（インデント・配列の書き方・Yoda 条件・括弧の内側の空白・項目の縦揃え）は外す。日本語のコメントと、テンプレートの 1 行の PHP に合わない規則も外す（理由は `phpcs.xml.dist` のコメント）
 
 理由：WordPress の公式がテーマとプラグインにも勧める規約で、WordPress の関数を知ったうえでセキュリティの漏れを見つけられるため
 
@@ -61,7 +61,7 @@ date: YYYY-MM-DD
 ### 受け入れたトレードオフ
 
 1. **WordPress 本体と違う整形にする**
-    - WPCS はタブのインデント・`array()`・Yoda 条件・括弧の内側の空白を求める。エディタの整形と食い違い、直すたびに差分が増えるため、これらの規則は外した
+    - WPCS はタブのインデント・`array()`・Yoda 条件・括弧の内側の空白・項目の縦揃えを求める。エディタの整形と食い違い、直すたびに差分が増えるため、これらの規則は外した
     - 代わりに、スペース 4 つのインデントと `[]` の配列にそろえる規則を入れた。エスケープ・nonce・国際化の規則は残している
 2. **名前に関わる設定が要る**
     - Text Domain（`my-theme`）を `phpcs.xml.dist` に書かないと、翻訳関数の検査が動かない。テーマを増やしたら足す

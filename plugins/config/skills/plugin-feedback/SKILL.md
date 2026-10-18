@@ -8,178 +8,77 @@ argument-hint: "[起票したい内容（任意。省略時はこのセッショ
 
 # プラグインの不具合・改善案の起票（plugin-feedback）
 
-セッション中に分かった kazu マーケットプレイスのプラグインの不具合・改善案を、`Kazu-K0032/claude-plugins` の Issue にする。既存の Issue と照らし合わせ、関連する Issue があればコメントで追記する。下書きを作る前に、同じ件の Issue の状況と、マーケットプレイスの方針とのずれをユーザーに伝える（手順 4・5）。**GitHub への書き込みは、下書きの承認を取ってから行う**。承認を省くのは、ユーザーが省くよう求めたときだけ（手順 9）。
+セッション中に分かった kazu マーケットプレイスのプラグインの不具合・改善案を、`Kazu-K0032/claude-plugins` の Issue にする。関連する Issue があればコメントで追記し、下書きの前に、同じ件の Issue の状況と方針とのずれを伝える（手順 4・5）。
 
-| 種類 | 例 |
-| --- | --- |
-| 不具合（`bug`） | スキルの手順どおりに動かない・チェックが誤検出する・書かれていない挙動でつまずいた |
-| 改善案（`enhancement`） | 「こういう機能があったら便利」・手順やテンプレートの改善 |
-
-対象外は 2 つ。Claude Code 本体の不具合（組み込みの `/feedback` で Anthropic へ送る）と、利用先のプロジェクト自身の不具合。
-
-起票の提案は、config の SessionStart フックが入れる文面（`${CLAUDE_PLUGIN_ROOT}/hooks/plugin-feedback.md`）に沿って行われる。このスキルは、ユーザーが同意した後の起票を受け持つ。ユーザーがこのスキルを直接呼んだときは、起票に同意したものとして扱う。ただし、呼んだことを下書きの承認（手順 9）の代わりにはしない。公開リポジトリに載る本文を、ユーザーはまだ見ていないため。
+- 外へ書き込むもの：`Kazu-K0032/claude-plugins` の Issue・コメント。初めての実行だけ、作業ディレクトリの `.claude/settings.local.json` の `env`
+- 人がすること：候補が複数なら、起票する件を選ぶ。下書きを承認する（**GitHub への書き込みは承認の後**。省くのは、ユーザーが省くよう求めたときだけ）。対応しないと決めた件・方針とずれる件なら、求める理由を書く。`gh` で書き込めないときは、手で起票する
 
 ## 参照ファイル
 
-| ファイル | 役割 |
+| ファイル | いつ読むか |
 | --- | --- |
-| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/issue-format.md` | Issue・コメントの本文の型と、公開前の点検項目 |
-| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/short-body.md` | 本文の長さの上限・数え方・書き方 |
-| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.js` | 本文の文字数を数えるスクリプト |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/gh-access.md` | 手順 1 で `gh` の状態を見るとき、手順 9 でラベルの権限を見るとき、手順 10 で失敗したとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/approval.md` | 手順 1 で承認の設定を確かめるとき、手順 9 で承認を省くかを決め、承認を取るとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/triage.md` | 手順 2 で起票する件を決めるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/existing-issues.md` | 手順 3・4・6 で既存の Issue を探し、扱いを決めるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/policy-check.md` | 手順 5 で方針と照らすとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/issue-format.md` | 手順 7 で下書きを作るとき、手順 8 で公開前に点検するとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/short-body.md` | 手順 8 で本文の長さを確かめるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.js` | 手順 8 で本文の文字数を数えるとき |
 
-## 引数の解釈
+## 想定している引数
 
 | 引数 | 対象 |
 | --- | --- |
 | 省略 | このセッションで分かった不具合・改善案から候補を挙げる |
 | 起票したい内容 | その件だけを扱う。会話にある経緯・エラー文・根拠も使う |
 
+扱う件は次の 2 種類。対象外は、Claude Code 本体の不具合（組み込みの `/feedback` で Anthropic へ送る）と、利用先のプロジェクト自身の不具合。
+
+| 種類 | 例 |
+| --- | --- |
+| 不具合（`bug`） | スキルの手順どおりに動かない・チェックが誤検出する・書かれていない挙動でつまずいた |
+| 改善案（`enhancement`） | 「こういう機能があったら便利」・手順やテンプレートの改善 |
+
+## 出力先
+
+新しい Issue か、既存の Issue へのコメント。どちらも `--repo Kazu-K0032/claude-plugins` に書く。下書きのファイルは作らず、本文は標準入力から渡す。利用先のリポジトリや `~/.claude` に下書きを残さないため。
+
 ## 手順
 
 ### 1. 前提を確かめる
 
-```bash
-gh auth status
-```
-
-| 結果 | 対応 |
-| --- | --- |
-| `gh` が無い（`command not found` 等） | [GitHub CLI](https://cli.github.com/) のインストールと `gh auth login` を案内する。今すぐ起票したい場合は「`gh` で書き込めない場合」に進む |
-| ログインしていない | `gh auth login` を案内する。今すぐ起票したい場合は同上 |
-| `Token:` が `github_pat_` で始まり、アカウントが `Kazu-K0032` 以外 | fine-grained トークンは、メンバーでない公開リポジトリに書き込めない。`gh auth login`（ブラウザでのログイン）か classic トークンへの切り替えを案内する。切り替えない場合は「`gh` で書き込めない場合」に進む |
-| それ以外 | 下の「承認の設定」へ進む |
-
-#### 承認の設定
-
-下書きの承認（手順 9）を省くかは、環境変数 `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` で切り替える。値が `true` か `on`（大文字・小文字は問わない）なら省き、それ以外（`off`・未設定など）は承認を取る。ユーザーが省くよう指示しているとき（引数・会話・CLAUDE.md・記憶）も省く。実行のたびに次の順で確かめ、どうするかをユーザーに伝えてから手順 2 へ進む。
-
-1. 作業ディレクトリ（Claude Code を起動したディレクトリ）の `.claude/settings.local.json` を `Read` し、`env` に `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` があるかを見る。セッションの途中で書き換えた値も拾えるよう、環境変数より先にファイルを見る
-1. ファイルに無ければ、ほかの場所（`~/.claude/settings.json`・起動したシェルなど）で設定されていないかを確かめる
-
-    ```bash
-    printenv CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL
-    ```
-
-1. 次の表で使う値を決める
-
-    | 状態 | 使う値 | 伝えるときの設定場所 |
-    | --- | --- | --- |
-    | `settings.local.json` にある | ファイルの値 | `.claude/settings.local.json` |
-    | ファイルに無く、`printenv` が値を返す | 環境変数の値。`settings.local.json` には書き込まない | 環境変数（`~/.claude/settings.json` など） |
-    | どちらにも無い（初めての実行） | `off`。`settings.local.json` の `env` に `"CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL": "off"` を書き込む | `.claude/settings.local.json` |
-
-1. 承認を省く指示が、引数・会話・CLAUDE.md・記憶に無いかを確かめる
-1. 次の形でユーザーに伝える
-    - 値が `true`・`on` のとき：「<設定場所> で `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` が `<値>` になっているので、下書きの承認を取らずに起票します。承認を取りたい場合は `off` に戻してください」
-    - 値はそれ以外だが、省く指示があるとき：「<設定場所> で `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` は `<値>` ですが、<指示のある場所> の指示に従い、下書きの承認を取らずに起票します」
-    - どちらでもないとき：「<設定場所> で `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` が `<値>` になっているので、下書きの承認を取ってから起票します。承認が要らなければ `true` に変えてください」
-    - 初めての実行で書き込んだときは、頭に「初めての実行なので、`.claude/settings.local.json` に `CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` を `off` で書き込みました。」を付ける
-
-`settings.local.json` への書き込みは、次のとおりに行う。
-
-- 書き込むのは初めての実行のときだけ。ファイルが無ければ作り（`.claude/` が無ければそれも作る）、あれば `env` にこのキーだけを足す。ほかのキーと書式は変えない
-- ファイルに無くても `printenv` が値を返すときは書き込まない。`settings.local.json` はほかの場所の設定より優先されるため、書き込むと `~/.claude/settings.json` などの設定を上書きしてしまう
-- `settings.local.json` が JSON として読めないときは書き込まず、値を `off` として扱い、読めなかったことを伝える
-- 書き込みを断られた・止められた（許可プロンプトで断られた・deny やフックで止められた）ときは、値を `off` として扱い、書き込めなかったことを伝えて続ける。値がどこにも無いままだと、次の実行でも書き込もうとする。止めるには `~/.claude/settings.json` の `env` にこの変数を入れればよい（`off` でもよい）ことも伝える
+`gh auth status` を実行し、結果ごとの扱いを `gh-access.md` で決める。書き込めるなら、`approval.md` の「承認の設定を確かめる」と「`settings.local.json` への書き込み」で承認を省くかを決め、ユーザーに伝えてから手順 2 へ進む。
 
 ### 2. 起票する件を決める
 
-1. 引数か会話から、起票する件を拾う。候補が複数あれば `AskUserQuestion` で選んでもらう。複数を選んだ場合は、1 件ずつ手順 3〜10 を繰り返す
-1. 件ごとに次を決める
-    - 種類：不具合（`bug`）か改善案（`enhancement`）か
-    - 対象：プラグインとスキル（例：`project:gas`）。導入したテンプレート・ルールが対象なら、プラグイン内のパスも決める（例：`plugins/project/skills/gas/files/.claude/rules/gas.md`）
-1. スキルの結果へのユーザーの違和感・不満（「何か違くない？」「毎回おかしい」など）から始まった件は、そのスキルの本文・規約と結果を突き合わせて原因を分け、扱いを決める
-
-    | 原因 | 扱い |
-    | --- | --- |
-    | 規約どおりの結果だが、規約がユーザーの期待と違う | 改善案（`enhancement`）として、規約の見直しを起票する |
-    | 規約に反した結果が繰り返し出る | 指示が守られにくい書き方だとして、改善案（`enhancement`）にする |
-    | 規約に反した結果が 1 回だけ出て、直したら済んだ | 起票しない（その場の Claude の間違い） |
-    | 利用先のプロジェクトだけの好み | 起票するかをユーザーに聞く。他の人にも役立つなら改善案にする |
-
-1. 対象外の件は起票しない。Claude Code 本体の不具合なら、組み込みの `/feedback` を案内する
-1. 何が起きたか・再現の手順が会話から分からない件は、ユーザーに補ってもらう。推測で埋めない
+引数か会話から起票する件を拾い、件ごとに種類と対象（例：`project:gas`）を決める。決め方は、件の数に関わらず `triage.md` を読む（候補の選び方・原因の分け方・対象外の扱い・分からないことを補ってもらう）。ユーザーがこのスキルを直接呼んだときは、起票に同意したものとして扱う。
 
 ### 3. 既存の Issue を探す
 
-語を変えて 2〜3 回検索する。語の例は、プラグイン名とスキル名・エラー文やつまずいた挙動の要点・改善案の名詞。クローズ済みも含める。
-
-```bash
-gh issue list --repo Kazu-K0032/claude-plugins --state all --search "<語>" --json number,title,state,labels,url --limit 20
-```
-
-関係がありそうな Issue は、本文とコメントまで読む。`gh issue view --comments` は端末以外から実行するとコメントしか出ないため、`--json` で取る。
-
-```bash
-gh issue view <番号> --repo Kazu-K0032/claude-plugins --json number,title,body,comments,state,stateReason,labels,assignees,updatedAt,url
-```
-
-紐づく PR は、番号で検索して探す。このリポジトリの PR は `develop` に向けるため、`Closes #<番号>` があっても Issue と PR が自動ではつながらないことがある。
-
-```bash
-gh pr list --repo Kazu-K0032/claude-plugins --state all --search "#<番号>" --json number,title,state,baseRefName,mergedAt,url
-```
-
-読んだ Issue を、「同じ件」「関連する件（同じプラグイン・スキル・テーマで、まとめて直すのが自然なもの）」「無関係」に分ける。判断に迷ったら、候補の Issue を示して `AskUserQuestion` で選んでもらう。
+語を変えて、クローズ済みも含めて検索し、読んだ Issue を「同じ件」「関連する件」「無関係」に分ける。コマンドと分け方は `existing-issues.md` の「探す」を読む。
 
 ### 4. 同じ件の Issue の状況を伝える
 
-同じ件の Issue があれば、下書きを作る前に、状態ごとに次を伝える。無ければ手順 5 へ進む。
-
-| 同じ件の Issue | 伝えること | その後 |
-| --- | --- | --- |
-| open | タイトル・URL・進み具合（担当者・ラベル・紐づく PR・最後の更新日）を示し、「同じ件が対応待ちのため、更新を待ってほしい」と伝える | 新しく分かったこと（別の再現条件・根拠など）があれば、コメントでの追記を提案する。同意されたら手順 6 へ進む（起票済みの件のため、手順 5 は飛ばす）。無い・断られたら終える |
-| closed（`stateReason` が `COMPLETED`） | 直した PR を示し、直した変更がまだリリースされていないことがあると伝える。PR を `develop` に溜め、リリースでまとめて出すため | `/plugin marketplace update kazu` と `/reload-plugins` での更新を案内する。更新しても起きるなら、手順 5 へ進む。それ以外は終える |
-| closed（`stateReason` が `NOT_PLANNED`・`DUPLICATE`、または `wontfix`・`duplicate`・`invalid` のラベル） | 閉じた理由を、最後のコメントとラベルからたどり、「〇〇という理由で、あえて対応していない」と伝える。重複として閉じた場合は、重複先の Issue でこの表を当て直す | `AskUserQuestion` で「それでも起票する / やめる」を聞く。起票するなら、閉じた理由を承知で求める理由をユーザーに書いてもらい、手順 5 へ進む |
-
-閉じた理由がたどれないときは、たどれなかったことを伝え、`NOT_PLANNED` と同じく起票するかを聞く。
+同じ件の Issue があれば、下書きを作る前に、状態ごとの扱いを伝える。無ければ手順 5 へ進む。状態ごとに伝えることとその後は、`existing-issues.md` の「同じ件の Issue の状況」を読む。
 
 ### 5. 方針と照らす
 
-件が、マーケットプレイスの価値（`docs/values/`）・設計の方針（`docs/policies/`）とずれないかを確かめる。不具合でも、方針どおりの挙動（削除が deny で止まるなど）なら、ずれとして扱う。
-
-1. 価値と方針の一覧を読む。`gh repo view --json nameWithOwner` が `Kazu-K0032/claude-plugins` を返すなら、手元の `docs/values/README.md`・`docs/policies/README.md` を `Read` で読む。リリース前の方針も含めるため。それ以外は、`gh api` で GitHub から読む
-
-    ```bash
-    gh api repos/Kazu-K0032/claude-plugins/contents/docs/values/README.md -H "Accept: application/vnd.github.raw"
-    gh api repos/Kazu-K0032/claude-plugins/contents/docs/policies/README.md -H "Accept: application/vnd.github.raw"
-    ```
-
-1. 一覧の「読む場面」から関係する価値・方針を選び、そのファイル（一覧のリンク先）も同じ方法で読む
-1. 件が、読んだ文書の決めごと（禁止・しないと決めたこと・Q&A の答え）と食い違うかを見る
-1. ずれる、またはずれるか迷うときは、該当する価値・方針の番号・題・該当の文を示し、`AskUserQuestion` で「承知の上で起票する / ずれていない / やめる」を聞く。「承知の上で起票する」なら、ずれを承知で求める理由をユーザーに書いてもらう。「やめる」なら起票しない
-
-ずれの判断は Claude の判断のため、起票を止めない。ずれを伝えて聞くところまでにとどめる。`gh api` が失敗した・ログインしていないなどで読めないときは、照らさずに進み、照らしていないことを手順 11 で報告する。
-
-`gh api` は書き込みもできるため、`allowed-tools` に入れていない。読むたびに許可プロンプトが出る。
+件が、マーケットプレイスの価値（`docs/values/`）・設計の方針（`docs/policies/`）とずれないかを、`policy-check.md` の手順で確かめる。ずれの判断は Claude の判断のため、起票を止めない。ずれを伝えて聞くところまでにとどめる。
 
 ### 6. 起票の形を決める
 
-| 既存の Issue | 形 |
-| --- | --- |
-| 同じ件で open（手順 4 で追記に同意された） | 新しく分かったことだけをコメントで追記する |
-| 関連する件で open | コメントで追記する |
-| 同じ件で closed（手順 4 で起票を続けた）・関連する件で closed | 新しい Issue を作り、本文の末尾に `関連: #<番号>` を書く |
-| 無い・無関係 | 新しい Issue を作る |
-
-判断に迷ったら、候補の Issue を示して `AskUserQuestion` で選んでもらう。
+新しい Issue にするか、既存の Issue にコメントで追記するかを、`existing-issues.md` の「起票の形」で決める。
 
 ### 7. 下書きを作る
 
-`references/issue-format.md` の型で、タイトル・ラベル・本文を作る。コメントの場合は本文だけ。書くのは、会話・エラー文・ファイル・引用元で裏が取れたことだけ。手順 4・5 でユーザーが書いた理由は、型の「承知の上で求める理由」の節に入れる。
+`issue-format.md` の型で、タイトル・ラベル・本文を作る。コメントの場合は本文だけ。書くのは、会話・エラー文・ファイル・引用元で裏が取れたことだけ。手順 4・5 でユーザーが書いた理由は、型の「承知の上で求める理由」の節に入れる。
 
 ### 8. 公開してよいか点検する
 
-`Kazu-K0032/claude-plugins` は公開リポジトリである。`references/issue-format.md` の「公開前の点検」に従い、利用先の情報を下書きから消すか言い換える。利用先のリポジトリは次で特定する。
+`issue-format.md` の「公開前の点検」に従い、利用先の情報を下書きから消すか言い換える。利用先は `git rev-parse --show-toplevel` と `gh repo view --json nameWithOwner,isPrivate` で特定し、どちらも失敗したら（Git の管理外など）作業ディレクトリ名とする。今いるのが `Kazu-K0032/claude-plugins` 自身なら、リポジトリ名は言い換えなくてよい。
 
-```bash
-git rev-parse --show-toplevel
-gh repo view --json nameWithOwner,isPrivate
-```
-
-どちらも失敗した場合（Git の管理外など）は、作業ディレクトリ名を利用先の名前として扱う。今いるのが `Kazu-K0032/claude-plugins` 自身なら、リポジトリ名は言い換えなくてよい。
-
-点検を終えたら、下書きの本文を数える。下書きのファイルは作らず、標準入力から渡す。超えていたら縮め、もう一度数える。3 回直しても収まらなければ、承認を取るときは手順 9、省くときは手順 11 で超えた箇所を示す。Node.js が無い・実行を断られたときは、数えずに進み、手順 11 で伝える。
+点検を終えたら本文を数え、超えていたら縮めて数え直す。3 回直しても収まらなければ、承認を取るときは手順 9、省くときは手順 11 で超えた箇所を示す。Node.js が無い・実行を断られたときは、数えずに進み、手順 11 で伝える。
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.js" - <<'__ISSUE_BODY__'
@@ -189,38 +88,11 @@ __ISSUE_BODY__
 
 ### 9. 承認を取る
 
-1. ラベルを付けられるかを確かめる（新しい Issue の場合だけ）。リポジトリ名は必ず付ける。付けないと、今いる利用先のリポジトリの権限が返る
-
-    ```bash
-    gh repo view Kazu-K0032/claude-plugins --json viewerPermission
-    ```
-
-    - `ADMIN`・`MAINTAIN`・`WRITE` なら、付けるラベルが実在することを `gh label list --repo Kazu-K0032/claude-plugins` で確かめる
-    - それ以外（`TRIAGE`・`READ` 等）なら、ラベルは付けずに作者に任せる。書き込み権限が無いと、指定したラベルはエラーにならずに捨てられるため
-
-1. 承認を省くかを決める
-
-    | 条件 | 扱い |
-    | --- | --- |
-    | 手順 1 の「承認の設定」で、省くと伝えた（値が `true`・`on`、または省く指示がある） | 承認を省いて手順 10 へ進む |
-    | 手順 1 の後に、ユーザーが省くよう指示した（「下書きはいらない、そのまま起票して」など） | 省くことを伝えてから、手順 10 へ進む |
-    | それ以外（スキルを直接呼んだだけの場合を含む） | 承認を取る |
-
-    承認を省くときも、手順 4・5 の問い（対応しないと決めた件・方針とずれる件を起票するか）は省かない。承知で求める理由は、ユーザーにしか書けないため。
-
-1. 次を表示する
-    - 起票先（新しい Issue か、`#<番号>` へのコメントか）と、そう判断した理由。関連する Issue があればその URL
-    - 手順 4・5 で伝えた、同じ件の Issue の閉じた理由・方針とのずれ（あれば）
-    - タイトルとラベル（コメントなら無し。ラベルを付けられない場合は「作者が付ける」と書く）
-    - 本文の全文
-    - 手順 8 で消した・言い換えた箇所
-1. `AskUserQuestion` で「作成する / 直してから作成する / やめる」を聞く。「直してから作成する」なら、指摘を反映し、手順 8 の数えるところからやり直す
+新しい Issue なら、`gh-access.md` の「ラベルを付けられるか」を確かめる。`approval.md` の「承認を省くかを決める」で省くと決めたら手順 10 へ進み、省かないなら同じファイルの「承認を取る」で、下書きの全文を見せて承認を取る。
 
 ### 10. 作成する
 
-承認された本文（承認を省いた場合は、手順 7・8 で作った下書き）を**一字一句そのまま**、引用符付きのヒアドキュメントで標準入力から渡す。下書きのファイルは作らない。利用先のリポジトリや `~/.claude` に下書きを残さないため。
-
-新しい Issue の場合（ラベルを付けられない場合は `--label` を外す）：
+承認された本文（承認を省いた場合は、手順 7・8 で作った下書き）を**一字一句そのまま**、引用符付きのヒアドキュメントで渡す。ラベルを付けられない場合は `--label` を外す。`gh` が失敗したら、`gh-access.md` の「`gh` が失敗した場合」を読む。
 
 ```bash
 gh issue create --repo Kazu-K0032/claude-plugins --title "<タイトル>" --label <ラベル> --body-file - <<'__ISSUE_BODY__'
@@ -228,15 +100,7 @@ gh issue create --repo Kazu-K0032/claude-plugins --title "<タイトル>" --labe
 __ISSUE_BODY__
 ```
 
-既存の Issue へのコメントの場合：
-
-```bash
-gh issue comment <番号> --repo Kazu-K0032/claude-plugins --body-file - <<'__ISSUE_BODY__'
-<本文>
-__ISSUE_BODY__
-```
-
-`gh` が失敗したら、エラーを示して「`gh` で書き込めない場合」に進む。`Resource not accessible by personal access token` などの 403 は、手順 1 の fine-grained トークンが原因のことが多い。
+既存の Issue へのコメントは `gh issue comment <番号> --repo Kazu-K0032/claude-plugins --body-file -` に同じ形で渡す。
 
 ### 11. 報告する
 
@@ -246,14 +110,6 @@ __ISSUE_BODY__
 - 承認を省いた場合は、その理由（`CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` の値と設定場所・どこにあったどんな指示か）と、手順 8 で消した・言い換えた箇所
 - 方針とのずれを承知で起票した場合は、ずれた価値・方針の番号。方針を読めずに照らさなかった場合は、そのこと
 - 起票しなかった候補と、その理由（断られた・既存の Issue と同じ件で対応待ちだった・対応しないと決めて閉じていた等）
-
-## `gh` で書き込めない場合
-
-`gh` が無い・ログインしていない・トークンで書き込めない場合は、下書きを作ってユーザーに手で起票してもらう。
-
-1. 手順 2・6〜8 で下書きを作る。`gh` が使えて読み取りだけできる場合（fine-grained トークン等）は、手順 3〜5 も行う。使えない場合は、[Issue の一覧](https://github.com/Kazu-K0032/claude-plugins/issues?q=is%3Aissue) で同じ件が無いかを確かめるよう伝える
-1. タイトルと本文を、そのまま貼り付けられる形で示す
-1. 貼り付け先を案内して終える。新しい Issue なら [新しい Issue の画面](https://github.com/Kazu-K0032/claude-plugins/issues/new)、コメントなら既存の Issue の URL
 
 ## 禁止事項
 
@@ -268,5 +124,10 @@ __ISSUE_BODY__
 - 裏の取れない原因・再現手順を書かない
 - 手順 8 で数えずに、承認を取る・作成する（Node.js が無い・実行を断られたときを除く）
 - 利用先の非公開の情報（リポジトリ名・メールアドレス・トークン・業務のファイルの中身）を書かない
+
+## 保守
+
+- 起票の提案は、config の SessionStart フックが入れる文面（`${CLAUDE_PLUGIN_ROOT}/hooks/plugin-feedback.md`）に沿って行われる。このスキルは、ユーザーが同意した後の起票を受け持つ
+- `gh api`（手順 5）は書き込みもできるため、`allowed-tools` に入れていない。読むたびに許可プロンプトが出る
 
 $ARGUMENTS

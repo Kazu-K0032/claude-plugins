@@ -8,49 +8,35 @@ argument-hint: "[入れる設定（任意。省略時は statusline と language
 
 # グローバル設定の導入（setup-global）
 
-ユーザースコープの設定ファイル `~/.claude/settings.json` に、次の 2 つを入れる。**既存の値は承認なしに上書きしない**。
+ユーザースコープの設定ファイル `~/.claude/settings.json` に、2 行のステータスラインと日本語での応答を入れる。ステータスラインのスクリプトは、同梱版を `~/.claude/statusline/` にコピーして使う。
 
-| 設定 | 値 | 効果 |
-| --- | --- | --- |
-| `statusLine` | `{"type": "command", "command": "node ~/.claude/statusline/statusline.js"}` | 画面下部に 2 行のステータスラインを出す |
-| `language` | `"japanese"` | Claude の応答言語を日本語にする |
+- 外へ書き込むもの：`~/.claude/settings.json` の `statusLine`・`language` と、`~/.claude/statusline/statusline.js`（置き換えるときは前の版を日時付きの `.bak` に移す）。**既存の値は承認なしに上書きしない**
+- 人がすること：変更計画の承認
 
 ## 参照ファイル
 
-| ファイル | 役割 |
+| ファイル | いつ読むか |
 | --- | --- |
-| `${CLAUDE_PLUGIN_ROOT}/skills/setup-global/scripts/statusline.js` | ステータスラインの本体（Node.js・外部パッケージなし） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/setup-global/scripts/statusline.js` | ステータスラインの本体（Node.js・外部パッケージなし）。手順 1 で差分を取るとき、手順 4 でコピーするとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/setup-global/statusline-display.md` | 手順 3 で今のステータスラインと同梱版の違いを示すとき、表示について聞かれたとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/setup-global/verify.md` | 手順 5 で動作を確かめるとき |
 
-## ステータスラインの表示内容
-
-```text
- Model: Opus 5.5 (high)  Ctx: ▓▓▓░░░░░░░ 29% 57.0k  claude-plugins  issues/1-usage-feedback
- Total: 797.0k  Cost: $0.66  Time: 1h23m (API 12m)  Limit: 5h 24% ↻16:56 / 7d 84% ↻10/7 02:16
-```
-
-| 項目 | 内容 | 入力元 |
-| --- | --- | --- |
-| `Model` | モデルの表示名と、括弧内に推論の強さ（`low`〜`max`。対応しないモデルでは出ない） | `model.display_name`・`effort.level` |
-| `Ctx` | 現在のコンテキストの使用率（10 マスのバーと %）と、載っている入力トークン数。使用率が 50% 以上で黄、80% 以上で橙になる | `context_window.used_percentage` / `total_input_tokens` |
-| ディレクトリ・ブランチ | 作業ディレクトリ名と git ブランチ（長い場合は先頭を `…` で省略） | `workspace.current_dir`・`git branch --show-current` |
-| `Total` | セッション内の全 API 呼び出しで処理したトークン数（入力・キャッシュ作成・出力。キャッシュ読み込みは含めない） | `transcript_path` の各応答の `usage` を合算 |
-| `Cost` | セッションの推定コスト（USD） | `cost.total_cost_usd` |
-| `Time` | セッションの経過時間と、括弧内に API の応答待ちの合計時間 | `cost.total_duration_ms` / `total_api_duration_ms` |
-| `Limit` | 利用上限の 5 時間枠・7 日枠の消費率と、リセットされる時刻（`↻`）。高いほうの消費率で色が変わる（基準は `Ctx` と同じ） | `rate_limits.five_hour` / `seven_day` |
-
-`Limit` は claude.ai の Pro / Max プランでのみ、セッションの最初の応答の後から表示される。
-
-値が無い項目（初回応答前のコンテキストなど）は表示しない。入力の仕様は [ステータスラインの公式ドキュメント](https://code.claude.com/docs/ja/statusline) を参照。
-
-区切りの斜め三角は Powerline グリフ（Nerd Font 等）を使う。対応フォントが無い端末で文字化けする場合は、環境変数 `CLAUDE_STATUSLINE_PLAIN=1` を設定すると区切りなしの色帯表示になる（`settings.json` の `env` に入れればよい）。
-
-## 引数の解釈
+## 想定している引数
 
 | 引数 | 対象 |
 | --- | --- |
 | 省略 | `statusLine` と `language` の両方 |
 | `statusline だけ` 等 | `statusLine` のみ |
 | `language だけ` / `日本語化だけ` 等 | `language` のみ |
+
+## 出力先
+
+`~/.claude/settings.json` に次を入れる。
+
+| 設定 | 値 | 効果 |
+| --- | --- | --- |
+| `statusLine` | `{"type": "command", "command": "node ~/.claude/statusline/statusline.js"}` | 画面下部に 2 行のステータスラインを出す |
+| `language` | `"japanese"` | Claude の応答言語を日本語にする |
 
 ## 手順
 
@@ -76,9 +62,7 @@ argument-hint: "[入れる設定（任意。省略時は statusline と language
 | `language` | `"japanese"`（大文字小文字は問わない） | キーが無い | 別の言語 |
 | `statusline.js`（`statusLine` が対象のときのみ） | 同梱版と差分なし | ファイルが無い | 差分あり |
 
-#### 全部「同一」なら終了する
-
-対象の項目がすべて「同一」なら、次のように現状だけを報告して**終了する**。承認を求めず、書き込み・コピー・動作確認もしない。
+対象の項目がすべて「同一」なら、次のように現状だけを報告して**終了する**。承認を求めず、書き込み・コピー・動作確認もしない。プロジェクト側の設定に上書きされている場合（手順 3 の最後の箇条）は、その旨を報告に添える。
 
 ```markdown
 設定はすでに同梱版と同じため、変更はありません。
@@ -89,11 +73,9 @@ argument-hint: "[入れる設定（任意。省略時は statusline と language
 | `language` | `"japanese"` |
 ```
 
-ただし、プロジェクト側の設定（下記）に上書きされている場合は、その旨を報告に添える。
-
 ### 3. 変更計画を提示して承認を得る（必須）
 
-「同一」以外の項目について、現状と選択肢を示す。「同一」の項目は「変更なし」と表に載せるだけにして、選択肢を出さない。
+「同一」以外の項目について、現状と選択肢を示す。「同一」の項目は「変更なし」と表に載せるだけにして、選択肢を出さない。同梱版との違いは、`statusline-display.md` の表示内容と比べて示す。
 
 | 状態 | 示す内容 | 選択肢 |
 | --- | --- | --- |
@@ -135,15 +117,9 @@ argument-hint: "[入れる設定（任意。省略時は statusline と language
 
 `command` のパスはスラッシュ区切りで書く。Windows では Claude Code がステータスラインを Git Bash 経由で実行するため、バックスラッシュは区切りとして解釈されない。`~` は Windows でもホームディレクトリに展開される。
 
-### 5. 動作を確認する
+### 5. 動作を確認して報告する
 
-`statusline.js` を配置・編集した場合だけ、サンプル入力を流して、エラーなく 2 行が出ることを確認する。`pwd -W` は Git Bash で Windows 形式のパス（`C:/...`）を返す。Windows の Node.js は `/c/...` 形式を扱えず、ブランチが表示されなくなるため。
-
-```bash
-echo '{"model":{"display_name":"Opus"},"effort":{"level":"high"},"workspace":{"current_dir":"'"$(pwd -W 2>/dev/null || pwd)"'"},"cost":{"total_cost_usd":0.12,"total_duration_ms":754000,"total_api_duration_ms":120000},"context_window":{"total_input_tokens":12000,"used_percentage":6},"rate_limits":{"five_hour":{"used_percentage":23,"resets_at":'"$(( $(date +%s) + 3600 ))"'}}}' | node ~/.claude/statusline/statusline.js
-```
-
-最後に次を報告する。
+`statusline.js` を配置・編集した場合だけ、`verify.md` のサンプル入力を流して、エラーなく 2 行が出ることを確かめる。最後に次を報告する。
 
 - 項目ごとの結果（設定した / 置き換えた / 更新した / 据え置いた / 変更なし）と、置き換えた項目の元の値
 - ステータスラインは次の描画（次のメッセージ送信など）から反映される。`language` は新しいセッションから効く

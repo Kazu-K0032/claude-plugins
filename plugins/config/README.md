@@ -61,22 +61,34 @@ config/
 └── skills/
     ├── setup-global/
     │   ├── SKILL.md
+    │   ├── statusline-display.md  # ステータスラインの表示内容
+    │   ├── verify.md              # 導入後の動作の確かめ方
     │   └── scripts/
     │       └── statusline.js  # ステータスラインの本体（~/.claude/statusline/ へコピーして使う）
     ├── conflicts/
     │   ├── SKILL.md
+    │   ├── checks.md          # 点検する観点とスクリプトの出力
+    │   ├── output-format.md   # レポートの形
     │   └── scripts/
     │       └── conflicts.js   # 衝突・重複・書き方の誤りを JSON で出力する点検スクリプト
     ├── plugin-feedback/
     │   ├── SKILL.md
     │   ├── references/
-    │   │   ├── issue-format.md  # Issue・コメントの本文の型と、公開前の点検項目
-    │   │   └── short-body.md    # 本文の長さの上限と数え方（aidd と同じ写し）
+    │   │   ├── approval.md         # 下書きの承認を取るか・省くか
+    │   │   ├── existing-issues.md  # 既存の Issue の探し方と扱い
+    │   │   ├── gh-access.md        # gh の前提・権限と、書き込めないとき
+    │   │   ├── issue-format.md     # Issue・コメントの本文の型と、公開前の点検項目
+    │   │   ├── policy-check.md     # 方針と照らす
+    │   │   ├── short-body.md       # 本文の長さの上限と数え方（aidd と同じ写し）
+    │   │   └── triage.md           # 起票する件の切り分け
     │   └── scripts/
     │       └── body_length.js   # 本文の文字数を数える（aidd と同じ写し）
     └── mod-output-customize/
         ├── SKILL.md
         ├── README.md            # 使い方と収録物
+        ├── errors.md            # 入れる・確かめるときに失敗した場合
+        ├── features.md          # mod の機能
+        ├── uninstall.md         # mod を外す
         └── files/
             └── mod-output-customize/  # mod の本体（~/.claude/mods/ へコピーして使う）
 ```

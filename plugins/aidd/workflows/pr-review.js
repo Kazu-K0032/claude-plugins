@@ -277,7 +277,7 @@ const ctx = await agent(
     '',
     '手順（すべて Bash の gh CLI で取得する）:',
     '1. `gh pr view <番号> --json number,title,body,additions,deletions` で PR 情報を取得する。',
-    '2. 紐づく Issue 番号を特定する。手掛かりは PR 本文の「#<数字>」参照（Closes #N 等）とブランチ名に含まれる番号（`issues/<番号>-<説明>` の形なら <番号>、それ以外の形なら先頭の数字）。見つかれば `gh issue view <番号>` で本文を取得する。無ければ issueNumber は 0、issueBody は空文字。',
+    '2. 紐づく Issue 番号を特定する。手掛かりは PR 本文の「#<数字>」参照（Closes #N 等）と、ブランチ名が `issues/<番号>-<説明>` か `hotfix/<番号>-<説明>` の形のときの <番号> だけ。ほかの形のブランチ名からは、番号を推測しない（違う Issue を要件として読まないため）。見つかれば `gh issue view <番号>` で本文を取得する。無ければ issueNumber は 0、issueBody は空文字。',
     '3. `gh pr diff <番号> --name-only` で変更ファイル一覧を取得し、出力行をそのまま files に入れる。',
     '4. totalChangedLines は additions + deletions の合計。',
     '5. 解決済みのレビュースレッドを取得する。次のコマンドの <番号> を PR 番号に置き換えて実行し、出力の 1 行 1 件を resolvedThreads に入れる（{owner}・{repo} は gh が今のリポジトリに置き換えるので、そのまま渡す）。',
@@ -452,7 +452,8 @@ log(
 
 // 4. Report: 直す箇所を high / medium / low に分け、直す順の推奨アクションを添えて tmp へ保存する。PR へは投稿しない。
 //    読み手が見るのは直す箇所と直す順だけのため、要約・良かった点・総合評価・判定は出さない。
-//    構成は docs-sync・harness-audit のレポートとそろえる（見出し・冒頭の文・high・medium・low・推奨アクション）。
+//    構成と書き方の正典は aidd の references/report-format.md（docs-sync・harness-audit と共通）。
+//    workflow からはファイルを読めないため、下のテンプレートと整形ルールに写して持つ。正典を変えたら、ここもそろえて直す。
 //    workflow スクリプト内では時刻取得が禁止（Date.now/new Date は throw）のため、
 //    ブランチ名とタイムスタンプの算出・パス組み立てはエージェントに Bash で行わせる。
 //    ブランチ名の / を - に置換する規約は aidd の README.md の「ブランチ名の / は - に置き換える」。

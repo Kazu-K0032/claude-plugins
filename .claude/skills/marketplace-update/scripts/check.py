@@ -4,6 +4,7 @@
 チェック対象（1〜6 は plugins/ 配下の全プラグイン、2 の基準は project の init-repo テンプレート）:
   1. 権限規則の書式（allowed-tools に Write()/NotebookEdit()/MultiEdit()/Glob() のパス規則を使っていないか）
   2. init-repo テンプレートの deny の Bash 規則と、各スキルが使うコマンドの衝突
+     （allowed-tools と、スキルのフォルダの md（サブフォルダも）・references/ の本文。README.md と files/ は見ない）
   3. allowed-tools の書き込み許可パスが tmp 配下に収まっているか
   4. ${CLAUDE_PLUGIN_ROOT} 参照先のファイルが実在するか
   5. カタログの整合（スキル名・README の一覧・marketplace.json の source と登録漏れ）
@@ -15,6 +16,13 @@
  10. SKILL.md（plugins/ 配下と .claude/skills/）と規約（.claude/rules/ と、配る skills/*/files/.claude/rules/）の本文が、
      frontmatter を除いて DOC_LIMIT 文字以内か（docs/policies/p09-readable-ai-docs.md）。
      比べる ref（--base、無ければ origin/develop）でも超えていたものは、前からの超過として分けて出す
+ 11. このリポジトリと init-repo テンプレートの settings.json の deny が、Bash(git ...)・Bash(gh ...) の組の PowerShell(...) と
+     削除の別名を持つか（Bash(...) の規則は PowerShell のツールには効かない）。2 つの settings.json の deny が食い違わないか。
+     harness-principles.md の「土台の仕組み」が例に挙げるコマンドが、テンプレートの deny に残っているか
+ 12. 各スキル（plugins/ 配下と .claude/skills/）の allowed-tools に、書き込み・実行のオプション（--output など）も
+     確認なしで通す前方一致の Bash 規則が無いか（docs/policies/p01-operation-boundary.md の「確認なしで任せる操作」）
+ 13. 参照ファイル（スキルのフォルダの md と plugins/<p>/references/）に ${CLAUDE_PLUGIN_ROOT} が無いか
+     （置き換わるのは SKILL.md の中だけのため。WARN）
 
 使い方: python .claude/skills/marketplace-update/scripts/check.py [--repo <リポジトリのルート>] [--base <比べる ref>]
 終了コード: NG が 1 件でもあれば 1、それ以外は 0（WARN は 0 のまま）
@@ -124,6 +132,8 @@ def main():
 
     check_duplicated_files(repo)
     check_argument_hints(repo)
+    check_deny_sync(repo)
+    check_allowed_prefixes(repo)
     base = sys.argv[sys.argv.index("--base") + 1] if "--base" in sys.argv else None
     check_doc_lengths(repo, base)
     check_versions(repo, market, base)
@@ -136,6 +146,22 @@ def main():
     print("---")
     print("NG: %d / WARN: %d" % (ng, warn))
     return 1 if ng else 0
+
+
+def instruction_files(plugin, skills_dir, skill_names):
+    """スキルが手順として読む md を返す。
+
+    各スキルのフォルダの md（README.md と、導入先へコピーする files/ は除く）と、プラグインの references/ の md。
+    """
+    paths = []
+    for name in skill_names:
+        for root, dirs, files in os.walk(os.path.join(skills_dir, name)):
+            dirs[:] = sorted(d for d in dirs if not (root == os.path.join(skills_dir, name) and d == "files"))
+            for f in sorted(files):
+                if f.endswith(".md") and f != "README.md":
+                    paths.append(os.path.join(root, f))
+    paths += sorted(glob.glob(os.path.join(plugin, "references", "*.md")))
+    return paths
 
 
 def check_plugin(repo, plugin_name, plugin, prefixes):
@@ -177,8 +203,10 @@ def check_plugin(repo, plugin_name, plugin, prefixes):
                     "%s: 書き込み許可 %s が tmp 配下ではない。出力先を固定できているか確認する"
                     % (name, rule))
 
-        # 本文で実行を指示している gh / git と削除のコマンドを拾う（人が手で実行する例も含むため WARN）
-        for num, line in enumerate(text.splitlines(), 1):
+    # 本文で実行を指示している gh / git と削除のコマンドを拾う（人が手で実行する例も含むため WARN）
+    # 手順の細部は参照ファイルへ移すため（P9）、SKILL.md だけでなく、スキルが読む md も見る
+    for path in instruction_files(plugin, skills_dir, skill_names):
+        for num, line in enumerate(read(path).splitlines(), 1):
             stripped = line.strip().lstrip("$ ").strip("`")
             m = re.match(r"^((gh|git) [a-z][a-z-]*|(rm|rmdir|unlink|find)\b)", stripped)
             if not m:
@@ -189,6 +217,14 @@ def check_plugin(repo, plugin_name, plugin, prefixes):
                     "%s:%d 本文の `%s` はテンプレートの deny (%s) に一致する。"
                     "Claude に実行させるのか、人が実行する例示なのかを確認する"
                     % (os.path.relpath(path, repo).replace(os.sep, "/"), num, stripped, pre))
+
+    # 13: 場所の変数は SKILL.md の中でしか置き換わらない。参照ファイルに書くと、コマンドが空の場所で動く（WARN）
+    for path in instruction_files(plugin, skills_dir, skill_names):
+        if os.path.basename(path) != "SKILL.md" and "${CLAUDE_PLUGIN_ROOT}" in read(path):
+            add("WARN", "plugin-root-in-reference",
+                "%s: 参照ファイルに ${CLAUDE_PLUGIN_ROOT} がある。置き換わるのは SKILL.md の中だけのため、"
+                "SKILL.md の表にあるパスを指すか、<プラグインの場所> と書いて定義を添える"
+                % os.path.relpath(path, repo).replace(os.sep, "/"))
 
     # 4: ${CLAUDE_PLUGIN_ROOT} の参照先が実在するか
     targets = []
@@ -325,6 +361,100 @@ def check_argument_hints(repo):
                     "%s: 必須の引数 %s に「任意」「省略」がある。任意なら [] で書く" % (rel, group))
 
 
+SETTINGS_FILES = (
+    ".claude/settings.json",
+    "plugins/project/skills/init-repo/files/.claude/settings.json",
+)
+PRINCIPLES_FILE = "plugins/aidd/references/harness-principles.md"
+# 削除のコマンドは、PowerShell では別名が複数あり、規則が別名まで解決するかが分からないため、別名も並べる
+POWERSHELL_DELETE = ("Remove-Item", "rm", "rmdir", "del", "rd", "ri", "erase")
+
+
+def check_deny_sync(repo):
+    """11: settings.json の deny の PowerShell の組と、2 つの settings.json・物差しとの同期。"""
+    denies = {}
+    for rel in SETTINGS_FILES:
+        path = os.path.join(repo, rel)
+        if not os.path.isfile(path):
+            continue
+        deny = json.loads(read(path)).get("permissions", {}).get("deny", [])
+        denies[rel] = deny
+        for rule in deny:
+            m = re.match(r"^Bash\(((?:git|gh)\b.*)\)$", rule)
+            if m and "PowerShell(%s)" % m.group(1) not in deny:
+                add("NG", "deny-powershell",
+                    "%s: %s に組になる PowerShell(%s) が無い。Bash(...) の規則は PowerShell のツールには効かない（P1）"
+                    % (rel, rule, m.group(1)))
+        for name in POWERSHELL_DELETE:
+            if "PowerShell(%s *)" % name not in deny:
+                add("NG", "deny-powershell", "%s: 削除の PowerShell(%s *) が deny に無い（P1）" % (rel, name))
+    if len(denies) == len(SETTINGS_FILES):
+        sets = [{r for r in d if r.startswith(("Bash(", "PowerShell("))} for d in denies.values()]
+        for rel, only in zip(SETTINGS_FILES, (sets[0] - sets[1], sets[1] - sets[0])):
+            if only:
+                add("WARN", "deny-sync",
+                    "%s にだけある deny: %s。もう片方の settings.json にも入れるか、違いが意図したものか確かめる"
+                    % (rel, "、".join(sorted(only)[:5]) + ("…" if len(only) > 5 else "")))
+    principles = os.path.join(repo, PRINCIPLES_FILE)
+    template = denies.get(SETTINGS_FILES[1])
+    if os.path.isfile(principles) and template is not None:
+        found = False
+        for line in read(principles).splitlines():
+            if line.startswith("| コミット・push・削除・権限の変更・深刻な外部操作を止める"):
+                found = True
+                for ex in re.findall(r"`([a-z][a-z -]*[a-z])`", line):
+                    if not any(re.match(r"^Bash\(%s[ *)]" % re.escape(ex), r) for r in template):
+                        add("WARN", "deny-sync",
+                            "%s の例 `%s` に当たる deny が、テンプレートの settings.json に無い。物差しを直すか、deny を戻す"
+                            % (PRINCIPLES_FILE, ex))
+        if not found:
+            add("WARN", "deny-sync",
+                "%s に「コミット・push・削除・権限の変更・深刻な外部操作を止める」で始まる表の行が無い。"
+                "行頭の文言を直したときは、check.py の文言も直す。物差しと deny の食い違いを確かめられていない"
+                % PRINCIPLES_FILE)
+
+
+# 書き込み・実行のオプション（git diff・git log・git show の --output、git grep の -O、gh api の -X、
+# git apply の --apply など）を持つコマンド。
+# 許可の規則はオプションを見ずに前方一致で当たるため、後ろにどんな引数があっても前方一致の許可には入れない（P1）
+WRITE_OPTION_COMMANDS = ("git diff", "git log", "git show", "git grep", "git apply", "gh api")
+# 引数の無い前方一致だけが書き込み（ブランチの作成・改名）も通すコマンド。--list などに絞れば読み取りだけになる。
+# git・gh だけの前方一致は、すべてのサブコマンドを通す
+BARE_PREFIX_COMMANDS = ("git branch", "git", "gh")
+# git のサブコマンドの前に置ける、値を取るオプション（git -C <場所> log のように、サブコマンドを後ろへずらす）
+GIT_OPTIONS_WITH_VALUE = ("-C", "-c", "--git-dir", "--work-tree", "--namespace")
+
+
+def command_head(head):
+    """許可の頭のコマンドから、git の前置きのオプションを除く（git -C . log → git log）。"""
+    words = head.split()
+    if words[:1] == ["git"]:
+        i = 1
+        while i < len(words) and words[i].startswith("-"):
+            i += 2 if words[i] in GIT_OPTIONS_WITH_VALUE else 1
+        words = ["git"] + words[i:]
+    return " ".join(words)
+
+
+def check_allowed_prefixes(repo):
+    """12: allowed-tools に、書き込み・実行のオプションも確認なしで通す前方一致の Bash 規則が無いか。"""
+    paths = glob.glob(os.path.join(repo, "plugins", "*", "skills", "*", "SKILL.md"))
+    paths += glob.glob(os.path.join(repo, ".claude", "skills", "*", "SKILL.md"))
+    for path in sorted(paths):
+        rel = os.path.relpath(path, repo).replace(os.sep, "/")
+        for rule in split_rules(frontmatter(read(path)).get("allowed-tools", "")):
+            m = re.match(r"^Bash\((.+)\)$", rule)
+            if not m or "*" not in m.group(1):
+                continue
+            # 最初のワイルドカードより前が、許可が必ず当たるコマンドの頭
+            head = command_head(re.sub(r"(:\*| \*|\*).*$", "", m.group(1)).strip())
+            if head in BARE_PREFIX_COMMANDS or any(
+                    head == c or head.startswith(c + " ") for c in WRITE_OPTION_COMMANDS):
+                add("NG", "allowed-prefix",
+                    "%s: allowed-tools の Bash(%s) は、書き込み・実行のオプションも確認なしで通す。"
+                    "外すか、完全一致で書く（P1）" % (rel, m.group(1)))
+
+
 # 人が読み切れる本文の長さの上限（P9）。変えるときは P9 の Q&A「上限の数を変えたい」の場所もそろえる
 DOC_LIMIT = 5000
 
@@ -359,7 +489,7 @@ def check_doc_lengths(repo, base):
             continue
         if ref is None:
             add("WARN", "doc-length",
-                "%s: 本文が %d 文字で、上限の %d 文字を超える。扱いは marketplace-update の SKILL.md の手順 4 を見る（P9）"
+                "%s: 本文が %d 文字で、上限の %d 文字を超える。扱いは .claude/skills/marketplace-update/ng-warn.md の doc-length を見る（P9）"
                 % (rel, length, DOC_LIMIT))
             continue
         shown = git(repo, "show", "%s:%s" % (ref, rel))
