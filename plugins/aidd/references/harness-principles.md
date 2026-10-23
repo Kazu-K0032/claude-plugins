@@ -60,5 +60,4 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 - `.claude/rules/permissions.md`
 - `.claude/rules/tmp-output.md`
 - `.claude/hooks/guard-destructive.sh`
-- `.claude/hooks/session-start.sh`
 - `docs/adr/README.md`

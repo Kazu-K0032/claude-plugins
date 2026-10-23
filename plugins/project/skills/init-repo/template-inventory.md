@@ -18,7 +18,6 @@
 | `.claude/hooks/guard-destructive.sh` | 破壊的コマンドの承認エスカレーション | `settings.json` を入れる | 既存の PreToolUse フック |
 | `.claude/hooks/post-edit-lint.sh` | 編集後の Lint・整形（推論と機械の検査の分担） | ソースコードがある | 既存の PostToolUse フック |
 | `lefthook.yml` | Lint・整形のツールの定義（`post-edit-lint.sh` が使う） | `post-edit-lint.sh` を入れる | `lefthook.yml`・`lefthook.yaml`・`.lefthook.yml`・`.lefthook.yaml`（`claude-edit` を足す） |
-| `.claude/hooks/session-start.sh` | セッション開始時の運用ルール通知 | `settings.json` を入れる | 既存の SessionStart フック |
 | `.claude/hooks/guard-git-write.sh` | ラッパー経由まで含めた git / gh 書き込みの遮断 | 要件に明記がある場合のみ（既定では未配線） | 同等の PreToolUse フック |
 | `.claude/rules/comment.md` | コメントの書き方の規約 | ソースコードがある | `CLAUDE.md`・`.claude/rules/` 内のコメント規約 |
 | `.claude/rules/env.md` | 環境変数と `*.example` の追従 | `.env*` / `*.example` を使う | `CLAUDE.md` 等の環境変数の規約 |
@@ -60,7 +59,7 @@
 
 一方だけ入れると動かない組み合わせ。範囲を絞ったときも、片方を入れるならもう片方も入れる（既にあればよい）。
 
-- `.claude/settings.json` は `guard-destructive.sh`・`post-edit-lint.sh`・`session-start.sh` を呼ぶ。フックを外す場合は、`settings.json` の該当の `hooks` 定義も外す必要があるため、計画で明示する
+- `.claude/settings.json` は `guard-destructive.sh`・`post-edit-lint.sh` を呼ぶ。フックを外す場合は、`settings.json` の該当の `hooks` 定義も外す必要があるため、計画で明示する
 - `.claude/hooks/post-edit-lint.sh` は `lefthook.yml` の `claude-edit` を動かす。`lefthook.yml` が無いと、何もしない
 - `.github/workflows/sync-labels.yml` は `.github/labels.yml` を読む
 - `.claude/rules/tmp-output.md` は、`.gitignore` の `tmp/` を前提にする。`tmp/` が除外されていないと、作業ファイルがコミットに混ざる
