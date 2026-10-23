@@ -10,8 +10,8 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 同梱テンプレート（`${CLAUDE_PLUGIN_ROOT}/skills/gas/files/`）を実行中のリポジトリのルートへコピーし、既存の GAS コードがあれば規約に沿った振り分けを提案する。**既存ファイルは承認なしに上書きしない**。
 
-- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得た既存コードの移動・振り分け、`.clasp.json`・`.gitignore`・`.claspignore` の変更
-- 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、clasp の実行（`login`・`pull`・`push`。push には Node.js と clasp が要る）、コミット、導入後の作業（手順 8）
+- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得た既存コードの移動・振り分け、`.clasp.json`・`.gitignore`・`.claspignore` の変更、`cspell.json` への追記
+- 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、clasp の実行（`login`・`pull`・`push`。push には Node.js と clasp が要る）、コミット、導入後の作業（手順 9）
 
 ## 参照ファイル
 
@@ -23,7 +23,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/merge-policy.md` | 手順 5 で `DIFF` のファイルがあるとき（選択肢を示す前から） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/existing-code.md` | 手順 6 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/files/.claude/rules/gas.md` | 手順 6 で、振り分けの基準（ファイルの書き分け・関数の命名）を確かめるとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/gas/after-install.md` | 手順 8 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/gas/after-install.md` | 手順 9 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/README.md` | 収録物・除外したものを確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | Markdown を書く・直すとき。その規約に従う |
 
@@ -73,7 +73,11 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 `.clasp.json` は除外しない。`scriptId` は秘匿値ではなく、リポジトリを clone してすぐ push できるようにするためコミットする。
 
-### 8. 導入後にやることを伝える
+### 8. スペルチェックの除外語を足す
+
+`cspell.json` があり、テンプレートと手順 7 の `.gitignore` の行が使う語（`appsscript`・`claspignore`・`clasprc`）が `words` に無ければ、足す案を示し、承認を得てから足す。足さないと、`init-repo` の `pr-checks.yml` のスペルチェックで誤字として出るため。
+
+### 9. 導入後にやることを伝える
 
 `after-install.md` の残作業を示す。最後に、手順 2 と同じテンプレートのリンクを添える。
 
