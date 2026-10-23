@@ -94,7 +94,8 @@ TODO: このリポジトリで実際に存在する文書に合わせて行を�
 | 環境構築 | `docs/runbook/environment-setup.md` |
 | デプロイ手順 | `docs/runbook/deployment.md` |
 | アーキテクチャ概要 | `docs/architecture/architecture.md` |
-| 開発戦略 | `docs/strategies/development.md` |
+| AI 駆動開発の戦略（AI・機械・人の分担） | `docs/strategies/ai-driven-development.md` |
+| 開発の流れ | `docs/strategies/development.md` |
 | テスト戦略 | `docs/strategies/test-strategy.md` |
 | コミットルール | aidd プラグインの `/aidd:commit` が参照する commit-rule |
 

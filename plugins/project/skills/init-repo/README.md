@@ -66,7 +66,8 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/docs/adr/README.md` | ADR の一覧（`CLAUDE.md` が読み込む。表の見出しだけ） | そのまま使える |
 | `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
 | `files/docs/strategies/README.md` | 開発・テストの方針の案内板 | 文書を足したら表に行を足す |
-| `files/docs/strategies/development.md` | 開発の流れ（AI 駆動 × ドキュメント駆動の進め方と理由、aidd のスキルとの対応） | 「このプロジェクトでの決まり」の `TODO:` |
+| `files/docs/strategies/ai-driven-development.md` | AI 駆動開発の戦略（AI・機械・人の分担と振り分け方、文書で AI の向かう先をそろえる方法）。ハーネスの考え方そのもの | そのまま使える（変えるときは ADR を残す） |
+| `files/docs/strategies/development.md` | 開発の流れ（1 つの変更を進める順と担い手、aidd のスキルとの対応） | 「このプロジェクトでの決まり」の `TODO:` |
 | `files/docs/strategies/test-strategy.md` | テスト戦略の雛形（目的・テストの層・機械と人の分担・いつ動かすか・AI が書いたテストの扱い・テストデータと環境・完了の基準） | `TODO:` 行を実態に書き換える |
 | `files/docs/log/README.md` | 作業ログの案内板（ファイル名の決まり）。導入するときに選んだ場合だけ入れる | ログを足したら表に行を足す |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |

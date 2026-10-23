@@ -17,7 +17,7 @@ TODO: サブディレクトリを作ったら、その `README.md` へのリン�
 | --- | --- |
 | `specs/` | 何を作るか（機能要件・非機能要件・スコープ） |
 | `architecture/` | どう作るか（システム構成・全体像・CI/CD） |
-| [`strategies/`](strategies/README.md) | どう進めるか（開発・テストの方針） |
+| [`strategies/`](strategies/README.md) | どう進めるか（AI 駆動開発の戦略・開発の流れ・テストの方針） |
 | [`adr/`](adr/README.md) | なぜその選択をしたか（個別判断、1 判断 = 1 ファイル） |
 | `runbook/` | 実作業の手順（環境構築・デプロイ・運用） |
 | [`log/`](log/README.md) | 実作業の経緯（時系列の作業ログ。手順そのものは `runbook/` が SSOT） |
