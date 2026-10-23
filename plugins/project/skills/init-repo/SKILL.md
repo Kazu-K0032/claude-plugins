@@ -10,8 +10,8 @@ argument-hint: "[導入する範囲・既存ファイルの扱い・Lint と整�
 
 同梱テンプレート（`${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/`）を実行中のリポジトリのルートへコピーし、エディタ設定・Lint と整形のツール・スペルチェックの除外語をプロジェクトに合わせる。**既存ファイルは承認なしに上書きしない**。
 
-- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.vscode/`・`cspell.json`・`lefthook.yml` など）
-- 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、コミット、導入後の作業（手順 6）。フックは `jq` を使い、無いと失敗する。編集後の Lint・整形は lefthook で動かし（最低の版は `README.md` の「前提と制約」）、無いとフックは何もしない
+- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.vscode/`・`cspell.json`・`lefthook.yml` など）。Claude が入れると選ばれたときは、ツールの導入（`package.json`・`node_modules`、または OS のパッケージ管理）
+- 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、ツールを自分で入れるかの選択、コミット、導入後の作業（手順 6）。フックは `jq` を使い、無いと失敗する。編集後の Lint・整形は lefthook で動かし（最低の版は `README.md` の「前提と制約」）、無いとフックは何もしない
 
 ## 参照ファイル
 
@@ -20,7 +20,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い・Lint と整�
 | `${CLAUDE_PLUGIN_ROOT}/references/install-flow.md` | 手順 1〜4 で、状態の確認・計画の提示・コピー・衝突の片付けをするとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/template-inventory.md` | 引数で範囲を絞るとき・同じ役割の既存物を探すとき・手順 2 で入れないものを決めるとき（ほかの commitlint の設定や lefthook の別名の設定が既にあるかを、この一覧で確かめる） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/merge-policy.md` | 手順 4 で `DIFF` のファイルがあるとき（選択肢を示す前から）・既存の `CLAUDE.md` があるとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/tooling.md` | 手順 5 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/tooling.md` | 手順 2 でツールの入れ方を示すとき・手順 5 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/after-install.md` | 手順 6 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/README.md` | 収録物・除外したもの・導入後の調整を確かめるとき。手順 6 で、lefthook の最低の版を伝えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | Markdown を書く・直すとき。その規約に従う |
@@ -63,7 +63,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い・Lint と整�
 
 ### 5. エディタ設定・Lint と整形のツール・スペルチェックの除外語を調整する
 
-`.vscode/`・`cspell.json`・`lefthook.yml` を入れた（または既にある）場合は、`tooling.md` に従って中身を提案する。どれも**一覧を見せて承認を得てから**書き込む。
+`.vscode/`・`cspell.json`・`lefthook.yml` を入れた（または既にある）場合は、`tooling.md` に従って中身を提案する。どれも**一覧を見せて承認を得てから**書き込む。手順 2 で「Claude が入れる」が選ばれていれば、書き込んだ後に `tooling.md` の「ツールを入れる」に従って入れ、編集後の Lint が動くかを確かめる。
 
 ### 6. 導入後にやることを伝える
 
@@ -83,6 +83,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い・Lint と整�
 - `--only` の明示指定なしに既存ファイルを上書きしない
 - テンプレートに含まれないディレクトリを承認なしに作らない（README の本文を `docs/` 配下へ移す場合も、移動先を承認してもらってから作る）
 - コピー結果をコミットしない（コミットは人が行う）
+- npm で lefthook を入れるときに、`--ignore-scripts` を外さない（`.git/hooks` が書き換わる）
 
 ## 保守
 

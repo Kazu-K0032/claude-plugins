@@ -76,6 +76,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 
 - フックは `bash` と [`jq`](https://jqlang.org/) を使う。どちらも無い環境ではフックが失敗する
 - 編集後の Lint・整形は [lefthook](https://lefthook.dev/)（1.6.11 以降）を使う。lefthook が無いか、`lefthook.yml` に `claude-edit` が無いときは、フックは何もしない。`lefthook run` は既定で `.git/` の下を書き換えるため、フックは `--no-auto-install` を付けて呼ぶ
+- Claude が npm で lefthook を入れるときは、`--ignore-scripts` を付ける。npm 版は、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため（[P1](../../../../docs/policies/p01-operation-boundary.md)）。人のコミットにも検査をかけるときは、人が `lefthook install` を実行する
 - `settings.json` の `permissions.deny` は、ルールの形に当たるコマンドしか止めない。`git -C`・`git -c` を付けたコミット・push と、`gh api` でのマージと DELETE は個別に止めている。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
