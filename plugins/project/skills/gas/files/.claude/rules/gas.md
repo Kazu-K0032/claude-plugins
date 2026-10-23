@@ -9,7 +9,7 @@ paths:
 
 `.clasp.json` の `rootDir` 配下（テンプレートでは `src/`）を clasp で push する GAS のコードの、ファイルの書き分け・関数の命名・GAS 特有の注意点を決める。コードは JavaScript（V8 ランタイム）で書く。全ファイルが 1 つのグローバル空間を共有し、名前で外から呼ばれる関数も多いため、置き場所と名前をそろえる。
 
-実行時間とトリガーの決まりは `.claude/rules/gas-runtime.md` にある。
+実行時間とトリガーの決まりは `.claude/rules/gas-runtime.md` に、シートの見た目の決まりは `.claude/rules/gas-sheet-style.md` にある。
 
 ## コードを置く場合
 
