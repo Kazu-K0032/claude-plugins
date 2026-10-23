@@ -18,6 +18,7 @@
     "frontmatter",
     "ghaction",
     "lefthook",
+    "pgoptions",
     "pycache",
     "pythondontwritebytecode",
     "segs",
