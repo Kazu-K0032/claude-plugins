@@ -20,7 +20,7 @@
 /project:init-repo
 ```
 
-衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定とスペルチェックの除外語の調整 → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
+衝突状況の確認 → 計画の提示（Lint と整形のツールを自分で入れるか Claude が入れるか、`docs/log/` を入れるかも聞く） → 承認 → コピー → エディタ設定・Lint と整形のツール・スペルチェックの除外語の調整（Claude が入れると選んだら、ツールを入れて動くかを確かめる） → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
 
 | 引数の例 | 動き |
 | --- | --- |
@@ -65,6 +65,11 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.vscode/settings.json` | 保存時の整形（末尾改行・行末空白の削除・LF） | そのまま使える |
 | `files/docs/adr/README.md` | ADR の一覧（`CLAUDE.md` が読み込む。表の見出しだけ） | そのまま使える |
 | `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
+| `files/docs/strategies/README.md` | 開発・テストの方針の案内板 | 文書を足したら表に行を足す |
+| `files/docs/strategies/ai-driven-development.md` | AI 駆動開発の戦略（AI・機械・人の分担と振り分け方、文書で AI の向かう先をそろえる方法）。ハーネスの考え方そのもの | そのまま使える（変えるときは ADR を残す） |
+| `files/docs/strategies/development.md` | 開発の流れ（1 つの変更を進める順と担い手、aidd のスキルとの対応） | 「このプロジェクトでの決まり」の `TODO:` |
+| `files/docs/strategies/test-strategy.md` | テスト戦略の雛形（目的・テストの層・機械と人の分担・いつ動かすか・AI が書いたテストの扱い・テストデータと環境・完了の基準） | `TODO:` 行を実態に書き換える |
+| `files/docs/log/README.md` | 作業ログの案内板（ファイル名の決まり）。導入するときに選んだ場合だけ入れる | ログを足したら表に行を足す |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（案内板。文書は `docs/README.md` だけを案内する） | `TODO:` 行を実態に書き換える |
 | `files/commitlint.config.mjs` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |
@@ -76,6 +81,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 
 - フックは `bash` と [`jq`](https://jqlang.org/) を使う。どちらも無い環境ではフックが失敗する
 - 編集後の Lint・整形は [lefthook](https://lefthook.dev/)（1.6.11 以降）を使う。lefthook が無いか、`lefthook.yml` に `claude-edit` が無いときは、フックは何もしない。`lefthook run` は既定で `.git/` の下を書き換えるため、フックは `--no-auto-install` を付けて呼ぶ
+- Claude が npm で lefthook を入れるときは、`--ignore-scripts` を付ける。npm 版は、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため（[P1](../../../../docs/policies/p01-operation-boundary.md)）。人のコミットにも検査をかけるときは、人が `lefthook install` を実行する
 - `settings.json` の `permissions.deny` は、ルールの形に当たるコマンドしか止めない。`git -C`・`git -c` を付けたコミット・push と、`gh api` でのマージと DELETE は個別に止めている。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）

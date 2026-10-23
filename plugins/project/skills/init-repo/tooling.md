@@ -1,6 +1,11 @@
 # エディタ設定・Lint と整形のツール・スペルチェックの除外語
 
-`init-repo` の手順 5 で、`.vscode/`・`cspell.json`・`lefthook.yml` を入れた（または既にある）ときに使う。どれも、プロジェクトに合わせた中身の一覧を見せ、承認を得てから書き込む。
+`init-repo` の手順 5 で、`.vscode/`・`cspell.json`・`lefthook.yml` を入れた（または既にある）ときに使う。どれも、プロジェクトに合わせた中身の一覧を見せ、承認を得てから書き込む。手順 2 で入れ方を示すときは、「ツールを入れる」の節を使う。
+
+- [推奨拡張機能（.vscode/extensions.json）](#推奨拡張機能vscodeextensionsjson)
+- [Lint と整形のツール（lefthook.yml の claude-edit）](#lint-と整形のツールlefthookyml-の-claude-edit)
+- [ツールを入れる](#ツールを入れる)
+- [スペルチェックの除外語（cspell.json の words）](#スペルチェックの除外語cspelljson-の-words)
 
 ## 推奨拡張機能（.vscode/extensions.json）
 
@@ -46,7 +51,43 @@ claude-edit:
       run: '[ -x node_modules/.bin/oxlint ] || exit 0; node_modules/.bin/oxlint --deny-warnings {staged_files}'
 ```
 
-ツールの導入（`npm install` など）は人が行う。手順 6 で伝える。
+## ツールを入れる
+
+lefthook と、上の節で決めたツールは、手順 2 で選んでもらった方法で入れる。「自分で入れる」が選ばれたら、ここでは入れず、手順 6 で伝える。「Claude が入れる」が選ばれたら、手順 5 で `lefthook.yml` に書き込んだ後に入れる。
+
+### 入れ方を決める
+
+| 導入先 | lefthook | Lint・整形のツール |
+| --- | --- | --- |
+| `package.json` がある | npm の devDependencies | npm の devDependencies |
+| `package.json` が無い（Windows） | `winget install evilmartians.lefthook` | ツールの公式の文書にある入れ方 |
+| `package.json` が無い（macOS） | `brew install lefthook` | ツールの公式の文書にある入れ方 |
+| `package.json` が無い（Linux） | Homebrew があれば `brew install lefthook`。無ければ人が入れる | ツールの公式の文書にある入れ方 |
+
+- `package.json` があれば npm にする。devDependencies に入るため、チームで同じ版がそろう
+- ほかの入れ方は [導入の方法](https://lefthook.dev/install/) にある。表に無い入れ方を選ばれたら、それに従う
+
+### Claude が入れるとき
+
+- npm で lefthook を入れるときは、`npm install --save-dev --ignore-scripts lefthook` にする。npm 版は、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため。`.git/` の書き換えは人が行う。`LEFTHOOK=0` では止まらない
+- Lint・整形のツールは、lefthook と別のコマンドで入れる。`--ignore-scripts` は、同じコマンドで入れる全部のパッケージに効くため
+- 同意や管理者の権限を求められて止まったら、入れずに「自分で入れる」の流れに切り替え、手順 6 で伝える。同意するかは人が決めるため
+- 入れたら、`package.json` の差分を示す
+
+### 動くかを確かめる
+
+入れたら、`claude-edit` の `glob` に当たる既存のファイルを 1 つ選び、フックと同じ探し方で動かす。フックは、lefthook やツールが見つからないと黙って何もしないため、入れただけでは動くかが分からない。
+
+1. `command -v lefthook` で探し、無ければ `node_modules/.bin/lefthook` を使う。どちらも無ければ、フックは動かない
+1. 見つけた lefthook で、フックと同じコマンドを動かす。出力に、どのコマンドが動いたかが出る
+
+```bash
+<lefthook> run claude-edit --no-auto-install --file <ファイル>
+```
+
+- ツールの実行ファイル（`node_modules/.bin/<ツール>` など）があるかも確かめる。`run` は、ツールが無いと黙って飛ばすため
+- 整形のツールがファイルを書き換えたら、`git diff <ファイル>` を示す。戻すかは人が決める
+- winget で入れたときは、Claude Code を再起動するまで PATH が効かず、lefthook が見つからない。再起動してから確かめるよう、手順 6 で伝える
 
 ## スペルチェックの除外語（cspell.json の words）
 

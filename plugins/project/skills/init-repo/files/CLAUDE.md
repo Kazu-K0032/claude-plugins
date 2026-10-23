@@ -94,7 +94,8 @@ TODO: このリポジトリで実際に存在する文書に合わせて行を�
 | 環境構築 | `docs/runbook/environment-setup.md` |
 | デプロイ手順 | `docs/runbook/deployment.md` |
 | アーキテクチャ概要 | `docs/architecture/architecture.md` |
-| 開発戦略 | `docs/strategies/development.md` |
+| AI 駆動開発の戦略（AI・機械・人の分担） | `docs/strategies/ai-driven-development.md` |
+| 開発の流れ | `docs/strategies/development.md` |
 | テスト戦略 | `docs/strategies/test-strategy.md` |
 | コミットルール | aidd プラグインの `/aidd:commit` が参照する commit-rule |
 
@@ -118,11 +119,10 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 │   ├── README.md                         # 全ドキュメントの案内板
 │   ├── specs/                            # 仕様書（機能・非機能要件）
 │   ├── architecture/                     # アーキテクチャ図・CI/CD・全体構成
-│   ├── strategies/                       # 開発・テスト等の戦略
+│   ├── strategies/                       # AI 駆動開発の戦略・開発の流れ・テストの方針
 │   ├── adr/                              # ADR（個別判断の履歴）
 │   ├── runbook/                          # 環境構築・デプロイ・運用の手順
-│   ├── log/                              # 実作業の経緯（時系列の作業ログ）
-│   └── knowledge/                        # ツール・プラグインの入門知識
+│   └── log/                              # 実作業の経緯（時系列の作業ログ）
 ├── .gitignore
 ├── cspell.json                           # スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有）
 ├── lefthook.yml                          # Lint・整形のツールの定義（編集後のフックが使う）

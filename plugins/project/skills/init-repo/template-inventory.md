@@ -39,6 +39,8 @@
 | `commitlint.config.mjs` | Conventional Commits の検証 | Node.js のプロジェクトで、コミット規約を機械的に検証したい | `commitlint.config.*`・`.commitlintrc*`・`package.json` の `commitlint` キー |
 | `docs/README.md` | ドキュメントの案内板 | `docs/` がある、または作る | `docs/` 以外の文書置き場（`doc/`・`documentation/`・Wiki） |
 | `docs/adr/README.md` | ADR の一覧（`CLAUDE.md` が読み込む） | `CLAUDE.md` を入れる | `doc/adr/`・`docs/decisions/`・`adr/` の一覧 |
+| `docs/strategies/README.md` + `ai-driven-development.md` + `development.md` + `test-strategy.md` | AI 駆動開発の戦略（AI・機械・人の分担）と、開発の流れ・テストの方針（`CLAUDE.md` の SSOT 一覧が指す） | `docs/README.md` を入れる | `CONTRIBUTING.md`・`docs/` 内の開発・テストの方針 |
+| `docs/log/README.md` | 実作業の経緯を時系列で残す場所 | 手順 2 で入れると選ばれた | `docs/` 内の作業ログ・日報 |
 | `CLAUDE.md` | Claude Code 向けのガイド | Claude Code を使う（常に該当） | `CLAUDE.md`・`.claude/CLAUDE.md`・`AGENTS.md` |
 | `README.md` | リポジトリの入口（案内板） | 常に該当 | `README.md`・`README.*` |
 
@@ -64,6 +66,7 @@
 - `.github/workflows/sync-labels.yml` は `.github/labels.yml` を読む
 - `.claude/rules/tmp-output.md` は、`.gitignore` の `tmp/` を前提にする。`tmp/` が除外されていないと、作業ファイルがコミットに混ざる
 - `CLAUDE.md` の `@docs/adr/README.md` と `.claude/rules/adr.md` は、`docs/adr/README.md` を読む。入れないときは、取り込みの行と `adr.md` も外す。ADR を別の場所（`doc/adr/`・`docs/decisions/` など）に置いているときは、取り込みの行と `adr.md` のパスをその場所に直す
+- `CLAUDE.md` の「SSOT 一覧」は、`docs/strategies/` の 3 つの文書（`ai-driven-development.md`・`development.md`・`test-strategy.md`）を指す。入れないときは、一覧のその行も外す。残すと、一覧が実在しない文書を指し、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
 - `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`ssot` 等）も誤字として出て、PR のチェックが落ちる
 - Issue テンプレートの `labels:` は `labels.yml` のラベルを前提にしている
 
