@@ -13,6 +13,7 @@
 | `aidd:issue-start` | `git add <ファイル>`（実装で直したファイルと、作った ADR だけをステージに置く） | deny に `git add` を入れない | 止まらない |
 | `init-repo` の `CLAUDE.md`（「実装がひと区切りついたとき」） | `git add <ファイル>`（その区切りで直したファイルだけ）と、`tmp.md` への書き込み | deny に `git add` を入れない | 止まらない |
 | `init-repo` の `post-edit-lint.sh` | 編集したファイルに `lefthook run claude-edit` をかける。整形のツールはファイルを書き換える。`--no-auto-install` を付け、`.git/` は書き換えない | なし（フックは deny の対象外） | 止まらない |
+| `project:init-repo` | 「Claude が入れる」を選んだときの、lefthook と Lint・整形のツールの導入。`package.json` があれば `npm install --save-dev`（lefthook は `--ignore-scripts` を付け、`.git/hooks` を書き換えない）で `package.json`・lock・`node_modules` に書き込む。無ければ winget・Homebrew でリポジトリの外に入れる | deny に `npm install` と、`package.json` の `Edit` を入れない | 止まらない |
 | `project:wordpress` | `lefthook.yml`（古い形では `.claude/hooks/post-edit-lint.sh`）への PHP の Lint の追加と、`.claude/hooks/guard-destructive.sh` への `docker compose down -v` の追加（どちらも承認を得てから）、コピーしたテーマのディレクトリの `mv`、`<ADR_DIR>` への ADR の作成と一覧への 1 行の追加 | deny にこれらのファイル・`<ADR_DIR>` の `Edit` と `mv` を入れない | 止まらない |
 | `project:terraform` | `.claude/settings.json` の PreToolUse への `guard-terraform.sh` の登録（古い形の `matcher` は `Bash\|PowerShell\|Monitor` に直す）と `permissions.deny` への秘匿ファイル（`*.tfvars`・`*.tfstate` など）の追加、`lefthook.yml`（古い形では `.claude/hooks/post-edit-lint.sh`）への `terraform fmt` の追加と、`cspell.json` の `words` への語の追加（どれも承認を得てから） | deny にこれらのファイルの `Edit` を入れない | 止まらない |
 | `aidd:adr` | `<ADR_DIR>`（`docs/adr/` など）への ADR の作成と、一覧（`README.md`）の作成・更新 | deny にこのディレクトリへの書き込み（`Edit`）を入れない | 止まらない |
