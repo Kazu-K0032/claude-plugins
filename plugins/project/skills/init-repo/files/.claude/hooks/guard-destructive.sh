@@ -24,6 +24,7 @@ patterns=(
 '(^|[^[:alnum:]_-])rm[[:space:]]+([^;&|]*[[:space:]])?(-[a-zA-Z]*[rRf][a-zA-Z]*|--recursive|--force)([[:space:]]|$)'
 # PowerShell の Remove-Item と、その別名（ri・del・erase・rd・rmdir）に -Recurse・-Force が付いたもの。
 # PowerShell はオプションを先頭の数文字に略せる（-r・-fo など）ため、略した形も含める。-Recurse:$true の形も当たる
+# 略した形の recu・forc は辞書に無い語のため、PR のスペルチェック（cspell）が誤字として出す。検出から外す。cspell:ignore recu forc
 '(^|[^[:alnum:]_-])(remove-item|ri|del|erase|rd|rmdir)[[:space:]]+([^;&|]*[[:space:]])?-(r|re|rec|recu|recur|recurs|recurse|fo|for|forc|force)([[:space:]:]|$)'
 # ステージング・ワーキングツリーをコミットに強制リセットする。未コミット変更が消える
 'git[[:space:]]+reset[[:space:]]+--hard'
