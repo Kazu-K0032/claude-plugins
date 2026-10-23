@@ -103,6 +103,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | Skill・エージェント・Workflow | プラグイン本体として配布済み。リポジトリへコピーしない |
 | 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。技術スタック別の Skill（`/project:gas`・`/project:terraform` 等）が配るか、必要なリポジトリで `.claude/rules/` に追加する |
 | Terraform の秘匿ファイル（`*.tfvars`・`*.tfstate` 等）の deny と、破壊的なコマンドの検出 | Terraform を使うリポジトリにだけ要る。`/project:terraform` が `settings.json` に deny を足し、`guard-terraform.sh` で止める |
+| clasp の認証情報（`.clasprc.json`）の deny と、`clasp push`・`login` などの検出 | GAS を使うリポジトリにだけ要る。`/project:gas` が `settings.json` に deny を足し、`guard-clasp.sh` で止める |
 | 言語別の Lint・整形のツールの設定（ESLint・stylelint など） | 使うツールはプロジェクトで決める。Skill が既存の設定を探して `lefthook.yml` に足すか、技術スタック別の Skill が足す |
 | `docker compose down -v` の検出 | Docker のローカル環境を配るのは `/project:wordpress` だけ。そのスキルが `guard-destructive.sh` に足す |
 

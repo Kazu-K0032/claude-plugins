@@ -17,7 +17,7 @@
 | `project:terraform` | `.claude/settings.json` の PreToolUse への `guard-terraform.sh` の登録（古い形の `matcher` は `Bash\|PowerShell` に直す）と `permissions.deny` への秘匿ファイル（`*.tfvars`・`*.tfstate` など）の追加、`lefthook.yml`（古い形では `.claude/hooks/post-edit-lint.sh`）への `terraform fmt` の追加と、`cspell.json` の `words` への語の追加（どれも承認を得てから） | deny にこれらのファイルの `Edit` を入れない | 止まらない |
 | `aidd:adr` | `<ADR_DIR>`（`docs/adr/` など）への ADR の作成と、一覧（`README.md`）の作成・更新 | deny にこのディレクトリへの書き込み（`Edit`）を入れない | 止まらない |
 | `aidd:issue-pr-sync` | `gh issue edit`・`gh pr edit` | deny に入れない | 反映が止まり、下書きを出すところまでになる |
-| `project:gas` | 既存のコードの `git mv` による `src/` への移動（承認を得てから）、`src/`・`.claude/rules/gas.md`・`.clasp.json` の作成と、`rootDir`・`paths` の書き換え、`.gitignore` への `.clasprc.json` などの追記、`cspell.json` の `words` への語の追加（承認を得てから） | deny に `git mv` と、これらのファイルの `Edit` を入れない | 止まらない |
+| `project:gas` | 既存のコードの `git mv` による `src/` への移動（承認を得てから）、`src/`・`.claude/rules/gas.md`・`.clasp.json` の作成と、`rootDir`・`paths` の書き換え、`.gitignore` への `.clasprc.json` などの追記、`.claude/settings.json` の PreToolUse への `guard-clasp.sh` の登録（古い形の `matcher` は `Bash\|PowerShell` に直す）と `permissions.deny` への認証情報（`.clasprc.json`）の追加、`cspell.json` の `words` への語の追加（どれも承認を得てから） | deny に `git mv` と、これらのファイルの `Edit` を入れない | 止まらない |
 | `config:setup-global` | `~/.claude/settings.json` と `~/.claude/statusline/statusline.js`（と `.bak`）への書き込み。置いた `statusline.js` は環境変数 `CLAUDE_STATUSLINE_PLAIN` を読む | なし（どちらもリポジトリの外。deny は `./` で始まるパスだけを止める） | 関係しない |
 | `config` のフック | 環境変数 `CLAUDE_PLUGIN_DATA` を読み、そのフォルダに印のファイル `plugin-feedback-notice-shown` を書く | なし（リポジトリの外） | 関係しない |
 | `config` のフック・`config:plugin-feedback` | 環境変数 `CLAUDE_PLUGIN_FEEDBACK`・`CLAUDE_PLUGIN_FEEDBACK_SKIP_APPROVAL` を読む | `settings.json` の `env` に入れない（利用者が決める値のため） | 関係しない |
