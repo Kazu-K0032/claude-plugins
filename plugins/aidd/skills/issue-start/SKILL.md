@@ -3,7 +3,7 @@ name: issue-start
 description: 指定した Issue に着手し、実装と PR の下書きまで進める。Issue の記述を今のコード・引用元と突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする。関係する ADR を読み、計画モードで決めることを選択肢の質問で詰めて計画を作り、承認後に実装する。決めた仕様で Issue を更新し、決めたことを ADR にするかを聞き、実装したファイルをステージに置き、コミットメッセージを tmp.md に、PR 本文と検証コメントを tmp/ に書いて終わる。コミット・push はしない。Issue に取りかかる時に使用する
 argument-hint: "<Issue番号|URL>"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(git status:*), Bash(git branch --show-current), Bash(git branch --list *), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start/*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(gh pr list:*), Bash(git status:*), Bash(git branch --show-current), Bash(git branch --list *), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start/*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
 
 # Issue の着手
@@ -128,7 +128,7 @@ git log --oneline --all --grep "#<番号>"
 - ❌ スクリプトで数えずに、Issue の本文を書き換える・コメントすること（Node.js が無い・実行を断られたときを除く）
 - ❌ ユーザーが選んでいないのに、Issue にコメントすること
 - ❌ 既存の担当者を外すこと
-- ❌ 紐づいたブランチがあるのに、新しいブランチを作ること
+- ❌ マージ前の紐づいたブランチがあるのに、聞かずに新しく作ること
 - ❌ ブランチ名・起点のブランチを、このスキルの例やリポジトリの慣習から決め打ちすること
 - ❌ 引用元で確かめていない引用を「確認済み」と書くこと
 - ❌ 決めることを聞かずに、推奨案で実装すること
