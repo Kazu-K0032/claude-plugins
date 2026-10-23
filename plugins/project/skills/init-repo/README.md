@@ -48,7 +48,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/hooks/post-edit-lint.sh` | 編集後に `lefthook.yml` の Lint・整形を動かし、失敗した結果を Claude へ返す PostToolUse フック（非ブロッキング） | 検査の対象を絞るときは冒頭の `TARGET_PREFIX` を直す |
 | `files/.claude/rules/comment.md` | インラインコメントの規約（なぜを書く・読み手を選ばない言葉）。言語を問わないため、常に読み込まれる | そのまま使える |
 | `files/.claude/rules/env.md` | 環境変数と `*.example` の追従ルール | 変数の種類と追記先の表 |
-| `files/.claude/rules/github-actions.md` | ワークフローの実装ルール（最小権限・SHA 固定・インジェクション対策） | そのまま使える |
+| `files/.claude/rules/github-actions.md` | ワークフローの実装ルール（最小権限・SHA 固定・インジェクション対策・保護ブランチとトリガーの一致） | そのまま使える |
 | `files/.claude/rules/adr.md` | 判断の前に ADR の一覧を見て、新しい判断を ADR に残すか聞く規約 | ADR の置き場所が `docs/adr/` でなければパスを直す |
 | `files/.claude/rules/readme.md` | README を案内板として運用するための規約 | README の種別表 |
 | `files/.claude/rules/permissions.md` | Claude に任せる操作と人が行う操作の線引きと、deny・フックを変えるときの規約。`settings.json`・フックを開いたときに読み込まれる | deny やフックの方針を変えたら表を合わせる |
@@ -68,13 +68,14 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（案内板。文書は `docs/README.md` だけを案内する） | `TODO:` 行を実態に書き換える |
 | `files/commitlint.config.mjs` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |
-| `files/lefthook.yml` | Lint・整形のツールの定義（`claude-edit`。`post-edit-lint.sh` が使う）。ツールは書いていない | 使うツールを `claude-edit` に足す（Skill が既存の設定を探して提案する） |
+| `files/lefthook.yml` | Lint・整形のツールの定義（`claude-edit`。`post-edit-lint.sh` が使う）と、人のコミットで commitlint を動かす `commit-msg`。`pre-commit`・`pre-push` は書き方の例だけ | 使うツールを `claude-edit` に足す（Skill が既存の設定を探して提案する）。人のコミット・push にも検査をかけるなら、例を見て `pre-commit`・`pre-push` を足す |
 | `files/cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と `pr-checks.yml` が共有する。テンプレート自身が使う語は登録済み） | プロジェクトの固有名詞を `words` に入れる（Skill が候補を出す） |
 | `files/.gitignore` | Claude Code の作業ファイル（`tmp.md`・`tmp/`）・個人設定・秘匿ファイル・OS のファイルの除外 | 言語・ビルド成果物の除外を追記する |
 
 ## 前提と制約
 
-- フックは `bash` と [`jq`](https://jqlang.org/) を使う。どちらも無い環境ではフックが失敗する
+- フックは `bash` と [`jq`](https://jqlang.org/) を使う。`bash` が無い環境ではフックが動かない。`jq` が無いときは、ガードは止める側に倒れる（`guard-destructive.sh` は当たったコマンドを承認に回し、`guard-clasp.sh`・`guard-terraform.sh` は当たったコマンドを止める）。フックが 2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。`onFailure: "block"` は使わない。フックが起動できない環境（Git Bash の無い Windows）で、すべてのコマンドが止まるため
+- PreToolUse のフックの `matcher` は `Bash|PowerShell|Monitor` にする。`Monitor`（コマンドを裏で動かし続けるツール）も Bash と同じシェルで動くため。deny の `Bash(...)` の規則は `Monitor` にも効くが、フックは `matcher` に無いツールでは動かない
 - 編集後の Lint・整形は [lefthook](https://lefthook.dev/)（1.6.11 以降）を使う。lefthook が無いか、`lefthook.yml` に `claude-edit` が無いときは、フックは何もしない。`lefthook run` は既定で `.git/` の下を書き換えるため、フックは `--no-auto-install` を付けて呼ぶ
 - `settings.json` の `permissions.deny` は、ルールの形に当たるコマンドしか止めない。`git -C`・`git -c` を付けたコミット・push と、`gh api` でのマージと DELETE は個別に止めている。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する

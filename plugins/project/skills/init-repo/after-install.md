@@ -8,7 +8,7 @@
 1. `.claude/settings.json` の `permissions.deny` を、このリポジトリの秘匿ファイル配置に合わせる
 1. lefthook（最低の版は `README.md` の「前提と制約」）と、手順 5 で `lefthook.yml` に書いたツールを入れる。lefthook は npm・Homebrew・winget などで入る（[導入の方法](https://lefthook.dev/install/)）。npm で入れると、Git のフックも入る。検査の対象を絞るときは、`.claude/hooks/post-edit-lint.sh` 冒頭の `TARGET_PREFIX` を直す
 1. `.claude/hooks/guard-destructive.sh` の `patterns` に、このプロジェクト固有の破壊的操作（クラウド CLI の削除系・本番ホストへの接続等）を追記する
-1. `commitlint.config.mjs` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`commit-msg` フックから呼ぶ（`lefthook.yml` の `commit-msg` に書ける）
+1. `commitlint.config.mjs` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`lefthook install` で Git のフックを入れる。`lefthook.yml` の `commit-msg` が commitlint を呼ぶ（入っていなければ飛ばす）。`.git/` の下を書き換えるため、人が実行する
 1. `.github/workflows/` には「シークレットスキャン」「スペルチェック」「ラベル同期」しか入っていない。ビルド・テストの CI はプロジェクト側で作る
 1. Issue テンプレートを入れたら、`.github/ISSUE_TEMPLATE/release.yml` の「事前確認」と「リリース手順」を、このリポジトリのデプロイの方式に合わせる。テンプレートは、検証環境があり、リリース用ブランチへのマージでデプロイワークフローが動く構成を前提にしている（例：`main` へのマージでホスティングが自動でデプロイするなら、リリース用ブランチとデプロイワークフローの行をその方式の手順に置き換える）
 

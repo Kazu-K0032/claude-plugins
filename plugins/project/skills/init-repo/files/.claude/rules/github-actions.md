@@ -101,6 +101,7 @@ jobs:
 
 - `push` は対象ブランチ・対象パスを絞る
 - `pull_request` は `types: [opened, reopened, synchronize]` に絞る（`closed` 等の不要なトリガーを除外）
+- 保護ブランチ（GitHub の ruleset）を変えたら、`pull_request` の `branches` と、lefthook の pre-push のガード（使っていれば）の一覧もそろえる。ずれると、保護したブランチへの PR で検査が動かないため。ruleset は GitHub の画面で人が変える
 
 ```yaml
 # NG: 全 push で起動（README 変更だけでも動く）
