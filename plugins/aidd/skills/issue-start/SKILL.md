@@ -10,7 +10,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(git status:*), 
 
 Issue の記述が今のコードと合っているかを確かめ、作業用のブランチを用意し、要件を詰めてから実装する。実装の後は、Issue の更新と、コミットメッセージ・PR の下書きまでを済ませる。
 
-- 外へ書き込むもの：GitHub には、ブランチの作成（手順 5）・自分を担当者に足す（手順 6）・Issue の本文の更新（手順 9・12）・着手を見送った理由のコメント（ユーザーが選んだときだけ。手順 3）の 4 つだけ。ラベルと既存のコメントは変えない。ほかに `tmp.md` と `tmp/` の下書き
+- 外へ書き込むもの：GitHub には、ブランチの作成（手順 5）・自分を担当者に足す（手順 6）・Issue の本文の更新（手順 9・13）・着手を見送った理由のコメント（ユーザーが選んだときだけ。手順 3）の 4 つだけ。ラベルと既存のコメントは変えない。ほかに `tmp.md` と `tmp/` の下書き
 - 人がすること：計画の承認、コミット・push、PR の作成
 
 ## 参照ファイル
@@ -23,10 +23,10 @@ Issue の記述が今のコードと合っているかを確かめ、作業用�
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/branch-setup.md` | 手順 4・5 で、ブランチを用意するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 5 で、ブランチの規約と起点のブランチを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/requirements-tree.md` | 手順 7・8 で、計画モードに入れなかったときと、要件を詰めるとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-update.md` | 手順 9・12 で、Issue の本文を書き換えるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-update.md` | 手順 9・13 で、Issue の本文を書き換えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/implementation.md` | 手順 10・11 で、実装して検査するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md`・`${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | Issue の本文・コメントを書いて数えるとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/adr/SKILL.md` | 手順 2 で ADR の一覧を探すとき（「出力先」）、手順 13 で ADR にするかを聞く前と作るとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/adr/SKILL.md` | 手順 2 で ADR の一覧を探すとき（「出力先」）、手順 12 で ADR にするかを聞く前と作るとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/commit/` の `SKILL.md`・`commit-rule.md`・`output-format.md`・`split-within-file.md`・`ci-run-url.md` | 手順 14 で、コミットメッセージを作るとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/` の `SKILL.md`・`pr-body-guide.md`・`verify-comment-template.md`、`${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 15 で、PR の下書きを作るとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/result-template.md` | 手順 16 で結果を伝えるとき、手順 3 で止めるとき |
@@ -98,17 +98,17 @@ git log --oneline --all --grep "#<番号>"
 
 `implementation.md` の「検査する」に従い、テスト・Lint・型検査を探して実行する。
 
-### 12. Issue のタスクを更新する
+### 12. ADR にするかを聞く
+
+手順 8 で決めたことに ADR にできるものがあれば、`adr` の `SKILL.md` の手順 1 のとおり、`AskUserQuestion` で「作らない・極小・簡易・詳細」から選んでもらう。選ばれたものは、`adr` スキルを Skill ツールで呼んで作る（`disable-model-invocation: false` のため呼べる）。無ければ聞かずに手順 13 へ進む。
+
+### 13. Issue のタスクを更新する
 
 手順 9 と同じ手順（`issue-update.md`）で、実装で埋まったタスクにチェックを入れる。
 
-### 13. ADR にするかを聞く
-
-手順 8 で決めたことに ADR にできるものがあれば、`adr` の `SKILL.md` の手順 1 のとおり、`AskUserQuestion` で「作らない・極小・簡易・詳細」から選んでもらう。選ばれたものは、`adr` スキルを Skill ツールで呼んで作る（`disable-model-invocation: false` のため呼べる）。無ければ聞かずに手順 14 へ進む。
-
 ### 14. ステージに置き、コミットメッセージを作る
 
-手順 10 で控えたファイルと、手順 13 で作った ADR・一覧を `git add <ファイル>` でステージに置く。`git add -A`・`git add .` は、作業中にできたファイル（キャッシュなど）や手順 4 で持ち越した変更が混ざるため使わない。続けて `commit` の `SKILL.md` の手順で、コミットメッセージを `tmp.md` に書く。コミットはしない。
+手順 10 で控えたファイルと、手順 12 で作った ADR・一覧を `git add <ファイル>` でステージに置く。`git add -A`・`git add .` は、作業中にできたファイル（キャッシュなど）や手順 4 で持ち越した変更が混ざるため使わない。続けて `commit` の `SKILL.md` の手順で、コミットメッセージを `tmp.md` に書く。コミットはしない。
 
 ### 15. PR の下書きを作る
 
