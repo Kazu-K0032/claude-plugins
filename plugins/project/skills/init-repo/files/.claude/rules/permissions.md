@@ -37,7 +37,7 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 | 外部ツール | 読み取り | リモートへの反映・取り込み（`clasp push` など）、ログイン |
 
 - `git remote` は、読み取りも止めている。変更のサブコマンドを並べると、抜けが出やすいため。リモートの URL は `gh repo view` で確かめる
-- 外部ツールの禁止は、deny に入れていない。使うツールが決まったら、deny に足す。Terraform は、`/project:terraform` が配るフックで止める
+- 外部ツールの禁止は、deny に入れていない。使うツールが決まったら、deny に足す。Terraform と clasp は、`/project:terraform`・`/project:gas` が配るフックで止める
 - `attribution` の `commit`・`pr` を空文字にし、コミットと PR の本文に Claude の署名行を付けない。コミットの禁止を外しても、Claude の名前が履歴に残らないようにするため
 
 ## deny を足す・外す場合
@@ -46,7 +46,7 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 - 外すと、Claude もその操作をできるようになる。削除・コミット・push の deny を外す前に、利用者に確かめる
 - 実行前の確認（許可プロンプト）を減らしたいだけなら、deny は変えず、`.claude/settings.local.json` の `permissions.allow` に足す
 - 秘匿ファイルの deny（`Read(./.env)` など）は、このリポジトリの秘匿ファイルの置き場所に合わせて足す
-- Terraform の秘匿ファイル（変数の値・state など）の deny は、`/project:terraform` が足す
+- Terraform の秘匿ファイル（変数の値・state など）の deny は、`/project:terraform` が足す。clasp の認証情報（`.clasprc.json`）の deny は、`/project:gas` が足す
 - deny は、ルールの形に当たるコマンドしか止められない（例：`bash -c 'rm …'` は止まらない）。deny で止まらない操作も、この線引きに従う
 - `Bash(...)` の規則は、PowerShell のツールには効かない。そのため、`git`・`gh` の deny は `PowerShell(...)` の形でも同じ数だけ置く。削除のコマンドは別名（`rm`・`del`・`rmdir`・`rd`・`ri`・`erase`・`Remove-Item`）も置く。足す・外すときは、`Bash(...)` と `PowerShell(...)` の組でそろえる
 
@@ -59,3 +59,4 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 - `guard-destructive.sh` は、破壊的なコマンドを見つけて承認を求める。このプロジェクト固有の破壊的な操作は、`patterns` に足す。`patterns` は大文字小文字を区別せずに当てる。PowerShell は区別しないため
 - `post-edit-lint.sh` は、編集したファイルに `lefthook.yml` の `claude-edit` をかける。`lefthook run` は既定で `.git/` の下を書き換えるため、`--no-auto-install` を付けて呼ぶ。外さない
 - `guard-terraform.sh`（`/project:terraform` が配る）は、Claude が Terraform でインフラや state を変えるコマンドを止める。反映は人が行うため
+- `guard-clasp.sh`（`/project:gas` が配る）は、Claude が clasp で Apps Script 側へ反映・取り込み・認証をするコマンド（`push`・`pull`・`login` など）を止める。反映は人が行うため

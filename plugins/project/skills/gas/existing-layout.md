@@ -9,7 +9,7 @@
 | 方針 | 内容 | 向いている場合 |
 | --- | --- | --- |
 | A：`src/` へ移す | 既存のコードと `appsscript.json` を `src/` へ移し、`rootDir` を `src` にする（手順 3） | テンプレートの構成にそろえたい |
-| B：今の場所のまま | コードは動かさず、規約（`gas.md`・`gas-runtime.md`）だけを入れる。規約の `paths` を今の場所に書き換える | ファイルの移動を避けたい |
+| B：今の場所のまま | コードは動かさず、規約（`gas.md`・`gas-runtime.md`・`gas-sheet-style.md`）とフックだけを入れる。規約の `paths` を今の場所に書き換える | ファイルの移動を避けたい |
 
 `rootDir` が絶対パス（例：`C:\Users\...`）の場合は、ほかの PC で clone すると push できない。どちらの方針でも、相対パス（A なら `src`、B なら `.` 等）に直すことを提案する。
 
@@ -26,7 +26,7 @@
 ## 方針 B：今の場所のまま（手順 3・4）
 
 - 手順 3 の移動は飛ばす
-- 手順 4 では規約だけをコピーする（`--only .claude/rules/gas.md .claude/rules/gas-runtime.md`）。`src/` 配下のテンプレートはコピーしない
+- 手順 4 では規約とフックだけをコピーする（`--only .claude/rules/gas.md .claude/rules/gas-runtime.md .claude/rules/gas-sheet-style.md .claude/hooks/guard-clasp.sh`）。`src/` 配下のテンプレートはコピーしない。フックは `rootDir` に関わらず使える
 - コピーした規約の frontmatter の `paths` を、今の `rootDir` に合わせて書き換える。本文は `rootDir` を基準に書いてあるため直さない
 - テンプレートのコードの中身（スクリプトプロパティの取得・トリガーの登録など）は、手順 6 で既存ファイルへ足す案として出す
 
