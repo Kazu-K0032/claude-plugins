@@ -10,13 +10,21 @@
 # エラーで即座に止めるための厳格モード
 set -euo pipefail
 
-# 渡された JSON からコマンド文字列を取り出し、コマンドが無ければ即座に素通りさせる
-input=$(cat)
-command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
-[ -z "$command" ] && exit 0
+# terraform を呼ぶコマンドかもしれないのに判定できないときは、止める。exit 2 以外で失敗すると、Claude Code は操作をそのまま進めるため
+trap 'echo "guard-terraform.sh が判定できなかったため止めた（jq が無い、など）。jq を入れるか、人に実行を頼むこと。" >&2; exit 2' ERR
 
 # terraform と、サブコマンドの前に置けるオプション（-chdir=<ディレクトリ> など）までに当たる正規表現
-tf='(^|[^[:alnum:]_-])terraform([[:space:]]+-[^[:space:]]+)*[[:space:]]+'
+tf_options='terraform([[:space:]]+-[^[:space:]]+)*[[:space:]]+'
+tf="(^|[^[:alnum:]_-])${tf_options}"
+
+# terraform の呼び出しが入力のどこにも無ければ、jq を使わずに素通りさせる。jq が無い環境で、terraform と関係ないコマンドまで止めないため。
+# JSON の中では改行・タブが \n・\t と書かれるため、その直後の terraform も拾う
+input=$(cat)
+printf '%s' "$input" | grep -qE "(^|[^[:alnum:]_-]|\\\\[nrt])${tf_options}" || exit 0
+
+# 渡された JSON からコマンド文字列を取り出し、コマンドが無ければ即座に素通りさせる。Monitor の WebSocket を見張る形には、コマンドが無い
+command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
+[ -z "$command" ] && exit 0
 
 # terraform を呼ばないコマンドは素通りさせる
 printf '%s' "$command" | grep -qE "$tf" || exit 0

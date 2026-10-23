@@ -44,7 +44,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | --- | --- | --- |
 | `files/.claude/settings.json` | 権限（秘匿ファイル・コミット / push・削除・権限の変更・深刻な外部操作の deny と、`*.example` の allow）・フックの設定と、Python のキャッシュを作らない環境変数（`PYTHONDONTWRITEBYTECODE`） | 秘匿ファイルの deny パスをプロジェクトに合わせる |
 | `files/.claude/hooks/guard-destructive.sh` | 破壊的コマンドを検出して承認へエスカレーションする PreToolUse フック | `patterns` にプロジェクト固有の破壊的操作を追記する |
-| `files/.claude/hooks/guard-git-write.sh` | `git commit` / `git push` / `gh` 書き込みを Claude に実行させないガード（既定では未配線） | 使う場合は settings.json の PreToolUse（`matcher` は `Bash\|PowerShell`）に追加する |
+| `files/.claude/hooks/guard-git-write.sh` | `git commit` / `git push` / `gh` 書き込みを Claude に実行させないガード（既定では未配線） | 使う場合は settings.json の PreToolUse（`matcher` は `Bash\|PowerShell\|Monitor`）に追加する |
 | `files/.claude/hooks/post-edit-lint.sh` | 編集後に `lefthook.yml` の Lint・整形を動かし、失敗した結果を Claude へ返す PostToolUse フック（非ブロッキング） | 検査の対象を絞るときは冒頭の `TARGET_PREFIX` を直す |
 | `files/.claude/rules/comment.md` | インラインコメントの規約（なぜを書く・読み手を選ばない言葉）。言語を問わないため、常に読み込まれる | そのまま使える |
 | `files/.claude/rules/env.md` | 環境変数と `*.example` の追従ルール | 変数の種類と追記先の表 |
@@ -88,7 +88,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `.gitignore`・`.vscode/`・`cspell.json`・`.claude/settings.json`・`lefthook.yml` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
 - `pr-checks.yml` のスペルチェックは、`npx` で版を固定した cspell を取得して動かす。版は `files/.github/workflows/pr-checks.yml` と、Skill の候補の洗い出しのコマンド（[tooling.md](tooling.md) の「スペルチェックの除外語」）の 2 か所に書いてある。版を上げるときは両方をそろえる
-- `commitlint.config.mjs` は設定だけ。ESM の形式（`.mjs`）のため、`package.json` の `type` に関係なく読み込める。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る。Node のプロジェクトが前提だが、コミット規約の検証は土台の考え方のため配る（[P6](../../../../docs/policies/p06-common-template.md) の例外）
+- `commitlint.config.mjs` は設定だけ。ESM の形式（`.mjs`）のため、`package.json` の `type` に関係なく読み込める。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`lefthook install` による Git のフックの配線（`lefthook.yml` の `commit-msg` が呼ぶ）が要る。Node のプロジェクトが前提だが、コミット規約の検証は土台の考え方のため配る（[P6](../../../../docs/policies/p06-common-template.md) の例外）
 
 ## 除外したもの
 

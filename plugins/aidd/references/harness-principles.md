@@ -37,7 +37,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | --- | --- | --- |
 | コミット・push・削除・権限の変更・深刻な外部操作を止める | `.claude/settings.json` の `permissions.deny`（`git commit`・`git push`・`rm`・`gh pr merge`・`gh release` など。PowerShell の形（`PowerShell(...)`）も） | high |
 | 秘匿ファイルの読み取りを止める | `permissions.deny` の `Read(./.env)` など | high |
-| 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など。`matcher` は `Bash\|PowerShell`） | high |
+| 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など。`matcher` は `Bash\|PowerShell\|Monitor`。判定できないときは止める側に倒す） | high |
 | コミット・PR に Claude の署名を付けない | `settings.json` の `attribution` が空 | low |
 | 秘密の混入を CI で止める | シークレットスキャン（gitleaks など）の CI | high |
 | 操作の線引きと理由を、利用先の Claude に伝える | `.claude/rules/permissions.md` など | low |
