@@ -82,5 +82,6 @@ paths:
 ## clasp で反映する場合
 
 - push の対象は `.clasp.json` の `rootDir` 配下（`.claspignore` があれば、そこで除外したものを除く）。`rootDir` の外にある `.claude/` やドキュメントは push されない
+- `.clasp.json` はコミットし、`.gitignore` に入れない。`scriptId` は秘匿値ではなく、clone してすぐ push できるようにするため。例外として、開発用と本番用で `scriptId` を切り替える運用の場合だけ、`.gitignore` に入れて手元で管理する
 - スクリプトエディタで直接編集しない。`clasp push` でエディタ側の内容が上書きされるため。エディタで直した場合は、push の前に `clasp pull` で取り込む
 - TypeScript は使わない。clasp は TypeScript を変換しないため、使うにはバンドラーの導入が要る
