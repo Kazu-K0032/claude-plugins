@@ -49,7 +49,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | AI が読む文書の書き方を伝える | `.claude/rules/ai-docs.md` など | low |
 | Issue・PR の定型 | Issue・PR のテンプレート（本文の長さの上限を示す） | low |
 | 編集後に Lint・整形を動かす | PostToolUse のフックと、その定義（`lefthook.yml` など） | low |
-| コミット規約を検証する（Node のプロジェクトだけ） | `commitlint.config.*` など | low |
+| コミット規約を検証する（Node のプロジェクトだけ） | `commitlint.config.*` などと、それを呼ぶ `commit-msg` のフック（`lefthook.yml` など） | low |
 
 重大度は 2 段にする。安全に関わる仕組み（操作を止める deny・秘匿ファイルの deny・破壊的な操作のガード・秘密の混入を止める CI）は high、ほかは low。low の欠けは、意図して入れていないなら無視してよい。`init-repo` は、一部だけ入れることもできるため。
 

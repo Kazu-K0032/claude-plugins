@@ -3,7 +3,7 @@
 | 区分 | 内容 |
 | --- | --- |
 | 対象 | `project`（`init-repo`・`gas`・`wordpress`・`terraform`） |
-| 例外 | `init-repo` の `settings.json` の `env` に入れる `PYTHONDONTWRITEBYTECODE=1` は、Python 専用だが配る。Claude の作業スクリプトは、リポジトリの言語に関係なく Python で書かれやすく、入れても害が無いため。`commitlint.config.mjs` は Node のプロジェクトが前提だが配る。コミット規約の検証は土台の考え方で、Node はその道具にすぎないため。入れる条件で Node のプロジェクトに絞る |
+| 例外 | `init-repo` の `settings.json` の `env` に入れる `PYTHONDONTWRITEBYTECODE=1` は、Python 専用だが配る。Claude の作業スクリプトは、リポジトリの言語に関係なく Python で書かれやすく、入れても害が無いため。`commitlint.config.mjs` は Node のプロジェクトが前提だが配る。コミット規約の検証は土台の考え方で、Node はその道具にすぎないため。入れる条件で Node のプロジェクトに絞る。`lefthook.yml` の `commit-msg` は、commitlint を呼ぶ形でどのリポジトリにも配る。commitlint が入っていなければ飛ばすため、Node でないリポジトリでも害が無い |
 | 価値 | [V5](../values/v05-mechanisms-over-habits.md) |
 
 土台（`init-repo`）は、このリポジトリのハーネスの設計思想を配る。技術スタック別のスキル（`gas` など）は、その上に技術に依るものを重ねる。土台だけでも思想を受け継げ、技術別のスキルを重ねても思想が崩れないようにする。
