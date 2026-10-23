@@ -44,7 +44,7 @@ Closes #
 
 ### AI を使った確認
 
-- [ ] `/marketplace-update` で、プラグインの整合を確かめた
 - [ ] `/aidd:docs-sync` で、README などが変更に追従しているか確かめた
+- [ ] `/marketplace-update` で、プラグインの整合を確かめた
 - [ ] `/aidd:issue-pr-sync` で、Issue と PR の内容が合っているか確かめた
 - [ ] `/aidd:pr-review` を実行し、指摘を確かめて直した
