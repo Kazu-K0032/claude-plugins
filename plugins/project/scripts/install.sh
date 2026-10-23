@@ -9,7 +9,7 @@
 #
 # 出力は 1 行 1 ファイルで、先頭のラベルが状態を表す。
 #   NEW  ... 導入先に存在しない（--apply でコピーされる）
-#   SAME ... 既存ファイルと内容が一致（コピー不要）
+#   SAME ... 既存ファイルと内容が一致（コピー不要）。改行コード（CRLF・LF）の違いは無視する
 #   DIFF ... 既存ファイルと内容が異なる（--apply では触らない。--only で明示指定したときだけ上書き）
 set -euo pipefail
 
@@ -98,7 +98,8 @@ while IFS= read -r rel; do
   if [ ! -e "$rel" ]; then
     state="NEW"
     new_count=$((new_count + 1))
-  elif cmp -s "$src" "$rel"; then
+  # core.autocrlf で作業ツリーが CRLF になる環境があるため、完全一致でなければ CR を除いて比べ直す
+  elif cmp -s "$src" "$rel" || cmp -s <(tr -d '\r' < "$src") <(tr -d '\r' < "$rel"); then
     state="SAME"
     same_count=$((same_count + 1))
   else
