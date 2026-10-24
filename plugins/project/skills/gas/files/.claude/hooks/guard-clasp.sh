@@ -7,8 +7,8 @@
 # カスタマイズ方針:
 #   止めるサブコマンドを足すときは、下の deny_patterns 配列に追記する。判定は grep -E の正規表現で行う。
 
-# エラーで即座に止めるための厳格モード
-set -euo pipefail
+# エラーで即座に止めるための厳格モード。-E は、関数（deny など）の中の失敗でも、下の ERR のトラップを動かすため
+set -Eeuo pipefail
 
 # clasp を呼ぶコマンドかもしれないのに判定できないときは、止める。exit 2 以外で失敗すると、Claude Code は操作をそのまま進めるため
 trap 'echo "guard-clasp.sh が判定できなかったため止めた（jq が無い、など）。jq を入れるか、人に実行を頼むこと。" >&2; exit 2' ERR
