@@ -40,7 +40,7 @@ TODO: MCP サーバー・エディタ設定など、開発を支える仕組み�
 - Claude Code のプラグイン: [claude-plugins](https://github.com/Kazu-K0032/claude-plugins)
 - VS Code の推奨拡張機能: [.vscode/extensions.json](.vscode/extensions.json)
 - スペルチェックの設定と除外語: [cspell.json](cspell.json)
-- Lint・整形のツールの定義: [lefthook.yml](lefthook.yml)
+- Lint・整形のツールと、コミットのメッセージの検査の定義: [lefthook.yml](lefthook.yml)
 
 ## ドキュメント系
 

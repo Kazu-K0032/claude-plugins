@@ -15,3 +15,28 @@
 claude-edit:
   piped: true
   commands: {}
+
+# 人のコミットのメッセージを、commitlint.config.mjs の規約に当てる。lefthook install で Git のフックを入れたときだけ動く。
+# commitlint が入っていないとき（Node のプロジェクトでないときなど）は、黙って飛ばす。
+commit-msg:
+  commands:
+    commitlint:
+      run: '[ -x node_modules/.bin/commitlint ] || exit 0; node_modules/.bin/commitlint --edit {1}'
+
+# 人のコミット・push にも検査をかけるときの書き方の例。使うときは、コメントを外して run を書く。
+# pre-commit:
+#   # マージのコミットでは動かさない。取り込んだ側のファイルまで書き換えてしまうため
+#   skip: [merge]
+#   commands:
+#     format:
+#       run: '...'
+#       # 整形で直したファイルをステージに置き直す。部分的にステージした変更の退避と戻しは、版を追って直されてきたため
+#       # （Ref: https://github.com/evilmartians/lefthook/blob/master/CHANGELOG.md の 2.1.16・2.2.2 など）、
+#       # 使うときはファイルの先頭に min_version を書き、古い版で動かさない
+#       stage_fixed: true
+# pre-push:
+#   commands:
+#     protected-branch:
+#       # push 先の ref を標準入力で受け取る。受け取らないと、HEAD:main のような形の push 先を見られないため
+#       use_stdin: true
+#       run: '...'

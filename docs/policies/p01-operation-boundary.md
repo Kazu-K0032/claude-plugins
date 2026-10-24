@@ -30,10 +30,12 @@ Claude が実行してよい操作と、人が行う操作の線引きを決め�
 | 手元のファイル | 読み取り・作成・編集 | 削除 |
 | Git | ブランチ・タグの作成、`git fetch` | コミット、push、`git remote` の変更、ブランチ・タグ・stash の削除、`.git/` の直接の書き換え（フック・設定の変更） |
 | Issue・PR | 作成、コメント、本文・ラベル・担当者の更新、クローズ | 削除、マージ、レビュー（承認） |
-| GitHub のそのほか | 読み取り | リリース、ワークフローの実行、リポジトリの作成・設定変更・削除、secrets・variables・鍵・ログインの変更 |
+| GitHub のそのほか | 読み取り | リリース、ワークフローの実行（コメント・ラベルで起動するものを含む）、リポジトリの作成・設定変更・削除、secrets・variables・鍵・ログインの変更 |
 | 外部ツール | 読み取り | リモートとの反映・取り込み（`clasp push`・`clasp pull` など）、ログイン |
+| データベース | 手元の開発用の DB の読み書き | 共有・本番の DB への書き込み |
+| MCP のツール | 読み取り | 秘密の読み出し（ブラウザの保存領域・ログイン状態を保存したファイルなど） |
 
-`init-repo` は、この表の禁止のうち、外部ツール以外を deny で配る。線引きと理由は、利用先で読めるよう `.claude/rules/permissions.md` で配る。この方針を変えたら、そちらも直す。外部ツールの禁止は、技術スタック別のスキル（`gas` など）の禁止事項で止める。利用先の Claude にも守らせたいものは、そのスキルがフックを配って止めてよい（`terraform` の `guard-terraform.sh`、`gas` の `guard-clasp.sh`）。技術に依る秘匿ファイル（`*.tfstate`・`.clasprc.json` など）の読み取りの deny も、そのスキルが承認を得て足す。スキルの操作との対応は [permissions.md](permissions.md)。`Bash(...)` の規則は PowerShell のツールには効かないため、`git`・`gh` の deny は `PowerShell(...)` の形でも置く（削除は別名の `rm`・`del`・`rmdir`・`rd`・`ri`・`erase` も置く）。同じ理由で、コマンドを見るフック（`guard-destructive.sh` など）は `matcher` を `Bash|PowerShell` にする。フックは `bash` で動くため、Git Bash の無い Windows では動かない。deny は、ルールの形に当たるコマンドしか止められない。`bash -c 'rm …'` や、`gh api` での権限の変更は止まらない。抜けやすい形のうち、`gh api` でのマージと DELETE、`git -C`・`git -c` を付けたコミット・push は個別に止めている。deny で止まらない操作も、この線引きに従う。
+`init-repo` は、この表の禁止のうち、外部ツール・データベース・MCP のツール以外を deny で配る。線引きと理由は、利用先で読めるよう `.claude/rules/permissions.md` で配る。この方針を変えたら、そちらも直す。外部ツールの禁止は、技術スタック別のスキル（`gas` など）の禁止事項で止める。利用先の Claude にも守らせたいものは、そのスキルがフックを配って止めてよい（`terraform` の `guard-terraform.sh`、`gas` の `guard-clasp.sh`）。技術に依る秘匿ファイル（`*.tfstate`・`.clasprc.json` など）の読み取りの deny も、そのスキルが承認を得て足す。スキルの操作との対応は [permissions.md](permissions.md)。`Bash(...)` の規則は PowerShell のツールには効かないため、`git`・`gh` の deny は `PowerShell(...)` の形でも置く（削除は別名の `rm`・`del`・`rmdir`・`rd`・`ri`・`erase` も置く）。`Monitor`（コマンドを裏で動かし続けるツール）には `Bash(...)` の規則が効く。ただしフックは `matcher` に無いツールでは動かないため、コマンドを見るフック（`guard-destructive.sh` など）は `matcher` を `Bash|PowerShell|Monitor` にする。フックは `bash` で動くため、Git Bash の無い Windows では動かない。フックが 2 以外の終了コードで失敗すると操作はそのまま進むため、ガードは判定できないとき（`jq` が無いなど）に止める側へ倒す。`onFailure: "block"` は、フックが起動できない環境ですべてのコマンドを止めるため使わない。コメントで動くワークフローの起動語・秘密を読める MCP のツールの deny と、共有・本番の DB への接続の既定を読み取り専用にする設定は、リポジトリごとに違うため利用先で足す。deny は、ルールの形に当たるコマンドしか止められない。`bash -c 'rm …'` や、`gh api` での権限の変更は止まらない。抜けやすい形のうち、`gh api` でのマージと DELETE、`git -C`・`git -c` を付けたコミット・push は個別に止めている。deny で止まらない操作も、この線引きに従う。
 
 `git remote` は、変更だけでなく読み取り（`git remote -v` など）も deny で止める。変更系のサブコマンドを並べると、抜けが出やすいため。リモートの URL は `gh repo view` で確かめる。
 

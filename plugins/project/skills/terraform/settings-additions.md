@@ -4,7 +4,7 @@
 
 ## フック
 
-この実行で `.claude/hooks/guard-terraform.sh` を入れ、`guard-terraform.sh` の行が無いときに足す。`hooks.PreToolUse` の `"matcher": "Bash|PowerShell"` の `hooks` に次を足す。`"matcher": "Bash"`（古い `init-repo` の形）しか無ければ、その `matcher` を `"Bash|PowerShell"` に直す案も差分に入れる。`Bash` だけだと、PowerShell のツールで打った `terraform` を止められないため。どちらも無ければ、`"matcher": "Bash|PowerShell"` で `PreToolUse` に定義ごと足す。
+この実行で `.claude/hooks/guard-terraform.sh` を入れ、`guard-terraform.sh` の行が無いときに足す。`hooks.PreToolUse` の `"matcher": "Bash|PowerShell|Monitor"` の `hooks` に次を足す。`"matcher": "Bash"`・`"Bash|PowerShell"`（古い `init-repo` の形）しか無ければ、その `matcher` を `"Bash|PowerShell|Monitor"` に直す案も差分に入れる。足りないと、PowerShell のツールや、コマンドを裏で動かす `Monitor` のツールで打った `terraform` を止められないため。どれも無ければ、`"matcher": "Bash|PowerShell|Monitor"` で `PreToolUse` に定義ごと足す。
 
 ```json
 {
