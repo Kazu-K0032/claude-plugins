@@ -11,6 +11,7 @@
 1. `commitlint.config.mjs` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`lefthook install` で Git のフックを入れる。`lefthook.yml` の `commit-msg` が commitlint を呼ぶ（入っていなければ飛ばす）。`.git/` の下を書き換えるため、人が実行する
 1. `.github/workflows/` には「シークレットスキャン」「スペルチェック」「ラベル同期」しか入っていない。ビルド・テストの CI はプロジェクト側で作る
 1. Issue テンプレートを入れたら、`.github/ISSUE_TEMPLATE/release.yml` の「事前確認」と「リリース手順」を、このリポジトリのデプロイの方式に合わせる。テンプレートは、検証環境があり、リリース用ブランチへのマージでデプロイワークフローが動く構成を前提にしている（例：`main` へのマージでホスティングが自動でデプロイするなら、リリース用ブランチとデプロイワークフローの行をその方式の手順に置き換える）
+1. 既存の `.sh` が CRLF でコミットされているときは、`.gitattributes` を入れた後に `git add --renormalize .` で LF にそろえる。LF にそろえる差分が出るため、内容を確かめてから人がコミットする。CRLF のままだと、Linux の bash でそのフックが動かない
 
 ## 配線していないフック
 
