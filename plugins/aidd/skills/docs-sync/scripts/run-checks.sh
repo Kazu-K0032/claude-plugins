@@ -92,7 +92,9 @@ DOC_PATTERN='^(docs?|documentation)/|(^|/)(README|CLAUDE|CONTRIBUTING|AGENTS)\.m
 EXCLUDE_PATTERN='(^|/)(node_modules|vendor|dist|build|tmp)/'
 
 # 差分ファイル（分岐点以降のコミット＋作業ツリーの変更）
-mapfile -t ALL_CHANGED < <(git diff --name-only "$MERGE_BASE")
+# ファイル名を出す git には -c core.quotepath=false を付ける。
+# 既定では日本語名が "docs/\346..." の形で出て、[[ -e ]] で見つからず検査から外れるため。
+mapfile -t ALL_CHANGED < <(git -c core.quotepath=false diff --name-only "$MERGE_BASE")
 
 MD_CHANGED=()      # 変更された md 全部（一覧表示用）
 CODE_CHANGED=()    # 変更された非 md（docs 追従判定の入力）
@@ -118,7 +120,7 @@ touch "$TMP/links.txt" "$TMP/md.txt" "$TMP/links_all.txt" "$TMP/ssot.txt"
 
 # 全走査用: 差分に関係なく全散文 md を列挙する。
 # 既存ファイルの壊れリンク・壊れ SSOT ポインタは差分に現れないため、ここだけはリポジトリ全体を対象にする。
-mapfile -t ALL_DOC_MD < <(git ls-files | grep -E '\.md$' | grep -E "$DOC_PATTERN" | grep -vE "$EXCLUDE_PATTERN")
+mapfile -t ALL_DOC_MD < <(git -c core.quotepath=false ls-files | grep -E '\.md$' | grep -E "$DOC_PATTERN" | grep -vE "$EXCLUDE_PATTERN")
 
 # リンク検査だけから外すファイル。リポジトリ直下の .docs-sync-link-ignore（書式は .gitignore と同じ）で指定する。
 # 導入先のリポジトリを基準にリンクを書いたテンプレートなど、そのリポジトリの中では解決できないファイルのため。
@@ -128,7 +130,7 @@ declare -A LINK_IGNORED=()
 if [[ -f "$LINK_IGNORE_FILE" ]]; then
   while IFS= read -r f; do
     [[ -n "$f" ]] && LINK_IGNORED["$f"]=1
-  done < <(git ls-files --cached --ignored --exclude-from="$LINK_IGNORE_FILE")
+  done < <(git -c core.quotepath=false ls-files --cached --ignored --exclude-from="$LINK_IGNORE_FILE")
 fi
 
 # 引数のうち、リンク検査から外すファイルに当たらないものを 1 行ずつ出力する
