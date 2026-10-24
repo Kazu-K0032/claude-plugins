@@ -126,7 +126,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 ├── .gitattributes                        # シェルスクリプト（*.sh）の改行を LF に固定する
 ├── .gitignore
 ├── cspell.json                           # スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有）
-├── lefthook.yml                          # Lint・整形のツールの定義（編集後のフックが使う）
+├── lefthook.yml                          # Lint・整形のツール（編集後のフックが使う）と、コミットのメッセージの検査の定義
 └── README.md
 ```
 

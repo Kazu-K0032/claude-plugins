@@ -52,6 +52,7 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 - `.clasprc.json`（`clasp login --creds` で作業ディレクトリに保存される認証情報）は `.gitignore` に入れる。Skill が追記を提案する
 - 利用先の Claude が実行してよいのは、`clasp status` や `clasp logs` などの読み取りまで。`push`・`pull`・`login` などは人が行う（[P1](../../../../docs/policies/p01-operation-boundary.md)）。`guard-clasp.sh` はこれを仕組みで守る。`npm run` に包んだ実行などは止まらない
 - フックは `settings.json` の PreToolUse に登録して初めて効く。`settings.json` が無いリポジトリでは Skill は作らず、登録の定義を伝える
+- `guard-clasp.sh` は `jq` でコマンドを取り出す。`jq` が無いと判定できないため、`clasp` を含むコマンドは読み取り（`clasp status` など）も止める。止める側に倒すのは、2 以外の終了コードで失敗すると、Claude Code が操作をそのまま進めるため
 - 認証情報（`.clasprc.json`、既定の置き場所 `~/.clasprc.json`）の読み取りの deny は、Skill が `settings.json` に足す。GAS を使うリポジトリにだけ要るため、`/project:init-repo` には含めない（[P6](../../../../docs/policies/p06-common-template.md)）
 - 秘匿値はスクリプトプロパティに置く前提にしている。`constants.js` にはキー名だけを書く
 - トリガーは `trigger.js` の一覧（`TRIGGERS`）だけで管理し、`setupTriggers` は毎回同じ Google アカウントで実行する前提にしている。`setupTriggers` は実行したアカウントのトリガーをすべて消してから作り直すため、そのアカウントで手作業で作ったトリガーは消え、別のアカウントで作ったトリガーは残る。既存のプロジェクトに入れる場合は、Skill が手作業のトリガーを一覧へ書き移す案を出し、別のアカウントのトリガーは持ち主のアカウントで消してもらう

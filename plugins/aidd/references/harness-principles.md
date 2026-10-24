@@ -20,7 +20,7 @@
 
 | 番号 | 方針 | 要点 |
 | --- | --- | --- |
-| P1 | Claude に任せる操作と、人が行う操作を分けること | 削除・権限の変更・コミット・push と、間違えると深刻な外部操作（マージ・承認・リリース・ワークフローの実行など）は、deny などで止めて人が行う。それ以外は止めない |
+| P1 | Claude に任せる操作と、人が行う操作を分けること | 削除・権限の変更・コミット・push と、間違えると深刻な外部操作（マージ・承認・リリース・ワークフローの実行・共有や本番の DB への書き込みなど）は、deny などで止めて人が行う。それ以外は止めない |
 | P3 | ADR などの文書は、プロジェクトの規約どおりの場所に置くこと | 置き場所を規約（`CLAUDE.md` など）に書き、そこに置く。推測した場所に置かない |
 | P4 | スキルの下書きやレポートは tmp に出し、コミットに混ぜないこと | レポート・下書きは `tmp/<ブランチ名>/`、コミットメッセージは `tmp.md` に書き、どちらも `.gitignore` に入れる。作業ファイルは `tmp/<ブランチ名>/work/<目的>/` に置く |
 | P7 | README には本文を書かず、どこに何があるかの案内にとどめること | 手順・設計・仕様は `docs/` などに 1 か所だけ書き、README からはリンクで案内する。ルートの README から `docs/` へは `docs/README.md` だけを案内する |
@@ -37,7 +37,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | --- | --- | --- |
 | コミット・push・削除・権限の変更・深刻な外部操作を止める | `.claude/settings.json` の `permissions.deny`（`git commit`・`git push`・`rm`・`gh pr merge`・`gh release` など。PowerShell の形（`PowerShell(...)`）も） | high |
 | 秘匿ファイルの読み取りを止める | `permissions.deny` の `Read(./.env)` など | high |
-| 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など。`matcher` は `Bash\|PowerShell`） | high |
+| 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など。`matcher` は `Bash\|PowerShell\|Monitor`。判定できないときは止める側に倒す） | high |
 | コミット・PR に Claude の署名を付けない | `settings.json` の `attribution` が空 | low |
 | 秘密の混入を CI で止める | シークレットスキャン（gitleaks など）の CI | high |
 | 操作の線引きと理由を、利用先の Claude に伝える | `.claude/rules/permissions.md` など | low |
@@ -49,7 +49,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | AI が読む文書の書き方を伝える | `.claude/rules/ai-docs.md` など | low |
 | Issue・PR の定型 | Issue・PR のテンプレート（本文の長さの上限を示す） | low |
 | 編集後に Lint・整形を動かす | PostToolUse のフックと、その定義（`lefthook.yml` など） | low |
-| コミット規約を検証する（Node のプロジェクトだけ） | `commitlint.config.*` など | low |
+| コミット規約を検証する（Node のプロジェクトだけ） | `commitlint.config.*` などと、それを呼ぶ `commit-msg` のフック（`lefthook.yml` など） | low |
 
 重大度は 2 段にする。安全に関わる仕組み（操作を止める deny・秘匿ファイルの deny・破壊的な操作のガード・秘密の混入を止める CI）は high、ほかは low。low の欠けは、意図して入れていないなら無視してよい。`init-repo` は、一部だけ入れることもできるため。
 

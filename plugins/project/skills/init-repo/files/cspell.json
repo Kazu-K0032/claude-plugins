@@ -13,11 +13,13 @@
   ],
   "words": [
     "aidd",
+    "commitlint",
     "davidanson",
     "envrc",
     "frontmatter",
     "ghaction",
     "lefthook",
+    "pgoptions",
     "pycache",
     "pythondontwritebytecode",
     "segs",
