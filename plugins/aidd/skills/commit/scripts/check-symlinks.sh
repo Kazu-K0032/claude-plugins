@@ -8,7 +8,8 @@
 set -eu
 
 # ステージ済みファイル(--cached)のうち、実質的な変更(ACMRT)があるファイル名だけ(--name-only)を一覧表示する
-staged="$(git diff --cached --name-only --diff-filter=ACMRT)"
+# core.quotepath=false は、日本語名を "\346..." の形にせずそのまま出すため（引用形のままだと [ -L ] で見つからない）
+staged="$(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMRT)"
 
 # ステージ済みのファイルが無ければ終了
 if [ -z "$staged" ]; then
