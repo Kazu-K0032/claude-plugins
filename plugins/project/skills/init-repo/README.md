@@ -1,8 +1,8 @@
 # init-repo
 
-新しいリポジトリへ「Claude Code のハーネス設定（`.claude/`）＋ GitHub の定型ファイル（`.github/`）＋ エディタ設定（`.vscode/`）・スペルチェックの設定（`cspell.json`）・Lint と整形のツールの定義（`lefthook.yml`）・`.gitignore` ＋ ドキュメントの骨組み」を一括で持ち込む Skill。実案件リポジトリの構成から、プロジェクト固有の要素を取り除いて汎用化したもの。
+新しいリポジトリへ「Claude Code のハーネス設定（`.claude/`）＋ GitHub の定型ファイル（`.github/`）＋ エディタ設定（`.vscode/`）・スペルチェックの設定（`cspell.json`）・Lint と整形のツールの定義（`lefthook.yml`）・`.gitignore`・`.gitattributes` ＋ ドキュメントの骨組み」を一括で持ち込む Skill。実案件リポジトリの構成から、プロジェクト固有の要素を取り除いて汎用化したもの。
 
-`files/` の中身がそのまま導入先リポジトリのルートに置かれる。
+`files/` の中身がそのまま導入先リポジトリのルートに置かれる（`.sh` は改行を LF にして置かれる）。
 
 ## 目次
 
@@ -76,6 +76,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/lefthook.yml` | Lint・整形のツールの定義（`claude-edit`。`post-edit-lint.sh` が使う）と、人のコミットで commitlint を動かす `commit-msg`。`pre-commit`・`pre-push` は書き方の例だけ | 使うツールを `claude-edit` に足す（Skill が既存の設定を探して提案する）。人のコミット・push にも検査をかけるなら、例を見て `pre-commit`・`pre-push` を足す |
 | `files/cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と `pr-checks.yml` が共有する。テンプレート自身が使う語は登録済み） | プロジェクトの固有名詞を `words` に入れる（Skill が候補を出す） |
 | `files/.gitignore` | Claude Code の作業ファイル（`tmp.md`・`tmp/`）・個人設定・秘匿ファイル・OS のファイルの除外 | 言語・ビルド成果物の除外を追記する |
+| `files/.gitattributes` | シェルスクリプト（`*.sh`）の改行を LF に固定する。Windows の `core.autocrlf=true` で checkout しても、フックが CRLF になって Linux の bash で動かなくなるのを防ぐ | そのまま使える |
 
 ## 前提と制約
 

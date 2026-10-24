@@ -1,0 +1,2 @@
+# シェルスクリプト（.claude/hooks/*.sh など）は、core.autocrlf=true の環境でも LF にする。CRLF だと Linux の bash が \r を読めず動かない
+*.sh text eol=lf

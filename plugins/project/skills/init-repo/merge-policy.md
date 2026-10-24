@@ -13,6 +13,7 @@
 | --- | --- |
 | `README.md` | 案内板に作り替える（下の「README.md を案内板にする」） |
 | `.gitignore` | 既存の行は残し、テンプレートにあって既存に無い行だけを末尾へ追記する。`既存は置き換えない` の指定があっても、不足行の追記は提案する |
+| `.gitattributes` | 既存の行は残し、`*.sh` の指定が無いときだけ末尾へ追記する。`*.sh` に別の指定（`eol=crlf` など）があれば、追記せず利用者に伝える。2 つの指定が並ぶと、後の行が効いて LF にならないため |
 | `.vscode/settings.json` / `.vscode/extensions.json` | 既存のキー・配列要素は残し、無いものだけを足す。JSONC（コメント・末尾カンマ）を壊さない。既存の `cSpell.words` は cspell の CLI が読まないため、`cspell.json` の `words` へ移すことを提案する |
 | `cspell.json` | 既存のキー・`words` の語は残し、無いものだけを足す |
 | `.claude/settings.json` | 既存のキー・配列要素は残し、無いものだけを足す。`env` の `PYTHONDONTWRITEBYTECODE` も足す。`hooks.PreToolUse` の `"matcher": "Bash"`・`"Bash\|PowerShell"` は、`"Bash\|PowerShell\|Monitor"` に直す案を示す。足りないと PowerShell・`Monitor` のツールに効かず、別の定義として足すと同じフックが 2 つ並ぶため |
