@@ -46,7 +46,7 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 - 外すと、Claude もその操作をできるようになる。削除・コミット・push の deny を外す前に、利用者に確かめる
 - 実行前の確認（許可プロンプト）を減らしたいだけなら、deny は変えず、`.claude/settings.local.json` の `permissions.allow` に足す
 - 秘匿ファイルの deny（`Read(./.env)` など）は、このリポジトリの秘匿ファイルの置き場所に合わせて足す
-- Terraform の秘匿ファイル（変数の値・state など）の deny は、`/project:terraform` が足す。clasp の認証情報（`.clasprc.json`）の deny は、`/project:gas` が足す
+- Terraform の秘匿ファイル（変数の値・state など）の deny は、`/project:terraform` が足す。clasp の認証情報の deny は、`/project:gas` が足す
 - deny は、ルールの形に当たるコマンドしか止められない（例：`bash -c 'rm …'` は止まらない）。deny で止まらない操作も、この線引きに従う
 - `Bash(...)` の規則は、PowerShell のツールには効かない。そのため、`git`・`gh` の deny は `PowerShell(...)` の形でも同じ数だけ置く。削除のコマンドは別名（`rm`・`del`・`rmdir`・`rd`・`ri`・`erase`・`Remove-Item`）も置く。足す・外すときは、`Bash(...)` と `PowerShell(...)` の組でそろえる
 
