@@ -47,6 +47,7 @@ bash <plugin>/scripts/install.sh --skill terraform --apply  # 未存在のファ
 - 環境はディレクトリで分け、workspace は使わない前提にしている。誤った workspace で apply すると、別の環境が変わるため
 - 利用先の Claude が実行してよいのは、fmt・validate・init・`plan -out=tfplan` まで。apply・destroy・state の書き換えは人が行う（[P1](../../../../docs/policies/p01-operation-boundary.md)）。`guard-terraform.sh` はこれを仕組みで守る
 - フックは `settings.json` の PreToolUse に登録して初めて効く。`settings.json` が無いリポジトリでは Skill は作らず、登録の定義を伝える
+- `guard-terraform.sh` は `jq` でコマンドを取り出す。`jq` が無いと判定できないため、`terraform` を呼ぶコマンドは fmt・plan なども止める。止める側に倒すのは、2 以外の終了コードで失敗すると、Claude Code が操作をそのまま進めるため
 - 秘匿ファイル（`*.tfvars`・`*.tfstate`・`.terraform/`）の読み取りの deny は、Skill が `settings.json` に足す。Terraform を使うリポジトリにだけ要るため、`/project:init-repo` には含めない（[P6](../../../../docs/policies/p06-common-template.md)）
 - `terraform` のコマンドは、Skill は実行しない（人が行う）。認証情報・state・実際のインフラに触れるため
 
