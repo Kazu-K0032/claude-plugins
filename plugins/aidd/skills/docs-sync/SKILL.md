@@ -44,7 +44,7 @@ allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(git check
 
 ### 2. 差分を列挙し、機械チェックを実行する
 
-リポジトリのルートで次を実行し、標準出力を保持する。スクリプトは `git`・`bash`・`perl`・`awk` を使う。`<比べるブランチ>` は手順 1 で決めたもの（通常は `origin/<マージ先>`）で、決まらなければ `--base` を付けない。
+リポジトリのルートで次を実行し、標準出力を保持する。スクリプトは `git`・`bash`（4.4 以上）・`perl`・`awk` を使い、足りなければ `ERROR` で止まる。`<比べるブランチ>` は手順 1 で決めたもの（通常は `origin/<マージ先>`）で、決まらなければ `--base` を付けない。
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比べるブランチ>"

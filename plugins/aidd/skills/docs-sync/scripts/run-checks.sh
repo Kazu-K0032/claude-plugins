@@ -15,6 +15,22 @@
 
 set -uo pipefail
 
+# --- 使う道具の確認 ---------------------------------------------------------
+# bash 4.4 未満では、mapfile・declare -A と、set -u での空の配列の展開で止まる。
+# perl・awk が無いと、検査の出力が空になり、黙って PASS と出る。そのため、検査の前に止める。
+# 見つかっても動かないもの（Windows の空のコマンドなど）を通さないよう、実際に動かして確かめる。
+if (( BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4) )); then
+  echo "ERROR: bash 4.4 以上が要ります（今は ${BASH_VERSION}）。macOS 標準の bash 3.2 では動かないため、新しい bash を入れる" >&2
+  exit 2
+fi
+MISSING_TOOLS=""
+perl -e 1 >/dev/null 2>&1 || MISSING_TOOLS="$MISSING_TOOLS perl（リンク切れ・SSOT ポインタ・@import の検査）"
+awk 'BEGIN { exit 0 }' </dev/null >/dev/null 2>&1 || MISSING_TOOLS="$MISSING_TOOLS awk（markdown 規約の検査）"
+if [[ -n "$MISSING_TOOLS" ]]; then
+  echo "ERROR: 次の道具が動きません:${MISSING_TOOLS}。入れてから実行し直す" >&2
+  exit 2
+fi
+
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
   echo "ERROR: git リポジトリのルートを取得できません" >&2
   exit 2

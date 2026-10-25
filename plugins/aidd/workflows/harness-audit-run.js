@@ -36,6 +36,17 @@ const MODELS = {
   verify: { model: 'opus', effort: 'high' },
   report: { model: 'sonnet', effort: 'medium' },
 }
+// MODELS を、同じモデルと effort の段ごとにまとめた 1 行の文にする（例: opus・high（rubric・presence）/ sonnet・medium（report））。
+// 結果の質と費用はこれで変わるため、開始時のログ・レポートの注記・戻り値に出す。
+const MODELS_NOTE = Object.entries(
+  Object.entries(MODELS).reduce((acc, [stage, m]) => {
+    const key = `${m.model}・${m.effort}`
+    acc[key] = [...(acc[key] || []), stage]
+    return acc
+  }, {})
+)
+  .map(([key, stages]) => `${key}（${stages.join('・')}）`)
+  .join(' / ')
 
 // --- 小さいファイルの束ね方 ---
 // エージェントは 1 体ごとに共通の前提（指示・CLAUDE.md など）を読むため、体数がそのまま費用になる。
@@ -486,6 +497,7 @@ if (planned > AGENT_PLAN_LIMIT) {
 }
 log(`対象 ${files.length} ファイル / 束 ${batches.length} / 横断の群 ${groups.length} / 横断の候補の検証を除くエージェント ${planned} 体`)
 log(`範囲: ${scopeNote.range}`)
+log(`モデルと effort（段ごとに固定）: ${MODELS_NOTE}`)
 if (!principles) {
   log('設計思想の要約が渡されていないため、リポジトリの規約だけで見る。仕組みの欠けと規約のずれは見ない')
 }
@@ -979,6 +991,7 @@ const report = await agent(
     `- 参照した規約: ${rubrics.length ? rubrics.join(', ') : 'なし'}`,
     `- 範囲: ${scopeNote.range}`,
     `- 範囲の外で見ていないもの: ${scopeNote.unseen || 'なし'}`,
+    `- モデルと effort（段ごとに固定）: ${MODELS_NOTE}`,
     `- 当てはまる規約が無かったファイル数: ${uncovered.length}`,
     `- 仕組みの欠け: ${presenceNote}`,
     `- 参照方向の観点: ${hasRefRule ? '有効' : '規約が無いためスキップ'}`,
@@ -1001,6 +1014,7 @@ const report = await agent(
     '  - 「参照した規約：…」（上の「参照した規約」から。設計思想の要約を使ったなら「同梱の設計思想の要約」も並べる。無ければ「なし」）',
     '  - 「範囲：…」（上の「範囲」をそのまま書く）',
     '  - 「見ていないもの：…」（上の「範囲の外で見ていないもの」が「なし」なら、この行は書かない。範囲を絞ったときは、見つからないだけで無いとは限らないと添える）',
+    '  - 「モデルと effort：…」（上の「モデルと effort」をそのまま書く。段ごとに固定していることも添える）',
     '  - 「仕組みの欠け：…」（上の「仕組みの欠け」が「見た」なら、この行は書かない）',
     '  - 「規約を当てなかったファイル：…件」（上の件数が 0 なら、この行は書かない）',
     '  - 「検証していない候補：…件。対象を分けて再実行する」（上の件数が 0 なら、この行は書かない）',
@@ -1026,6 +1040,7 @@ const report = await agent(
 if (!report) log('レポートを書けなかった（エージェントの失敗・スキップ）。件数は戻り値で確かめる')
 return {
   file: report ? report.path : null,
+  models: MODELS_NOTE,
   files: files.length,
   batches: batches.length,
   groups: groups.length,

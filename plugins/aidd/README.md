@@ -43,6 +43,8 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 同梱の Workflow（`pr-review` など）は、Claude Code の動的ワークフロー（dynamic workflows）で動く。切れていると `/` の候補に出ず、`/aidd:harness-audit` も監査の前に止まる。出ないときは、`/config` の「Dynamic workflows」の行をオンにする。Pro では初期設定でオフのため。ほかに止まる設定は、[harness-audit の errors.md](skills/harness-audit/errors.md) の「Workflow が使えないとき」にある。Ref: [Orchestrate subagents at scale with dynamic workflows](https://code.claude.com/docs/en/workflows)
 
+`pr-review` は、モデルと effort を段ごとに固定せず、呼んだセッションのものを引き継ぐ。使った設定は、開始時のログ・レポートの注記・戻り値に出る。どの設定で見た結果かを確かめられるようにするため。`harness-audit-run` は段ごとに固定する（「ハーネス監査は、設計思想を物差しにし、実行前に見込みを示す」の「モデル」）。
+
 ## ディレクトリ構成
 
 ```text
@@ -216,6 +218,6 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - 範囲：全体・差分・ディレクトリから選ぶ。差分は `docs-sync` と同じく、マージ先と比べる（`references/base-branch.md`）。絞っても、規約のずれと仕組みの欠けは全体を見る。この 2 つは対象の一覧に依らず、リポジトリの規約から調べるため。範囲の外との値の矛盾・重複は見つからないため、レポートの注記に「範囲」と「見ていないもの」を書く
 - 見込みの確認：Workflow は利用者に質問できないため、入口をスキルにし、件数・総量・エージェント数を示して続けるかを聞く。トークンを多く使うことは、見込みの前に伝える。費用がそのまま利用上限に数えられるため
 - Workflow が使えないとき：入口のスキルが最初に確かめ、`/config` の「Dynamic workflows」を案内する。Pro では初期設定でオフのため
-- モデル：`workflows/harness-audit-run.js` の `MODELS` で段ごとに固定する。呼ぶ人のモデルで費用が変わらないようにするため。判断の段は opus にし、質を落とさない（[V1](../../docs/values/v01-quality-over-speed.md)）。数の多い検査は sonnet にし、誤検出は検証の段で落とす
+- モデル：`workflows/harness-audit-run.js` の `MODELS` で段ごとに固定する。呼ぶ人のモデルで費用が変わらないようにするため。判断の段は opus にし、質を落とさない（[V1](../../docs/values/v01-quality-over-speed.md)）。数の多い検査は sonnet にし、誤検出は検証の段で落とす。使うモデルと effort は、見込み・開始時のログ・レポートの注記・最後の報告に出す。どの設定で見た結果かを、読み手が確かめられるようにするため
 - 束ねる：エージェントは 1 体ごとに共通の前提を読むため、体数がそのまま費用になる。小さいファイルは束ねて 1 体で検査する（`BATCH`）
 - 2 段の突合：1 体が読む事実が多すぎると取りこぼすため、件数が多いときは、ディレクトリの群ごとに突き合わせてから全体で突き合わせる（`DETECT_GROUP`）
