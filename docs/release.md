@@ -26,7 +26,11 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
 
 1. `git log --oneline origin/main..origin/develop` で入る変更を見て、上の表で版を決める
 1. Issue を作り、`develop` から `issues/<Issue番号>-<説明>`（例：`issues/60-v1-1-0`）を作る。3 つの `plugin.json` の `version` を上げ、`develop` へ PR を出してマージする
-1. 版を上げた `develop` で `/aidd:harness-audit` を範囲「全体」で動かし、リポジトリ全体が設計思想に合うかを確かめる。直す指摘があれば、`develop` への PR で直してから進む。CI は機械の検査だけで、思想との整合は見ないため
+1. 版を上げた `develop` を `git pull` で最新にし、前のリリース（`origin/main`）からの差分を次の 2 つで点検する。直す指摘があれば、`develop` への PR で直してから進む。CI は機械の検査だけで、思想との整合とセキュリティは見ないため
+   - `/aidd:harness-audit --diff`：設計思想に合うかを見る。見込みの「範囲」で、比べる先が `origin/main` かを確かめる。MAJOR では範囲「全体」で動かす。差分では、範囲の外のファイルとの矛盾を見ないため
+   - `/claude-security scan changes --base origin/main`：セキュリティの問題を見る。MAJOR では effort を `high` にする。コミット済みの変更だけを見る
+
+   前のタグ（例：`v2.1.0`）は `main` 側にあり、`develop` の履歴に無い。分岐点がタグと同じため、`origin/main` と比べる
 1. Issue フォームの「リリース」で、リリースの Issue を作る。`release` ラベルが付く。書き込み権限のある人が作った Issue だけで動き、ほかの人の Issue では何も起きない
 1. `release.yml` が次を行う。終わると、Issue に PR の URL がコメントされる
    - `plugin-checks.yml` と同じ検査を `develop` で動かす
@@ -91,3 +95,8 @@ hotfix で、手で Release を作るときの手順。通常のリリースで�
    ```
 
 1. **Settings** → **Actions** → **General** → **Workflow permissions** で、**Allow GitHub Actions to create and approve pull requests** を有効にする。無効だと、`release.yml` が PR を作れない
+1. Claude Code に `claude-security` を入れる。「リリースの流れ」の手順 3 の点検で使う。2 つの点検は Workflow を使うため、`/config` の **Dynamic workflows** も有効にする
+
+   ```text
+   /plugin install claude-security@claude-plugins-official
+   ```
