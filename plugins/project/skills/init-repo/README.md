@@ -63,13 +63,15 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.github/workflows/sync-labels.yml` | `labels.yml` を GitHub のラベルへ同期 | そのまま使える |
 | `files/.vscode/extensions.json` | VS Code の推奨拡張機能（markdownlint・スペルチェック・GitHub Actions・YAML） | 技術スタックに合わせて追加する（Skill が提案する） |
 | `files/.vscode/settings.json` | 保存時の整形（末尾改行・行末空白の削除・LF） | そのまま使える |
-| `files/docs/adr/README.md` | ADR の一覧（`CLAUDE.md` が読み込む。表の見出しだけ） | そのまま使える |
-| `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
+| `files/docs/adr/` | ADR の一覧（`README.md`。`CLAUDE.md` が読み込む。表の見出しだけ）と、ADR の雛形（`YYYY-MM-DD-判断の対象.template.md`。`/aidd:adr` の簡易の形） | 最初の ADR を作ったら、雛形の削除を提案する |
+| `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表と、雛形から実物を作る手順） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
+| `files/docs/specs/` | 仕様書の案内板と、要件定義書の雛形（`specifications.template.md`。機能要件・非機能要件・制約） | 雛形から実物（`specifications.md`）を作り、雛形の削除を提案する |
+| `files/docs/architecture/` | 構成の案内板と、アーキテクチャ概要の雛形（`architecture.template.md`）、構成図の雛形（`architecture.template.drawio` と、draw.io で書き出した `architecture.template.png`。AWS を例にしている） | 雛形から実物を作る。構成図は実際の構成に描き直して PNG を書き出し、雛形の削除を提案する |
 | `files/docs/strategies/README.md` | 開発・テストの方針の案内板 | 文書を足したら表に行を足す |
 | `files/docs/strategies/ai-driven-development.md` | AI 駆動開発の戦略（AI・機械・人の分担と振り分け方、文書で AI の向かう先をそろえる方法）。ハーネスの考え方そのもの | そのまま使える（変えるときは ADR を残す） |
 | `files/docs/strategies/development.md` | 開発の流れ（1 つの変更を進める順と担い手、aidd のスキルとの対応） | 「このプロジェクトでの決まり」の `TODO:` |
 | `files/docs/strategies/test-strategy.md` | テスト戦略の雛形（目的・テストの層・機械と人の分担・いつ動かすか・AI が書いたテストの扱い・テストデータと環境・完了の基準） | `TODO:` 行を実態に書き換える |
-| `files/docs/log/README.md` | 作業ログの案内板（ファイル名の決まり）。導入するときに選んだ場合だけ入れる | ログを足したら表に行を足す |
+| `files/docs/log/` | 作業ログの案内板（ファイル名の決まり）と雛形（`YYYY-MM-DD-作業の対象.template.md`）。導入するときに選んだ場合だけ入れる | 雛形から最初のログを作り、雛形の削除を提案する。ログを足したら表に行を足す |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（案内板。文書は `docs/README.md` だけを案内する） | `TODO:` 行を実態に書き換える |
 | `files/commitlint.config.mjs` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |

@@ -15,6 +15,7 @@
 | [P7](p07-readme-guide.md) | README には本文を書かず、どこに何があるかの案内にとどめること | README のひな形・規約を直すとき、README を作るスキルを足すとき |
 | [P8](p08-short-body.md) | Issue・PR の本文は、人が読み切れる長さにすること | Issue・PR の本文やコメントを書く手順・テンプレートを直すとき |
 | [P9](p09-readable-ai-docs.md) | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・参照ファイル・規約を書く・直すとき |
+| [P10](p10-template-lifecycle.md) | 雛形は、実物を作ったら削除を提案し、削除は人が行うこと | `init-repo` の `docs/` に雛形を足す・直すとき |
 
 スキルの操作と、`init-repo` が配る権限設定との対応は [permissions.md](permissions.md) にまとめる。
 
