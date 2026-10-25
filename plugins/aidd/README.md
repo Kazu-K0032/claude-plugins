@@ -41,6 +41,21 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 /plugin install aidd@kazu
 ```
 
+`/project:init-repo` を使わないリポジトリでも動く。スキルの文面・出力は日本語で、日本語で運用する前提にしている。
+
+### 要る道具
+
+| 道具 | 使うスキル | 無いとき |
+| --- | --- | --- |
+| Bash ツール（Windows では Git Bash） | すべて（`date`・ヒアドキュメントなど） | 動かない。PowerShell だけの環境は対象外 |
+| `gh`（GitHub CLI。ログイン済み） | `issue-start`・`issue-pr-sync`・`pr-create`・`pr-review`・`docs-sync`・`harness-audit` | Issue・PR を読めない |
+| Node.js | `issue-start`・`issue-pr-sync`・`pr-create` | 本文の文字数を数えずに進む |
+| Python 3.9 以上 | `ai-report` | 集計できない |
+| bash 4.4 以上・perl・awk | `docs-sync`（`issue-start` の点検も） | 足りないと止まる。macOS 標準の bash 3.2 も止まる |
+| `sh` | `commit`（`issue-start` も） | シンボリックリンクを確かめられず止まる |
+
+下書きとレポートは `tmp/` と `tmp.md` に書く。`.gitignore` に入れなくても動くが、入れるとコミットに混ざらない。`init-repo` は入れて配る。
+
 同梱の Workflow（`pr-review` など）は、Claude Code の動的ワークフロー（dynamic workflows）で動く。切れていると `/` の候補に出ず、`/aidd:harness-audit` も監査の前に止まる。出ないときは、`/config` の「Dynamic workflows」の行をオンにする。Pro では初期設定でオフのため。ほかに止まる設定は、[harness-audit の errors.md](skills/harness-audit/errors.md) の「Workflow が使えないとき」にある。Ref: [Orchestrate subagents at scale with dynamic workflows](https://code.claude.com/docs/en/workflows)
 
 `pr-review` は、モデルと effort を段ごとに固定せず、呼んだセッションのものを引き継ぐ。使った設定は、開始時のログ・レポートの注記・戻り値に出る。どの設定で見た結果かを確かめられるようにするため。`harness-audit-run` は段ごとに固定する（「ハーネス監査は、設計思想を物差しにし、実行前に見込みを示す」の「モデル」）。
