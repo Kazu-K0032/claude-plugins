@@ -30,5 +30,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           yaml-file: .github/labels.yml
-          # labels.yml にないラベルは削除する。デフォルトはfalseだが、削除を許可しているという意図を明示化
-          skip-delete: false
+          # labels.yml にないラベルは削除しない。既存のリポジトリに入れたとき、削除されたラベルは Issue・PR からも外れ、戻せないため。
+          # labels.yml に使うラベルをすべてそろえた後なら、false にして削除を許可してよい
+          skip-delete: true
