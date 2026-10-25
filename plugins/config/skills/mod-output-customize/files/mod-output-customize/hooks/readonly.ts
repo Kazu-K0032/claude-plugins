@@ -185,9 +185,9 @@ const FORBIDDEN_ARGS: Record<string, readonly string[]> = {
   tree: ['-o'],
 }
 
-/** シェルの字句。単語、区切り（; && || | & 改行）、リダイレクト（> >> < とその向き先） */
+/** シェルの字句。単語（glob は引用符の外の * ? [ を含むか）、区切り（; && || | & 改行）、リダイレクト（> >> < とその向き先） */
 type Token =
-  | { kind: 'word'; text: string }
+  | { kind: 'word'; text: string; glob: boolean }
   | { kind: 'separator' }
   | { kind: 'redirect'; operator: string; target: string }
 
@@ -195,7 +195,9 @@ type Token =
 const UNCHECKABLE = Symbol('uncheckable')
 
 /**
- * コマンド文字列を字句に分ける。コマンド置換・プロセス置換・ヒアドキュメント・サブシェルは確かめられないので UNCHECKABLE を返す
+ * コマンド文字列を字句に分ける。コマンド置換・プロセス置換・ヒアドキュメント・サブシェルと、
+ * 変数などの展開・ブレース展開は、実行される語が字面から分からないので UNCHECKABLE を返す。
+ * ファイル名の展開（* ? [）は、先頭が展開か - の語だけ UNCHECKABLE にする。-o… のような名前のファイルが引数に化けるため
  * @param command - Bash ツールに渡されたコマンド
  * @returns 字句の列か UNCHECKABLE
  */
@@ -203,14 +205,19 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
   const tokens: Token[] = []
   let word = ''
   let hasWord = false
+  let glob = false
   let quote: "'" | '"' | null = null
+  // 引用符の外の { の深さ。ブレース展開かを見分けるため
+  let braceDepth = 0
 
   const endWord = () => {
     if (hasWord) {
-      tokens.push({ kind: 'word', text: word })
+      tokens.push({ kind: 'word', text: word, glob })
     }
     word = ''
     hasWord = false
+    glob = false
+    braceDepth = 0
   }
 
   for (let index = 0; index < command.length; index++) {
@@ -226,8 +233,14 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
       continue
     }
 
-    if (char === '`' || (char === '$' && following === '(')) {
+    // コマンド置換と、$_・$IFS・${...} などの展開。ダブルクォートの中でも展開される
+    if (char === '`' || (char === '$' && /[\w(@*#?$!{[-]/.test(following))) {
       return UNCHECKABLE
+    }
+    // 行の継続。bash は \ と改行を消して、前後を 1 つの語につなぐ
+    if (char === '\\' && following === '\n') {
+      index++
+      continue
     }
 
     if (quote === '"') {
@@ -242,6 +255,10 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
       continue
     }
 
+    // $'...' と $"..." は、中身を置き換えてから語にする
+    if (char === '$' && (following === "'" || following === '"')) {
+      return UNCHECKABLE
+    }
     if (char === "'" || char === '"') {
       quote = char
       hasWord = true
@@ -258,6 +275,14 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
       continue
     }
     if (char === '(' || char === ')' || (char === '{' && !hasWord)) {
+      return UNCHECKABLE
+    }
+    // { } の中に , か .. があると、bash が語を増やす（-{delete,print} など）。HEAD@{1} は展開されない
+    if (char === '{') {
+      braceDepth++
+    } else if (char === '}') {
+      braceDepth = Math.max(braceDepth - 1, 0)
+    } else if (braceDepth > 0 && (char === ',' || (char === '.' && following === '.'))) {
       return UNCHECKABLE
     }
 
@@ -288,6 +313,14 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
       endWord()
       tokens.push({ kind: 'separator' })
       continue
+    }
+
+    // 展開した語は、どれも展開の手前の字面で始まる。src/*.md は通し、*.md や -* は止める
+    if (char === '*' || char === '?' || char === '[') {
+      if (word === '' || word.startsWith('-')) {
+        return UNCHECKABLE
+      }
+      glob = true
     }
 
     word += char
@@ -380,9 +413,10 @@ function isReadOnlyGh(args: readonly string[]): boolean {
 /**
  * 1 つのコマンド（区切りの間）が読み取りだけか
  * @param words - コマンド名と引数
+ * @param hasGlob - 引数にファイル名の展開を含むか
  * @returns 許可リストのコマンドで、禁じた引数を含まなければ true
  */
-function isReadOnlySimpleCommand(words: readonly string[]): boolean {
+function isReadOnlySimpleCommand(words: readonly string[], hasGlob: boolean): boolean {
   const [name, ...args] = words
   if (name === undefined || !READ_ONLY_COMMANDS.has(name)) {
     return false
@@ -401,12 +435,13 @@ function isReadOnlySimpleCommand(words: readonly string[]): boolean {
     return subcommand !== undefined && READ_ONLY_GIT_SUBCOMMANDS.has(subcommand)
   }
   if (name === 'uniq') {
-    // 2 つ目のファイル引数は出力先になる。単独の - は標準入力のファイル引数で、-- より後ろはすべてファイル引数
+    // 2 つ目のファイル引数は出力先になる。単独の - は標準入力のファイル引数で、-- より後ろはすべてファイル引数。
+    // ファイル名の展開は 2 つ以上に増えうるので止める
     const end = args.indexOf('--')
     const before = end === -1 ? args : args.slice(0, end)
     const after = end === -1 ? [] : args.slice(end + 1)
     const files = before.filter(arg => arg === '-' || !arg.startsWith('-')).length + after.length
-    return files <= 1
+    return files <= 1 && !hasGlob
   }
 
   return true
@@ -423,21 +458,25 @@ export function isReadOnlyCommand(command: string): boolean {
     return false
   }
 
-  const commands: string[][] = [[]]
+  const commands: { words: string[]; hasGlob: boolean }[] = [{ words: [], hasGlob: false }]
   for (const token of tokens) {
     if (token.kind === 'redirect') {
       if (!isHarmlessRedirect(token.operator, token.target)) {
         return false
       }
     } else if (token.kind === 'separator') {
-      commands.push([])
+      commands.push({ words: [], hasGlob: false })
     } else {
-      commands[commands.length - 1]?.push(token.text)
+      const current = commands[commands.length - 1]
+      if (current !== undefined) {
+        current.words.push(token.text)
+        current.hasGlob ||= token.glob
+      }
     }
   }
 
-  const nonEmpty = commands.filter(words => words.length > 0)
-  return nonEmpty.length > 0 && nonEmpty.every(isReadOnlySimpleCommand)
+  const nonEmpty = commands.filter(({ words }) => words.length > 0)
+  return nonEmpty.length > 0 && nonEmpty.every(({ words, hasGlob }) => isReadOnlySimpleCommand(words, hasGlob))
 }
 
 /**

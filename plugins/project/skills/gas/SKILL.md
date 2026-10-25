@@ -1,6 +1,6 @@
 ---
 name: gas
-description: Google Apps Script（GAS）のリポジトリに、clasp で push する src/ 配下の構成と .clasp.json、ファイルの書き分けと GAS 特有の注意点をまとめた規約（.claude/rules/gas.md・gas-runtime.md）を導入する。GAS のプロジェクトを立ち上げる時、または既存の GAS リポジトリへ構成と規約を後から入れる時に使用する
+description: Google Apps Script（GAS）のリポジトリに、clasp で push する src/ 配下の構成と .clasp.json、ファイルの書き分けと GAS 特有の注意点をまとめた規約（.claude/rules/gas.md・gas-runtime.md・gas-sheet-style.md）、Claude による clasp push・pull・login などを止めるフック（.claude/hooks/guard-clasp.sh）を導入する。GAS のプロジェクトを立ち上げる時、または既存の GAS リポジトリへ構成と規約を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*)
 argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象。例: 規約だけ / src だけ / 既存は置き換えない）]"
@@ -8,10 +8,10 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 # GAS プロジェクトのセットアップ（gas）
 
-同梱テンプレート（`${CLAUDE_PLUGIN_ROOT}/skills/gas/files/`）を実行中のリポジトリのルートへコピーし、既存の GAS コードがあれば規約に沿った振り分けを提案する。**既存ファイルは承認なしに上書きしない**。
+同梱テンプレート（`${CLAUDE_PLUGIN_ROOT}/skills/gas/files/`）を実行中のリポジトリのルートへコピーし、Claude が実行してはいけない clasp のコマンドを止めるフックを登録する。既存の GAS コードがあれば規約に沿った振り分けを提案する。**既存ファイルは承認なしに上書きしない**。
 
-- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得た既存コードの移動・振り分け、`.clasp.json`・`.gitignore`・`.claspignore` の変更
-- 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、clasp の実行（`login`・`pull`・`push`。push には Node.js と clasp が要る）、コミット、導入後の作業（手順 8）
+- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得た既存コードの移動・振り分け、`.clasp.json`・`.gitignore`・`.claspignore` の変更、`.claude/settings.json`（フック・deny）・`cspell.json` への追記
+- 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、clasp の実行（`login`・`pull`・`push`。push には Node.js と clasp が要る）、コミット、導入後の作業（手順 10）
 
 ## 参照ファイル
 
@@ -23,7 +23,8 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/merge-policy.md` | 手順 5 で `DIFF` のファイルがあるとき（選択肢を示す前から） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/existing-code.md` | 手順 6 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/files/.claude/rules/gas.md` | 手順 6 で、振り分けの基準（ファイルの書き分け・関数の命名）を確かめるとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/gas/after-install.md` | 手順 8 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/gas/settings-additions.md` | 手順 8 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/gas/after-install.md` | 手順 10 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/README.md` | 収録物・除外したものを確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | Markdown を書く・直すとき。その規約に従う |
 
@@ -33,7 +34,8 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 | 引数の例 | 対象・扱い |
 | --- | --- |
-| `規約だけ` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md` だけ |
+| `規約だけ` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけ |
+| `フックだけ` | `.claude/hooks/guard-clasp.sh` だけ（手順 8 の登録も対象） |
 | `src だけ` | `src/` 配下だけ |
 | `既存は置き換えない` | `DIFF` はすべて据え置き、手順 5 を飛ばす |
 
@@ -47,7 +49,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 ### 2. 導入計画を示して承認を得る（必須）
 
-`install-flow.md` の「導入計画を示す」に従って示し、承認を得る。既存の GAS コードがあれば、手順 1 の方針と、手順 6 で振り分けることも示す。方針 A では、移すファイルの一覧も示す。
+`install-flow.md` の「導入計画を示す」に従って示し、承認を得る。既存の GAS コードがあれば、手順 1 の方針と、手順 6 で振り分けることも示す。方針 A では、移すファイルの一覧も示す。あわせて、手順 8 のフックと deny の登録を示す。
 
 `.clasp.json` に `scriptId` が入っている（既存の Apps Script プロジェクトにつながっている）場合は、承認を求める前に、手元のコードがスクリプトエディタ側とそろっているかを利用者に確かめる。エディタで直した内容が手元に無いまま構成を変えて `clasp push` すると、エディタ側の変更が消えるため。分からなければ、`clasp pull` で取り込んでもらってから手順 1 をやり直す（このスキルは clasp を実行しない）。
 
@@ -73,9 +75,17 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 `.clasp.json` は除外しない。`scriptId` は秘匿値ではなく、リポジトリを clone してすぐ push できるようにするためコミットする。
 
-### 8. 導入後にやることを伝える
+### 8. フックと deny を登録する
 
-`after-install.md` の残作業を示す。最後に、手順 2 と同じテンプレートのリンクを添える。
+`settings-additions.md` に従い、`.claude/settings.json` にフック（`guard-clasp.sh`）と認証情報の deny を足す案を差分で示し、承認を得てから足す。引数が `規約だけ`・`src だけ` のときは飛ばす。
+
+### 9. スペルチェックの除外語を足す
+
+`cspell.json` があり、テンプレートと手順 7 の `.gitignore` の行が使う語（`appsscript`・`claspignore`・`clasprc`・`undeploy`）が `words` に無ければ、足す案を示し、承認を得てから足す。足さないと、`init-repo` の `pr-checks.yml` のスペルチェックで誤字として出るため。
+
+### 10. 導入後にやることを伝える
+
+`after-install.md` の残作業と、土台のうち GAS に合わない箇所の表を示す。土台のファイルはこのスキルでは書き換えない。最後に、手順 2 と同じテンプレートのリンクを添える。
 
 ## 禁止事項
 

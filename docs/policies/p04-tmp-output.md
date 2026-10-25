@@ -22,7 +22,7 @@
 
 ## 変えたいとき
 
-- `init-repo` を使っていないリポジトリでは、`.gitignore` に `tmp/` と `tmp.md` を自分で足す
+- `init-repo` を使っていないリポジトリでは、`.gitignore` に `tmp/` と `tmp.md` を自分で足す。足していなくても `aidd` のスキルは書き、足すよう伝える
 - Python のキャッシュを止める環境変数が要らないリポジトリでは、`.claude/settings.json` の `env` から `PYTHONDONTWRITEBYTECODE` を外す
 
 ## Q&A

@@ -1,8 +1,8 @@
 # init-repo
 
-新しいリポジトリへ「Claude Code のハーネス設定（`.claude/`）＋ GitHub の定型ファイル（`.github/`）＋ エディタ設定（`.vscode/`）・スペルチェックの設定（`cspell.json`）・Lint と整形のツールの定義（`lefthook.yml`）・`.gitignore` ＋ ドキュメントの骨組み」を一括で持ち込む Skill。実案件リポジトリの構成から、プロジェクト固有の要素を取り除いて汎用化したもの。
+新しいリポジトリへ「Claude Code のハーネス設定（`.claude/`）＋ GitHub の定型ファイル（`.github/`）＋ エディタ設定（`.vscode/`）・スペルチェックの設定（`cspell.json`）・Lint と整形のツールの定義（`lefthook.yml`）・`.gitignore`・`.gitattributes` ＋ ドキュメントの骨組み」を一括で持ち込む Skill。実案件リポジトリの構成から、プロジェクト固有の要素を取り除いて汎用化したもの。
 
-`files/` の中身がそのまま導入先リポジトリのルートに置かれる。
+`files/` の中身がそのまま導入先リポジトリのルートに置かれる（`.sh` は改行を LF にして置かれる）。
 
 ## 目次
 
@@ -20,7 +20,7 @@
 /project:init-repo
 ```
 
-衝突状況の確認 → 計画の提示 → 承認 → コピー → エディタ設定とスペルチェックの除外語の調整 → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
+衝突状況の確認 → 計画の提示（Lint と整形のツールを自分で入れるか Claude が入れるか、`docs/log/` を入れるかも聞く） → 承認 → コピー → エディタ設定・Lint と整形のツール・スペルチェックの除外語の調整（Claude が入れると選んだら、ツールを入れて動くかを確かめる） → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
 
 | 引数の例 | 動き |
 | --- | --- |
@@ -44,12 +44,11 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | --- | --- | --- |
 | `files/.claude/settings.json` | 権限（秘匿ファイル・コミット / push・削除・権限の変更・深刻な外部操作の deny と、`*.example` の allow）・フックの設定と、Python のキャッシュを作らない環境変数（`PYTHONDONTWRITEBYTECODE`） | 秘匿ファイルの deny パスをプロジェクトに合わせる |
 | `files/.claude/hooks/guard-destructive.sh` | 破壊的コマンドを検出して承認へエスカレーションする PreToolUse フック | `patterns` にプロジェクト固有の破壊的操作を追記する |
-| `files/.claude/hooks/guard-git-write.sh` | `git commit` / `git push` / `gh` 書き込みを Claude に実行させないガード（既定では未配線） | 使う場合は settings.json の PreToolUse（`matcher` は `Bash\|PowerShell`）に追加する |
+| `files/.claude/hooks/guard-git-write.sh` | `git commit` / `git push` / `gh` 書き込みを Claude に実行させないガード（既定では未配線） | 使う場合は settings.json の PreToolUse（`matcher` は `Bash\|PowerShell\|Monitor`）に追加する |
 | `files/.claude/hooks/post-edit-lint.sh` | 編集後に `lefthook.yml` の Lint・整形を動かし、失敗した結果を Claude へ返す PostToolUse フック（非ブロッキング） | 検査の対象を絞るときは冒頭の `TARGET_PREFIX` を直す |
-| `files/.claude/hooks/session-start.sh` | セッション開始時に運用ルールを通知する SessionStart フック | 文言を変えるだけ |
 | `files/.claude/rules/comment.md` | インラインコメントの規約（なぜを書く・読み手を選ばない言葉）。言語を問わないため、常に読み込まれる | そのまま使える |
 | `files/.claude/rules/env.md` | 環境変数と `*.example` の追従ルール | 変数の種類と追記先の表 |
-| `files/.claude/rules/github-actions.md` | ワークフローの実装ルール（最小権限・SHA 固定・インジェクション対策） | そのまま使える |
+| `files/.claude/rules/github-actions.md` | ワークフローの実装ルール（最小権限・SHA 固定・インジェクション対策・保護ブランチとトリガーの一致） | そのまま使える |
 | `files/.claude/rules/adr.md` | 判断の前に ADR の一覧を見て、新しい判断を ADR に残すか聞く規約 | ADR の置き場所が `docs/adr/` でなければパスを直す |
 | `files/.claude/rules/readme.md` | README を案内板として運用するための規約 | README の種別表 |
 | `files/.claude/rules/permissions.md` | Claude に任せる操作と人が行う操作の線引きと、deny・フックを変えるときの規約。`settings.json`・フックを開いたときに読み込まれる | deny やフックの方針を変えたら表を合わせる |
@@ -60,23 +59,33 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト）。本文の長さの上限をコメントで示す | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
-| `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks）とリポジトリ全体のスペルチェック（cspell） | そのまま使える |
-| `files/.github/workflows/sync-labels.yml` | `labels.yml` を GitHub のラベルへ同期 | そのまま使える |
+| `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks）とリポジトリ全体のスペルチェック（cspell） | `branches`（既定は `main`）を保護ブランチに合わせる |
+| `files/.github/workflows/sync-labels.yml` | `labels.yml` を GitHub のラベルへ同期（`labels.yml` に無いラベルは消さない） | 消したいときは、`labels.yml` をそろえてから `skip-delete` を `false` にする |
 | `files/.vscode/extensions.json` | VS Code の推奨拡張機能（markdownlint・スペルチェック・GitHub Actions・YAML） | 技術スタックに合わせて追加する（Skill が提案する） |
 | `files/.vscode/settings.json` | 保存時の整形（末尾改行・行末空白の削除・LF） | そのまま使える |
-| `files/docs/adr/README.md` | ADR の一覧（`CLAUDE.md` が読み込む。表の見出しだけ） | そのまま使える |
-| `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
+| `files/docs/adr/` | ADR の一覧（`README.md`。`CLAUDE.md` が読み込む。表の見出しだけ）と、ADR の雛形（`YYYY-MM-DD-判断の対象.template.md`。`/aidd:adr` の簡易の形） | 最初の ADR を作ったら、雛形の削除を提案する |
+| `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表と、雛形から実物を作る手順） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
+| `files/docs/specs/` | 要件の案内板と、要件定義書の雛形（`specifications.template.md`。機能要件・非機能要件・制約） | 雛形から実物（`specifications.md`）を作り、雛形の削除を提案する |
+| `files/docs/architecture/` | 構成の案内板と、アーキテクチャ概要の雛形（`architecture.template.md`）、構成図の雛形（`architecture.template.drawio` と、draw.io で書き出した `architecture.template.png`。AWS を例にしている） | 雛形から実物を作る。構成図は実際の構成に描き直して PNG を書き出し、雛形の削除を提案する |
+| `files/docs/strategies/README.md` | 開発・テストの方針の案内板 | 文書を足したら表に行を足す |
+| `files/docs/strategies/ai-driven-development.md` | AI 駆動開発の戦略（AI・機械・人の分担と振り分け方、文書で AI の向かう先をそろえる方法）。ハーネスの考え方そのもの | そのまま使える（変えるときは ADR を残す） |
+| `files/docs/strategies/development.md` | 開発の流れ（1 つの変更を進める順と担い手、aidd のスキルとの対応） | 「このプロジェクトでの決まり」の `TODO:` |
+| `files/docs/strategies/test-strategy.md` | テスト戦略の雛形（目的・テストの層・機械と人の分担・いつ動かすか・AI が書いたテストの扱い・テストデータと環境・完了の基準） | `TODO:` 行を実態に書き換える |
+| `files/docs/log/` | 作業ログの案内板（ファイル名の決まり）と雛形（`YYYY-MM-DD-作業の対象.template.md`）。導入するときに選んだ場合だけ入れる | 雛形から最初のログを作り、雛形の削除を提案する。ログを足したら表に行を足す |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（案内板。文書は `docs/README.md` だけを案内する） | `TODO:` 行を実態に書き換える |
 | `files/commitlint.config.mjs` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |
-| `files/lefthook.yml` | Lint・整形のツールの定義（`claude-edit`。`post-edit-lint.sh` が使う）。ツールは書いていない | 使うツールを `claude-edit` に足す（Skill が既存の設定を探して提案する） |
+| `files/lefthook.yml` | Lint・整形のツールの定義（`claude-edit`。`post-edit-lint.sh` が使う）と、人のコミットで commitlint を動かす `commit-msg`。`pre-commit`・`pre-push` は書き方の例だけ | 使うツールを `claude-edit` に足す（Skill が既存の設定を探して提案する）。人のコミット・push にも検査をかけるなら、例を見て `pre-commit`・`pre-push` を足す |
 | `files/cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と `pr-checks.yml` が共有する。テンプレート自身が使う語は登録済み） | プロジェクトの固有名詞を `words` に入れる（Skill が候補を出す） |
 | `files/.gitignore` | Claude Code の作業ファイル（`tmp.md`・`tmp/`）・個人設定・秘匿ファイル・OS のファイルの除外 | 言語・ビルド成果物の除外を追記する |
+| `files/.gitattributes` | シェルスクリプト（`*.sh`）の改行を LF に固定する。Windows の `core.autocrlf=true` で checkout しても、フックが CRLF になって Linux の bash で動かなくなるのを防ぐ | そのまま使える |
 
 ## 前提と制約
 
-- フックは `bash` と [`jq`](https://jqlang.org/) を使う。どちらも無い環境ではフックが失敗する
+- フックは `bash` と [`jq`](https://jqlang.org/) を使う。`bash` が無い環境ではフックが動かない。`jq` が無いときは、ガードは止める側に倒れる（`guard-destructive.sh` は当たったコマンドを承認に回し、`guard-clasp.sh`・`guard-terraform.sh`・`guard-git-write.sh` は当たったコマンドを止める）。フックが 2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。`onFailure: "block"` は使わない。フックが起動できない環境（Git Bash の無い Windows）で、すべてのコマンドが止まるため
+- PreToolUse のフックの `matcher` は `Bash|PowerShell|Monitor` にする。`Monitor`（コマンドを裏で動かし続けるツール）も Bash と同じシェルで動くため。deny の `Bash(...)` の規則は `Monitor` にも効くが、フックは `matcher` に無いツールでは動かない
 - 編集後の Lint・整形は [lefthook](https://lefthook.dev/)（1.6.11 以降）を使う。lefthook が無いか、`lefthook.yml` に `claude-edit` が無いときは、フックは何もしない。`lefthook run` は既定で `.git/` の下を書き換えるため、フックは `--no-auto-install` を付けて呼ぶ
+- Claude が npm で lefthook を入れるときは、`--ignore-scripts` を付ける。npm 版は、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため（[P1](../../../../docs/policies/p01-operation-boundary.md)）。人のコミットにも検査をかけるときは、人が `lefthook install` を実行する
 - `settings.json` の `permissions.deny` は、ルールの形に当たるコマンドしか止めない。`git -C`・`git -c` を付けたコミット・push と、`gh api` でのマージと DELETE は個別に止めている。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
@@ -89,7 +98,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `.gitignore`・`.vscode/`・`cspell.json`・`.claude/settings.json`・`lefthook.yml` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
 - `pr-checks.yml` のスペルチェックは、`npx` で版を固定した cspell を取得して動かす。版は `files/.github/workflows/pr-checks.yml` と、Skill の候補の洗い出しのコマンド（[tooling.md](tooling.md) の「スペルチェックの除外語」）の 2 か所に書いてある。版を上げるときは両方をそろえる
-- `commitlint.config.mjs` は設定だけ。ESM の形式（`.mjs`）のため、`package.json` の `type` に関係なく読み込める。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`commit-msg` フックの配線が要る。Node のプロジェクトが前提だが、コミット規約の検証は土台の考え方のため配る（[P6](../../../../docs/policies/p06-common-template.md) の例外）
+- `commitlint.config.mjs` は設定だけ。ESM の形式（`.mjs`）のため、`package.json` の `type` に関係なく読み込める。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`lefthook install` による Git のフックの配線（`lefthook.yml` の `commit-msg` が呼ぶ）が要る。Node のプロジェクトが前提だが、コミット規約の検証は土台の考え方のため配る（[P6](../../../../docs/policies/p06-common-template.md) の例外）
 
 ## 除外したもの
 
@@ -104,6 +113,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | Skill・エージェント・Workflow | プラグイン本体として配布済み。リポジトリへコピーしない |
 | 言語別の実装ルール（HTML / JavaScript / Terraform / テスト等） | 採用技術に依存する。技術スタック別の Skill（`/project:gas`・`/project:terraform` 等）が配るか、必要なリポジトリで `.claude/rules/` に追加する |
 | Terraform の秘匿ファイル（`*.tfvars`・`*.tfstate` 等）の deny と、破壊的なコマンドの検出 | Terraform を使うリポジトリにだけ要る。`/project:terraform` が `settings.json` に deny を足し、`guard-terraform.sh` で止める |
+| clasp の認証情報（`.clasprc.json`）の deny と、`clasp push`・`login` などの検出 | GAS を使うリポジトリにだけ要る。`/project:gas` が `settings.json` に deny を足し、`guard-clasp.sh` で止める |
 | 言語別の Lint・整形のツールの設定（ESLint・stylelint など） | 使うツールはプロジェクトで決める。Skill が既存の設定を探して `lefthook.yml` に足すか、技術スタック別の Skill が足す |
 | `docker compose down -v` の検出 | Docker のローカル環境を配るのは `/project:wordpress` だけ。そのスキルが `guard-destructive.sh` に足す |
 

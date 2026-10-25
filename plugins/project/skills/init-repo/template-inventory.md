@@ -17,8 +17,7 @@
 | `.claude/settings.json` | Claude Code の権限（秘匿ファイルの deny・コミット / push・削除・権限の変更・深刻な外部操作の deny）・フックの配線と、Python のキャッシュを作らない環境変数 | Claude Code を使う（常に該当） | `.claude/settings.json` |
 | `.claude/hooks/guard-destructive.sh` | 破壊的コマンドの承認エスカレーション | `settings.json` を入れる | 既存の PreToolUse フック |
 | `.claude/hooks/post-edit-lint.sh` | 編集後の Lint・整形（推論と機械の検査の分担） | ソースコードがある | 既存の PostToolUse フック |
-| `lefthook.yml` | Lint・整形のツールの定義（`post-edit-lint.sh` が使う） | `post-edit-lint.sh` を入れる | `lefthook.yml`・`lefthook.yaml`・`.lefthook.yml`・`.lefthook.yaml`（`claude-edit` を足す） |
-| `.claude/hooks/session-start.sh` | セッション開始時の運用ルール通知 | `settings.json` を入れる | 既存の SessionStart フック |
+| `lefthook.yml` | Lint・整形のツールの定義（`post-edit-lint.sh` が使う）と、commitlint を呼ぶ `commit-msg` | `post-edit-lint.sh` を入れる | `lefthook.yml`・`lefthook.yaml`・`.lefthook.yml`・`.lefthook.yaml`（`claude-edit` を足す） |
 | `.claude/hooks/guard-git-write.sh` | ラッパー経由まで含めた git / gh 書き込みの遮断 | 要件に明記がある場合のみ（既定では未配線） | 同等の PreToolUse フック |
 | `.claude/rules/comment.md` | コメントの書き方の規約 | ソースコードがある | `CLAUDE.md`・`.claude/rules/` 内のコメント規約 |
 | `.claude/rules/env.md` | 環境変数と `*.example` の追従 | `.env*` / `*.example` を使う | `CLAUDE.md` 等の環境変数の規約 |
@@ -37,9 +36,14 @@
 | `.vscode/extensions.json` / `.vscode/settings.json` | エディタの推奨拡張機能・保存時の整形 | VS Code を使う（`.vscode/` がある・チームで VS Code を使う） | `.vscode/` |
 | `cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有する） | `pr-checks.yml` か `.vscode/` を入れる | cspell の別名の設定ファイル（`.cspell.json`・`cspell.jsonc`・`cspell.yaml`・`cspell.config.*`・`.config/cspell.*`・`.vscode/cspell.json`）・`package.json` の `cspell` キー |
 | `.gitignore` | 作業ファイル・秘匿ファイルの除外 | git リポジトリ（常に該当） | `.gitignore`（据え置き時も不足行の追記は提案する） |
+| `.gitattributes` | フックなどのシェルスクリプトの改行を LF に固定する | `.claude/hooks/*.sh` を入れる | `.gitattributes`（`*.sh` の改行の指定） |
 | `commitlint.config.mjs` | Conventional Commits の検証 | Node.js のプロジェクトで、コミット規約を機械的に検証したい | `commitlint.config.*`・`.commitlintrc*`・`package.json` の `commitlint` キー |
 | `docs/README.md` | ドキュメントの案内板 | `docs/` がある、または作る | `docs/` 以外の文書置き場（`doc/`・`documentation/`・Wiki） |
-| `docs/adr/README.md` | ADR の一覧（`CLAUDE.md` が読み込む） | `CLAUDE.md` を入れる | `doc/adr/`・`docs/decisions/`・`adr/` の一覧 |
+| `docs/adr/`（`README.md`・ADR の雛形） | ADR の一覧（`CLAUDE.md` が読み込む）と、ADR の雛形 | `CLAUDE.md` を入れる | `doc/adr/`・`docs/decisions/`・`adr/` の一覧 |
+| `docs/specs/`（`README.md`・`specifications.template.md`） | 要件の置き場所の案内板と、要件定義書の雛形 | `docs/README.md` を入れる | 要件定義書・仕様書の置き場所（`docs/spec.md`・`docs/specifications/`・`requirements/`） |
+| `docs/architecture/`（`README.md`・`architecture.template.md`・`.drawio`・`.png`） | 構成の置き場所の案内板と、アーキテクチャ概要・構成図の雛形 | `docs/README.md` を入れる | 構成図・設計書の置き場所（`docs/architecture*`・`docs/design/`・Wiki の構成図） |
+| `docs/strategies/README.md` + `ai-driven-development.md` + `development.md` + `test-strategy.md` | AI 駆動開発の戦略（AI・機械・人の分担）と、開発の流れ・テストの方針（`CLAUDE.md` の SSOT 一覧が指す） | `docs/README.md` を入れる | `CONTRIBUTING.md`・`docs/` 内の開発・テストの方針 |
+| `docs/log/`（`README.md`・作業ログの雛形） | 実作業の経緯を時系列で残す場所と、作業ログの雛形 | 手順 2 で入れると選ばれた | `docs/` 内の作業ログ・日報 |
 | `CLAUDE.md` | Claude Code 向けのガイド | Claude Code を使う（常に該当） | `CLAUDE.md`・`.claude/CLAUDE.md`・`AGENTS.md` |
 | `README.md` | リポジトリの入口（案内板） | 常に該当 | `README.md`・`README.*` |
 
@@ -60,11 +64,14 @@
 
 一方だけ入れると動かない組み合わせ。範囲を絞ったときも、片方を入れるならもう片方も入れる（既にあればよい）。
 
-- `.claude/settings.json` は `guard-destructive.sh`・`post-edit-lint.sh`・`session-start.sh` を呼ぶ。フックを外す場合は、`settings.json` の該当の `hooks` 定義も外す必要があるため、計画で明示する
+- `.claude/settings.json` は `guard-destructive.sh`・`post-edit-lint.sh` を呼ぶ。フックを外す場合は、`settings.json` の該当の `hooks` 定義も外す必要があるため、計画で明示する
 - `.claude/hooks/post-edit-lint.sh` は `lefthook.yml` の `claude-edit` を動かす。`lefthook.yml` が無いと、何もしない
 - `.github/workflows/sync-labels.yml` は `.github/labels.yml` を読む
 - `.claude/rules/tmp-output.md` は、`.gitignore` の `tmp/` を前提にする。`tmp/` が除外されていないと、作業ファイルがコミットに混ざる
 - `CLAUDE.md` の `@docs/adr/README.md` と `.claude/rules/adr.md` は、`docs/adr/README.md` を読む。入れないときは、取り込みの行と `adr.md` も外す。ADR を別の場所（`doc/adr/`・`docs/decisions/` など）に置いているときは、取り込みの行と `adr.md` のパスをその場所に直す
+- `docs/README.md` の表は、`docs/specs/`・`docs/architecture/` の `README.md` へリンクする。`CLAUDE.md` は、SSOT 一覧・ディレクトリの図・参照ドキュメント（`@` の行）で、2 つのフォルダの実物を指す。フォルダごと入れないときは、これらの行も外す。残すと、リンクが切れ、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
+- 雛形のあるフォルダの `README.md` の一覧は、雛形（`*.template.*`）へリンクする。雛形だけを入れないときは、一覧の雛形の行も外す（壊れたリンクになるため）
+- `CLAUDE.md` の「SSOT 一覧」は、`docs/strategies/` の 3 つの文書（`ai-driven-development.md`・`development.md`・`test-strategy.md`）を指す。入れないときは、一覧のその行も外す。残すと、一覧が実在しない文書を指し、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
 - `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`ssot` 等）も誤字として出て、PR のチェックが落ちる
 - Issue テンプレートの `labels:` は `labels.yml` のラベルを前提にしている
 

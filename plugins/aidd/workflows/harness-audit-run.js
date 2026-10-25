@@ -1,14 +1,17 @@
 export const meta = {
-  // リポジトリ全体が、本マーケットプレイスの設計思想（AIDD × DocDD）と、そのリポジトリの規約に合うかを、
-  // fan-out で網羅監査する workflow。init-repo からの作り直しの後や、統合ブランチへのマージ前の最終チェックに使う。
+  // リポジトリが、本マーケットプレイスの設計思想（AIDD × DocDD）と、そのリポジトリの規約に合うかを、
+  // fan-out で網羅監査する workflow。init-repo からの作り直しの後や、統合ブランチへのマージ前の最終チェック（全体）と、
+  // PR の前の確認（差分・ディレクトリ）に使う。
   // 機械チェック（リンク切れ・markdown 規約）は Lint の担当として重複させない。
   //
-  // 対象の一覧と設計思想の要約（aidd の references/harness-principles.md の本文）は、/aidd:harness-audit スキルが args で渡す。
+  // 対象の一覧と設計思想の要約（aidd の references/harness-principles.md の本文）と範囲は、/aidd:harness-audit スキルが args で渡す。
+  // 範囲の絞り込み（差分・ディレクトリ）はスキル側で済ませてあり、ここでは files をそのまま対象にする。
+  // scope は、レポートの注記に「範囲」と「見ていないもの」を書くためだけに使う。
   // 実行前に件数と体数の見込みを示して利用者の確認を取るのはスキル側（workflow からは利用者に質問できない）。
   // 出力は tmp/<branch>/harness-audit_<timestamp>.md のみ。修正は行わない。
   name: 'harness-audit-run',
   description:
-    'リポジトリ全体がマーケットプレイスの設計思想と規約に合うか（規約違反・価値に反する・規約のずれ・仕組みの欠け）と、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。費用が大きいため直接は呼ばず、見込みを示して確認を取る /aidd:harness-audit から呼ぶ（args で { files, principles, confirmed: true } を渡す）',
+    'リポジトリがマーケットプレイスの設計思想と規約に合うか（規約違反・価値に反する・規約のずれ・仕組みの欠け）と、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。範囲は全体・差分・ディレクトリ。費用が大きいため直接は呼ばず、見込みを示して確認を取る /aidd:harness-audit から呼ぶ（args で { files, principles, scope, confirmed: true } を渡す）',
   // phases の model は進み具合の表示に使う。下の MODELS とそろえる（meta は純粋なリテラルのため、定数を参照できない）
   phases: [
     { title: 'Rubric', detail: '設計思想の要約とリポジトリの規約から、当てるファイル付きのチェックリストと規約のずれの候補を作る', model: 'opus' },
@@ -33,6 +36,17 @@ const MODELS = {
   verify: { model: 'opus', effort: 'high' },
   report: { model: 'sonnet', effort: 'medium' },
 }
+// MODELS を、同じモデルと effort の段ごとにまとめた 1 行の文にする（例: opus・high（rubric・presence）/ sonnet・medium（report））。
+// 結果の質と費用はこれで変わるため、開始時のログ・レポートの注記・戻り値に出す。
+const MODELS_NOTE = Object.entries(
+  Object.entries(MODELS).reduce((acc, [stage, m]) => {
+    const key = `${m.model}・${m.effort}`
+    acc[key] = [...(acc[key] || []), stage]
+    return acc
+  }, {})
+)
+  .map(([key, stages]) => `${key}（${stages.join('・')}）`)
+  .join(' / ')
 
 // --- 小さいファイルの束ね方 ---
 // エージェントは 1 体ごとに共通の前提（指示・CLAUDE.md など）を読むため、体数がそのまま費用になる。
@@ -396,8 +410,48 @@ function makeGroups(paths) {
   return merged
 }
 
+// --- 範囲の説明 ---
+// 呼び出し元が絞り込んだ範囲（全体・差分・ディレクトリ）を、レポートの注記に書く文にする。
+// 範囲の外のファイルは、規約違反を見ず、範囲の外との矛盾・重複も見つからないため、見ていないものとして書く。
+// 規約のずれと仕組みの欠けは files に依らず、リポジトリの規約から見るため、範囲に関わらず全体を対象にする。
+function parseScope(raw) {
+  if (!raw || typeof raw !== 'object' || !['all', 'diff', 'dir'].includes(raw.kind)) return null
+  return {
+    kind: raw.kind,
+    base: typeof raw.base === 'string' ? raw.base : '',
+    paths: Array.isArray(raw.paths) ? raw.paths.filter((p) => typeof p === 'string' && p) : [],
+    total: typeof raw.total === 'number' && raw.total >= 0 ? raw.total : null,
+    markdownOnly: raw.markdownOnly === true,
+  }
+}
+
+// count は実際に監査するファイル数。戻り値の range は「範囲」の行、unseen は「見ていないもの」の行（無ければ空文字）
+function describeScope(scope, count) {
+  if (!scope) return { range: `呼び出し元から渡されていない（渡された ${count} 件を対象にした）`, unseen: '' }
+  const known = scope.total !== null && scope.total >= count
+  const of = known ? `全 ${scope.total} 件のうち ${count} 件` : `${count} 件`
+  const md = scope.markdownOnly ? '、markdown だけ' : ''
+  let label
+  if (scope.kind === 'diff') {
+    label = `差分（${scope.base ? `${scope.base} との差` : '今のブランチの変更'}${md}。${of}）`
+  } else if (scope.kind === 'dir') {
+    label = `ディレクトリ（${scope.paths.join('・') || 'パス不明'}${md}。${of}）`
+  } else {
+    label = scope.markdownOnly ? `全体のうち markdown だけ（${of}）` : `全体（${count} 件）`
+  }
+  const narrowed = scope.kind !== 'all' || scope.markdownOnly
+  const range = narrowed ? `${label}。規約のずれと仕組みの欠けは、範囲に関わらず全体を対象にする` : label
+  const outside = known ? scope.total - count : null
+  if (!narrowed || outside === 0) return { range, unseen: '' }
+  const outsideText = outside === null ? '範囲の外のファイル' : `範囲の外の ${outside} 件`
+  return {
+    range,
+    unseen: `${outsideText}の規約違反・価値に反する箇所と、範囲の外のファイルとの値の矛盾・重複記述・参照方向違反`,
+  }
+}
+
 // --- args の解釈 ---
-// { files: [{ path, bytes }] | [path], principles: <設計思想の要約の本文> } を受け取る。
+// { files: [{ path, bytes }] | [path], principles: <設計思想の要約の本文>, scope: { kind, base?, paths?, total?, markdownOnly? } } を受け取る。
 // 文字列化された JSON で渡されても読めるようにする。
 let input = args
 if (typeof input === 'string') {
@@ -416,6 +470,8 @@ const entries = (input && Array.isArray(input.files) ? input.files : [])
   .filter((f) => f && f.path)
 const files = entries.map((e) => e.path)
 const principles = input && typeof input.principles === 'string' ? input.principles.trim() : ''
+const scope = parseScope(input && input.scope)
+const scopeNote = describeScope(scope, files.length)
 
 // 見込みを示して利用者の確認を取るのはスキル側。確認を通っていない呼び出しは、費用が大きいため走らせない
 if (!input || input.confirmed !== true) {
@@ -440,6 +496,8 @@ if (planned > AGENT_PLAN_LIMIT) {
   return { file: null, files: files.length, confirmed: 0, stopped: 'too-many-agents' }
 }
 log(`対象 ${files.length} ファイル / 束 ${batches.length} / 横断の群 ${groups.length} / 横断の候補の検証を除くエージェント ${planned} 体`)
+log(`範囲: ${scopeNote.range}`)
+log(`モデルと effort（段ごとに固定）: ${MODELS_NOTE}`)
 if (!principles) {
   log('設計思想の要約が渡されていないため、リポジトリの規約だけで見る。仕組みの欠けと規約のずれは見ない')
 }
@@ -931,6 +989,9 @@ const report = await agent(
     `- 監査対象ファイル数: ${files.length}`,
     `- 設計思想の要約: ${principles ? '同梱のものを使った' : '使っていない'}`,
     `- 参照した規約: ${rubrics.length ? rubrics.join(', ') : 'なし'}`,
+    `- 範囲: ${scopeNote.range}`,
+    `- 範囲の外で見ていないもの: ${scopeNote.unseen || 'なし'}`,
+    `- モデルと effort（段ごとに固定）: ${MODELS_NOTE}`,
     `- 当てはまる規約が無かったファイル数: ${uncovered.length}`,
     `- 仕組みの欠け: ${presenceNote}`,
     `- 参照方向の観点: ${hasRefRule ? '有効' : '規約が無いためスキップ'}`,
@@ -951,6 +1012,9 @@ const report = await agent(
     `- その直下に、次の冒頭の文をそのまま書く: 「この監査は、harness-audit によって、本マーケットプレイスの設計思想とこのリポジトリの規約への適合、土台の仕組みの欠け、ファイル間の整合性（値の矛盾・重複記述・参照方向違反）の観点から、${files.length} 件のファイルに問題が無いかチェックし結果をレポートしたものです。」`,
     '- 冒頭の文の直後に、引用（>）の注記を書く（何を見て何を見ていないかを明示する）。',
     '  - 「参照した規約：…」（上の「参照した規約」から。設計思想の要約を使ったなら「同梱の設計思想の要約」も並べる。無ければ「なし」）',
+    '  - 「範囲：…」（上の「範囲」をそのまま書く）',
+    '  - 「見ていないもの：…」（上の「範囲の外で見ていないもの」が「なし」なら、この行は書かない。範囲を絞ったときは、見つからないだけで無いとは限らないと添える）',
+    '  - 「モデルと effort：…」（上の「モデルと effort」をそのまま書く。段ごとに固定していることも添える）',
     '  - 「仕組みの欠け：…」（上の「仕組みの欠け」が「見た」なら、この行は書かない）',
     '  - 「規約を当てなかったファイル：…件」（上の件数が 0 なら、この行は書かない）',
     '  - 「検証していない候補：…件。対象を分けて再実行する」（上の件数が 0 なら、この行は書かない）',
@@ -976,11 +1040,13 @@ const report = await agent(
 if (!report) log('レポートを書けなかった（エージェントの失敗・スキップ）。件数は戻り値で確かめる')
 return {
   file: report ? report.path : null,
+  models: MODELS_NOTE,
   files: files.length,
   batches: batches.length,
   groups: groups.length,
   rubrics,
   principles: !!principles,
+  scope: scope ? scope.kind : null,
   checklist: checklist.length,
   uncovered: uncovered.length,
   harnessInstalled: presence.installed,

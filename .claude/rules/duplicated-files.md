@@ -12,6 +12,10 @@ paths:
   - "plugins/config/skills/plugin-feedback/references/short-body.md"
   - "plugins/aidd/scripts/body_length.js"
   - "plugins/config/skills/plugin-feedback/scripts/body_length.js"
+  - ".gitattributes"
+  - "plugins/project/skills/init-repo/files/.gitattributes"
+  - ".claude/hooks/guard-destructive.sh"
+  - "plugins/project/skills/init-repo/files/.claude/hooks/guard-destructive.sh"
 ---
 
 # 重複ファイルの同期ルール
@@ -28,6 +32,8 @@ paths:
 | `.claude/rules/branch.md` | `plugins/project/skills/init-repo/files/.claude/rules/branch.md` | ブランチ名の規約 | なし |
 | `.claude/rules/tmp-output.md` | `plugins/project/skills/init-repo/files/.claude/rules/tmp-output.md` | `tmp/` への出力の規約 | なし |
 | `.claude/rules/ai-docs.md` | `plugins/project/skills/init-repo/files/.claude/rules/ai-docs.md` | AI が読む文書の書き方の規約（[P9](../../docs/policies/p09-readable-ai-docs.md)） | なし |
+| `.gitattributes` | `plugins/project/skills/init-repo/files/.gitattributes` | `*.sh` を LF に固定する指定 | なし |
+| `.claude/hooks/guard-destructive.sh` | `plugins/project/skills/init-repo/files/.claude/hooks/guard-destructive.sh` | 破壊的なコマンドを承認に回すフック | なし |
 
 ## 組の片方を編集したとき
 

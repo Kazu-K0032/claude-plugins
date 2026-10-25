@@ -9,8 +9,11 @@
 #
 # 出力は 1 行 1 ファイルで、先頭のラベルが状態を表す。
 #   NEW  ... 導入先に存在しない（--apply でコピーされる）
-#   SAME ... 既存ファイルと内容が一致（コピー不要）
+#   SAME ... 既存ファイルと内容が一致（コピー不要）。改行コード（CRLF・LF）の違いは無視する
 #   DIFF ... 既存ファイルと内容が異なる（--apply では触らない。--only で明示指定したときだけ上書き）
+#
+# --only には、テンプレートからの相対パスだけを渡す。絶対パスと .. を含むパスは、導入先の外へ書き込めてしまうため受け付けない。
+# .sh のコピーでは CR を除いて LF にする。CRLF のフックは bash が \r を読めず動かないため。
 set -euo pipefail
 
 mode="check"
@@ -33,6 +36,13 @@ while [ $# -gt 0 ]; do
     --only)
       shift
       while [ $# -gt 0 ] && [ "${1#--}" = "$1" ]; do
+        # 導入先の外を指せるパスは、コピーを始める前に全件を確かめて弾く（途中までコピーして止まらないようにする）
+        case "$1" in
+          /* | [A-Za-z]:* | *\\* | .. | ../* | */.. | */../*)
+            echo "ERROR: --only に絶対パス・\\・.. を含むパスは指定できない: $1" >&2
+            exit 1
+            ;;
+        esac
         only_list+=("$1")
         only_count=$((only_count + 1))
         shift
@@ -98,7 +108,8 @@ while IFS= read -r rel; do
   if [ ! -e "$rel" ]; then
     state="NEW"
     new_count=$((new_count + 1))
-  elif cmp -s "$src" "$rel"; then
+  # core.autocrlf で作業ツリーが CRLF になる環境があるため、完全一致でなければ CR を除いて比べ直す
+  elif cmp -s "$src" "$rel" || cmp -s <(tr -d '\r' < "$src") <(tr -d '\r' < "$rel"); then
     state="SAME"
     same_count=$((same_count + 1))
   else
@@ -112,6 +123,10 @@ while IFS= read -r rel; do
     if [ "$state" = "NEW" ] || { [ "$state" = "DIFF" ] && [ "$only_count" -gt 0 ]; }; then
       mkdir -p "$(dirname "$rel")"
       cp "$src" "$rel"
+      # cp で実行権限を引き継いでから、中身だけ CR を除いたものに置き換える
+      case "$rel" in
+        *.sh) tr -d '\r' < "$src" > "$rel" ;;
+      esac
       copied_count=$((copied_count + 1))
       action=" -> copied"
     fi

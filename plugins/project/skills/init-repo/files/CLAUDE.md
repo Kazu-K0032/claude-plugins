@@ -74,6 +74,7 @@
 
 - 文書を `docs/` のどのディレクトリに置くかは、[`docs/README.md`](docs/README.md) の振り分けに従う
 - README の役割（本文を持たない案内板）・どこまで案内するか・いつリンクを足すかは、[`.claude/rules/readme.md`](.claude/rules/readme.md) に従う
+- `docs/` の `*.template.*` は、実物の雛形。実物を作ったら、雛形の削除を利用者に提案する（手順は [`docs/README.md`](docs/README.md) の「雛形から実物を作るとき」）。削除は人が行う
 
 ### コメント文
 
@@ -83,7 +84,7 @@
 
 情報の唯一の所在を以下に定める。本表に該当する情報は、他ファイルに再掲せず相対パスでリンクで参照する。
 
-TODO: このリポジトリで実際に存在する文書に合わせて行を足し引きする。
+TODO: このリポジトリで実際に存在する文書に合わせて行を足し引きする。`docs/specs/`・`docs/architecture/` の文書は、雛形から実物を作った後のパス。
 
 | 情報 | 唯一の情報源 |
 | --- | --- |
@@ -94,7 +95,8 @@ TODO: このリポジトリで実際に存在する文書に合わせて行を�
 | 環境構築 | `docs/runbook/environment-setup.md` |
 | デプロイ手順 | `docs/runbook/deployment.md` |
 | アーキテクチャ概要 | `docs/architecture/architecture.md` |
-| 開発戦略 | `docs/strategies/development.md` |
+| AI 駆動開発の戦略（AI・機械・人の分担） | `docs/strategies/ai-driven-development.md` |
+| 開発の流れ | `docs/strategies/development.md` |
 | テスト戦略 | `docs/strategies/test-strategy.md` |
 | コミットルール | aidd プラグインの `/aidd:commit` が参照する commit-rule |
 
@@ -116,22 +118,26 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 │   └── workflows/                        # CI/CD
 ├── docs/
 │   ├── README.md                         # 全ドキュメントの案内板
-│   ├── specs/                            # 仕様書（機能・非機能要件）
-│   ├── architecture/                     # アーキテクチャ図・CI/CD・全体構成
-│   ├── strategies/                       # 開発・テスト等の戦略
-│   ├── adr/                              # ADR（個別判断の履歴）
+│   ├── specs/                            # 要件定義書（機能・非機能要件）。雛形は specifications.template.md
+│   ├── architecture/                     # アーキテクチャ図（.drawio と書き出した .png）・CI/CD・全体構成。雛形は architecture.template.*
+│   ├── strategies/                       # AI 駆動開発の戦略・開発の流れ・テストの方針
+│   ├── adr/                              # ADR（個別判断の履歴）。雛形は YYYY-MM-DD-判断の対象.template.md
 │   ├── runbook/                          # 環境構築・デプロイ・運用の手順
-│   ├── log/                              # 実作業の経緯（時系列の作業ログ）
-│   └── knowledge/                        # ツール・プラグインの入門知識
+│   └── log/                              # 実作業の経緯（時系列の作業ログ）。雛形は YYYY-MM-DD-作業の対象.template.md
+├── .gitattributes                        # シェルスクリプト（*.sh）の改行を LF に固定する
 ├── .gitignore
 ├── cspell.json                           # スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有）
-├── lefthook.yml                          # Lint・整形のツールの定義（編集後のフックが使う）
+├── lefthook.yml                          # Lint・整形のツール（編集後のフックが使う）と、コミットのメッセージの検査の定義
 └── README.md
 ```
 
 ### 参照ドキュメント
 
-TODO: セッション開始時に常時読ませたい文書だけを @import する。存在しないパスを書くと読み込みエラーになるため、実在する文書に絞る。
+セッション開始時に常時読ませたい文書を @import する。まだ無い文書（雛形から実物を作る前のもの）は、読み込まれずに無視される。実物を作ると、次のセッションから自動で読み込まれる。
+
+TODO: コマンド一覧など、常に読ませたい文書があれば、同じ形で足す。
 
 @README.md
 @docs/adr/README.md
+@docs/specs/specifications.md
+@docs/architecture/architecture.md

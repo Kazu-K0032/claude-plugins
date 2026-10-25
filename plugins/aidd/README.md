@@ -9,14 +9,14 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | スキル | 用途 |
 | --- | --- |
 | `/aidd:adr` | ADR（判断の記録）の作成・ステータス更新。小さな技術的判断も対象にし、重さ（極小・簡易・詳細）を選んで書き、一覧に 1 行足す。判断が決まると Claude から作るかを聞く |
-| `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う） |
+| `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。実装の後は `docs-sync` の手順で文書の追従を点検して直し、Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う） |
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:issue-pr-sync` | Issue / PR の本文（PR 本文が空なら新規作成）・タイトル・サイドバーを、現在の差分とレビュー対応に合わせて更新 |
 | `/aidd:commit` | ステージ済み差分と会話の経緯から Conventional Commits 形式のメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を添える） |
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
-| `/aidd:harness-audit` | リポジトリ全体が、このマーケットプレイスの設計思想と規約に合うかを監査する。init-repo からの作り直しの後や、統合ブランチへのマージ前に使う。実行前に件数とエージェント数の見込みを示して聞く |
+| `/aidd:harness-audit` | リポジトリが、このマーケットプレイスの設計思想と規約に合うかを、全体・差分・ディレクトリから範囲を選んで監査する。全体は init-repo からの作り直しの後や統合ブランチへのマージ前に、差分は PR の前に使う。実行前に、トークンを多く使うことと、件数・エージェント数の見込みを示して聞く |
 
 同梱エージェント。
 
@@ -29,9 +29,36 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | Workflow | 用途 |
 | --- | --- |
 | `pr-review` | PR を 6 観点で並列レビューし、指摘ごとに敵対的検証して、直す箇所を high・medium・low に分け、推奨アクションを添えて出力 |
-| `harness-audit-run` | `/aidd:harness-audit` の本体。設計思想・規約への適合、土台の仕組みの欠け、ファイル間の値の矛盾・重複記述・参照方向違反を監査する。対象の一覧・設計思想の要約・確認の印（`confirmed`）を `args` で受け取るため、スキルから呼ぶ。確認の印が無い呼び出しは走らない |
+| `harness-audit-run` | `/aidd:harness-audit` の本体。設計思想・規約への適合、土台の仕組みの欠け、ファイル間の値の矛盾・重複記述・参照方向違反を監査する。対象の一覧・設計思想の要約・範囲（`scope`）・確認の印（`confirmed`）を `args` で受け取るため、スキルから呼ぶ。確認の印が無い呼び出しは走らない |
 
 収録は上記 9 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
+
+## 導入
+
+スコープ（user / project / local）は問わない。`/project:init-repo` を使うリポジトリで project スコープに入れるときは、`init-repo` の後に入れる。先に入れると、登録が書き込まれた `.claude/settings.json` と、`init-repo` がコピーするものが衝突するため。
+
+```bash
+/plugin install aidd@kazu
+```
+
+`/project:init-repo` を使わないリポジトリでも動く。スキルの文面・出力は日本語で、日本語で運用する前提にしている。
+
+### 要る道具
+
+| 道具 | 使うスキル | 無いとき |
+| --- | --- | --- |
+| Bash ツール（Windows では Git Bash） | すべて（`date`・ヒアドキュメントなど） | 動かない。PowerShell だけの環境は対象外 |
+| `gh`（GitHub CLI。ログイン済み） | `issue-start`・`issue-pr-sync`・`pr-create`・`pr-review`・`docs-sync`・`harness-audit` | Issue・PR を読めない |
+| Node.js | `issue-start`・`issue-pr-sync`・`pr-create` | 本文の文字数を数えずに進む |
+| Python 3.9 以上 | `ai-report` | 集計できない |
+| bash 4.4 以上・perl・awk | `docs-sync`（`issue-start` の点検も） | 足りないと止まる。macOS 標準の bash 3.2 も止まる |
+| `sh` | `commit`（`issue-start` も） | シンボリックリンクを確かめられず止まる |
+
+下書きとレポートは `tmp/` と `tmp.md` に書く。`.gitignore` に入れなくても動くが、入れるとコミットに混ざらない。`init-repo` は入れて配る。
+
+同梱の Workflow（`pr-review` など）は、Claude Code の動的ワークフロー（dynamic workflows）で動く。切れていると `/` の候補に出ず、`/aidd:harness-audit` も監査の前に止まる。出ないときは、`/config` の「Dynamic workflows」の行をオンにする。Pro では初期設定でオフのため。ほかに止まる設定は、[harness-audit の errors.md](skills/harness-audit/errors.md) の「Workflow が使えないとき」にある。Ref: [Orchestrate subagents at scale with dynamic workflows](https://code.claude.com/docs/en/workflows)
+
+`pr-review` は、モデルと effort を段ごとに固定せず、呼んだセッションのものを引き継ぐ。使った設定は、開始時のログ・レポートの注記・戻り値に出る。どの設定で見た結果かを確かめられるようにするため。`harness-audit-run` は段ごとに固定する（「ハーネス監査は、設計思想を物差しにし、実行前に見込みを示す」の「モデル」）。
 
 ## ディレクトリ構成
 
@@ -62,6 +89,7 @@ aidd/
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
     ├── short-body.md    # Issue・PR の本文の長さ
+    ├── tmp-ignore.md    # tmp/・tmp.md の除外の確かめ方
     ├── ai-research.md   # AI 出力を引用として扱わないための規約
     └── harness-principles.md # 設計思想の要約（harness-audit の物差し）
 ```
@@ -117,7 +145,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `${CLAUDE_PLUGIN_ROOT}` が frontmatter の `allowed-tools` で展開されるかは公式に記載が無い。プラグインの実体パスはインストール先で変わるため、当てにせず通常の許可プロンプトを通す（[P1](../../docs/policies/p01-operation-boundary.md)）。
 
-`ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。`pr-create`・`issue-start`・`issue-pr-sync` が本文を数える `scripts/body_length.js` も載せていない。
+`ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。`issue-start` が `docs-sync` の `run-checks.sh` を動かすときも同じ。`pr-create`・`issue-start`・`issue-pr-sync` が本文を数える `scripts/body_length.js` も載せていない。
 
 ### エージェント名にプラグイン名を付けない
 
@@ -136,7 +164,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 | `issue-pr-sync` | Issue / PR の本文・タイトル・サイドバーを、実態に合わせて更新する |
 | `issue-start` | Issue に紐づく作業用のブランチを作り、自分を担当者に足す。決めた仕様に合わせて Issue の本文とタスクを書き換える。着手を見送ったときは、ユーザーが選べば理由をコメントする |
 
-`issue-start` が Issue の本文を書き換えるのは、計画モードで決めた仕様を、実装中・PR のレビュー中・後から Issue を読む人に届けるため。セッション内の報告や `tmp/`（`.gitignore` 済み）では、その人たちに届かない。
+`issue-start` が Issue の本文を書き換えるのは、計画モードで決めた仕様を、実装中・PR のレビュー中・後から Issue を読む人に届けるため。セッション内の報告や `tmp/`（コミットしない）では、その人たちに届かない。
 
 どちらも `gh` の書き込み系サブコマンドを `allowed-tools` に載せず、通常の許可プロンプトを通す。`gh issue develop` は一覧の表示（`--list`）とブランチの作成が同じ前方一致になるため、一覧の表示も含めて載せない。
 
@@ -156,6 +184,12 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
 - `workflows/` の `pr-review.js`・`harness-audit-run.js`
 - `project` の `init-repo` が配る `.claude/rules/tmp-output.md`（このリポジトリの `.claude/rules/tmp-output.md` と組）。サブディレクトリに書くスキルを増やす・改名するときも直す
+
+### `tmp/` の除外が無くても書き、利用者に伝える
+
+`tmp/`・`tmp.md` に書くスキルは、書く前に `.gitignore` で除外されているかを確かめる。除外が無くても止めずに書き、足すと混ざらないと伝える。既にある `tmp.md` は、上書きの前に聞く。`.gitignore` は利用者が直す。手順は `references/tmp-ignore.md` にある。
+
+`tmp/` に書くスキル・ワークフローを足すときは、この確かめも入れる。ワークフローは `references/` を読めないため、`pr-review.js` は Context の段で確かめ、戻り値の `tmpNote` で伝える。
 
 ### Issue 番号を省いたら、ブランチ名から取る
 
@@ -192,11 +226,13 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### ハーネス監査は、設計思想を物差しにし、実行前に見込みを示す
 
-`harness-audit` は、リポジトリ全体がこのマーケットプレイスの設計思想に合うかを見る最終チェック。init-repo から作り直した後や、統合ブランチへのマージ前に使う。
+`harness-audit` は、リポジトリがこのマーケットプレイスの設計思想に合うかを見る。範囲を全体にすると最終チェックになり、init-repo から作り直した後や、統合ブランチへのマージ前に使う。差分やディレクトリに絞ると、PR の前に、ブランチで変えたファイルだけを安く見られる。
 
 - 物差し：利用先には `docs/values`・`docs/policies` が配られないため、要点を `references/harness-principles.md` に同梱する（[P5](../../docs/policies/p05-standalone-plugin.md)）。価値・方針・init-repo の土台を変えたら、この要約も直す
 - 仕組みの欠け：存在するファイルを読むだけでは、土台の欠けに気づけない。そのため、init-repo の印があるリポジトリでは、要約の「土台の仕組み」を役割ごとに確かめる
-- 見込みの確認：Workflow は利用者に質問できないため、入口をスキルにし、件数・総量・エージェント数を示して続けるかを聞く
-- モデル：`workflows/harness-audit-run.js` の `MODELS` で段ごとに固定する。呼ぶ人のモデルで費用が変わらないようにするため。判断の段は opus にし、質を落とさない（[V1](../../docs/values/v01-quality-over-speed.md)）。数の多い検査は sonnet にし、誤検出は検証の段で落とす
+- 範囲：全体・差分・ディレクトリから選ぶ。差分は `docs-sync` と同じく、マージ先と比べる（`references/base-branch.md`）。絞っても、規約のずれと仕組みの欠けは全体を見る。この 2 つは対象の一覧に依らず、リポジトリの規約から調べるため。範囲の外との値の矛盾・重複は見つからないため、レポートの注記に「範囲」と「見ていないもの」を書く
+- 見込みの確認：Workflow は利用者に質問できないため、入口をスキルにし、件数・総量・エージェント数を示して続けるかを聞く。トークンを多く使うことは、見込みの前に伝える。費用がそのまま利用上限に数えられるため
+- Workflow が使えないとき：入口のスキルが最初に確かめ、`/config` の「Dynamic workflows」を案内する。Pro では初期設定でオフのため
+- モデル：`workflows/harness-audit-run.js` の `MODELS` で段ごとに固定する。呼ぶ人のモデルで費用が変わらないようにするため。判断の段は opus にし、質を落とさない（[V1](../../docs/values/v01-quality-over-speed.md)）。数の多い検査は sonnet にし、誤検出は検証の段で落とす。使うモデルと effort は、見込み・開始時のログ・レポートの注記・最後の報告に出す。どの設定で見た結果かを、読み手が確かめられるようにするため
 - 束ねる：エージェントは 1 体ごとに共通の前提を読むため、体数がそのまま費用になる。小さいファイルは束ねて 1 体で検査する（`BATCH`）
 - 2 段の突合：1 体が読む事実が多すぎると取りこぼすため、件数が多いときは、ディレクトリの群ごとに突き合わせてから全体で突き合わせる（`DETECT_GROUP`）

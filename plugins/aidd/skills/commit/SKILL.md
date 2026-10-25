@@ -2,7 +2,7 @@
 name: commit
 description: ステージング済みの差分を分析し、Conventional Commits 形式のコミットメッセージを提案する。コミットメッセージの作成やステージング済み変更のレビューを求められた時に使用する
 disable-model-invocation: true
-allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(date:*), Bash(gh pr checks:*), Read, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
+allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Bash(gh pr checks:*), Read, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
 argument-hint: "[補足指示（任意。省略時はステージ済みの差分と会話の経緯から提案する。例: Issue#5 を参照に付ける / 1 コミットにまとめる）]"
 ---
 
@@ -22,6 +22,7 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 | `${CLAUDE_PLUGIN_ROOT}/skills/commit/split-within-file.md` | 手順 6 で、1 つのファイルの中の変更を別々のコミットに分けるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/commit/ci-run-url.md` | 手順 7 で、CI の失敗を直すコミットに失敗した実行の URL を添えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/check-symlinks.sh` | 手順 2 で実行する |
+| `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/`・`tmp.md` の除外を確かめるとき |
 
 ## 想定している引数
 
@@ -32,6 +33,8 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 - コミットメッセージ：プロジェクトルート直下の `tmp.md`
 - パッチ：`tmp/<ブランチ名>/commit/<ts>_<N>.patch`。ファイルの中の変更を分けるときだけ書く。`<ブランチ名>` は `git branch --show-current` で取り、`/` は `-` に置き換える（例：`issues/5-sample` → `issues-5-sample`。規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。`<ts>` は `date +%Y%m%d_%H%M%S` で取る
 
+手順 1 の前に、`tmp-ignore.md` で `tmp/`・`tmp.md` の除外を確かめる。
+
 ## 手順
 
 ### 1. ステージ済みのファイルを確かめる
@@ -40,7 +43,15 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 
 ### 2. シンボリックリンクを確かめる
 
-`check-symlinks.sh` を実行する。シンボリックリンクが見つかったら中断し、「リンク元（実体）を更新してください」とだけ案内する（状況の詳細の列挙・コミット方針の確認は行わない）。
+`check-symlinks.sh` を `sh` で実行する。ステージのモードで見るため、Windows でも見つかる。
+
+```bash
+sh "${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/check-symlinks.sh"
+```
+
+ほかの手順（`issue-start` など）からこのファイルを読んだときは、`${CLAUDE_PLUGIN_ROOT}` が置き換わらない。この `SKILL.md` の 2 つ上のフォルダ（プラグインの場所）に読み替える。そのままでは、スクリプトが見つからないため。
+
+実行できなければ、確かめずに進めず中断する。リンクを見逃したままコミットされるため。`sh` が無いときは Git Bash などの `sh` が要ると、スクリプトが見つからないときはそのパスを伝える。シンボリックリンクが見つかったら中断し、「リンク先（実体）を更新してください」とだけ案内する（状況の詳細の列挙・コミット方針の確認は行わない）。
 
 ### 3. 差分を読む
 
@@ -74,7 +85,7 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 
 ### 9. `tmp.md` に書く
 
-`output-format.md` の形で書く。既存の `tmp.md` があれば、上書きする前に必ず Read してから Write する（新規ならそのまま作る）。
+`output-format.md` の形で書く。既存の `tmp.md` があれば、上書きする前に必ず Read してから Write する（新規ならそのまま作る）。`tmp.md` が除外されていなければ、上書きの前に `tmp-ignore.md` のとおり聞く。
 
 ## 禁止事項
 

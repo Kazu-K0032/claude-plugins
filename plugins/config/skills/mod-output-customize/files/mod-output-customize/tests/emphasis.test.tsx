@@ -194,6 +194,11 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
   expect(drawn.context?.some(block => block.includes('# 応答の色分け'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('### 簡潔版') && block.includes('## 次アクション'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('なぜなら') && block.includes('つまり'))).toBe(true)
+  expect(
+    drawn.context?.some(
+      block => block.includes('### 変えた設定') && block.includes('反映に要る操作') && block.includes('止め方と戻し方'),
+    ),
+  ).toBe(true)
   expect(drawn.context?.some(block => block.includes('# 文書の書き方') && block.includes('文字数を少なく'))).toBe(true)
   // 上限の数は、方針 P8（docs/policies/p08-short-body.md）とそろえる
   expect(drawn.context?.some(block => block.includes('1 項目は 50 文字以内') && block.includes('全体を 500 文字以内'))).toBe(true)
@@ -224,6 +229,7 @@ test('応答カスタムのボタンで OFF にすると、記法を使わせな
   const submitted = await $.prompt.submit(PROMPT)
   expect(submitted.context?.some(block => block.includes('# 応答の色分け'))).toBe(false)
   expect(submitted.context?.some(block => block.includes('# 応答の形式') && block.includes('今回は通常の形式'))).toBe(true)
+  expect(submitted.context?.some(block => block.includes('「### 変えた設定」') && block.includes('使わない'))).toBe(true)
   expect(saved).toEqual([['isCustomized', false]])
 
   await band.unmount()

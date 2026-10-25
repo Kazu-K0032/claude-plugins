@@ -2,7 +2,7 @@
 name: docs-sync
 description: 現在のブランチと、そのマージ先との差分を分析し、コード・インフラ変更に追従して更新すべき md ドキュメントを特定して更新を提案する。ブランチの変更にドキュメントが追従しているか点検したい時に使用する。マージ先が無いブランチ（既定ブランチなど）と main・master では停止する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
+allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(git check-ignore:*), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
 ---
 
 # ドキュメント追従チェック（docs-sync）
@@ -16,6 +16,7 @@ allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr vie
 
 | ファイル | いつ読むか |
 | --- | --- |
+| `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/` の除外を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 1 で、比べるブランチを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh` | 手順 2 で実行する（差分の列挙・機械チェック） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/errors.md` | 手順 2 でスクリプトが `STOP`・`ERROR` を返したとき、終了コードの意味を確かめるとき |
@@ -33,6 +34,8 @@ allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr vie
 
 `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` に書く。ブランチ名は `git branch --show-current` で取り、`/` は `-` に置き換える（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。タイムスタンプは `date +%Y%m%d_%H%M%S` で取る。
 
+手順 1 の前に、`tmp-ignore.md` で `tmp/` の除外を確かめる。
+
 ## 手順
 
 ### 1. 比べるブランチを決める
@@ -41,7 +44,7 @@ allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr vie
 
 ### 2. 差分を列挙し、機械チェックを実行する
 
-リポジトリのルートで次を実行し、標準出力を保持する。スクリプトは `git`・`bash`・`perl`・`awk` を使う。`<比べるブランチ>` は手順 1 で決めたもの（通常は `origin/<マージ先>`）で、決まらなければ `--base` を付けない。
+リポジトリのルートで次を実行し、標準出力を保持する。スクリプトは `git`・`bash`（4.4 以上）・`perl`・`awk` を使い、足りなければ `ERROR` で止まる。`<比べるブランチ>` は手順 1 で決めたもの（通常は `origin/<マージ先>`）で、決まらなければ `--base` を付けない。
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比べるブランチ>"
@@ -83,5 +86,6 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比
 
 ## 保守
 
-- リポジトリ全体の規約への適合と、横断的な重複記述・値の矛盾を網羅して監査するのは `/aidd:harness-audit`（差分ではなく全ファイルが対象）。このスキルは「このブランチの変更にドキュメントが追従しているか」に特化する
+- リポジトリの規約への適合と、横断的な重複記述・値の矛盾を網羅して監査するのは `/aidd:harness-audit`（範囲は全体・差分・ディレクトリから選べる）。差分に絞っても見るのは変えたファイルの規約適合で、変更に追従していない md は見つけない。このスキルは「このブランチの変更にドキュメントが追従しているか」に特化する
+- `issue-start` は、このスキルを呼ばずに手順 2〜4 を使う（`issue-start` の `docs-check.md`）。手順の番号・出力先・スクリプトの場所を変えるときは、そちらも直す
 - `allowed-tools` に `run-checks.sh` の `Bash` パターンを含めていない。プラグインの実体パスは `${CLAUDE_PLUGIN_ROOT}` で解決するが、この変数が `allowed-tools` の frontmatter で展開されるかは公式に記載がないため、当てにせず通常の許可プロンプトを通す

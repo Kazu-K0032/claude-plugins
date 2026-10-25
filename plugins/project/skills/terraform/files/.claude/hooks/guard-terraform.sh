@@ -7,19 +7,31 @@
 # カスタマイズ方針:
 #   止めるサブコマンドを足すときは、下の deny_patterns 配列に追記する。判定は grep -E の正規表現で行う。
 
-# エラーで即座に止めるための厳格モード
-set -euo pipefail
+# エラーで即座に止めるための厳格モード。-E は、関数（deny など）の中の失敗でも、下の ERR のトラップを動かすため
+set -Eeuo pipefail
 
-# 渡された JSON からコマンド文字列を取り出し、コマンドが無ければ即座に素通りさせる
-input=$(cat)
-command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
-[ -z "$command" ] && exit 0
+# terraform を呼ぶコマンドかもしれないのに判定できないときは、止める。exit 2 以外で失敗すると、Claude Code は操作をそのまま進めるため
+trap 'echo "guard-terraform.sh が判定できなかったため止めた（jq が無い、など）。jq を入れるか、人に実行を頼むこと。" >&2; exit 2' ERR
 
 # terraform と、サブコマンドの前に置けるオプション（-chdir=<ディレクトリ> など）までに当たる正規表現
 tf='(^|[^[:alnum:]_-])terraform([[:space:]]+-[^[:space:]]+)*[[:space:]]+'
 
+# terraform の語が入力のどこにも無ければ、jq を使わずに素通りさせる。jq が無い環境で、terraform と関係ないコマンドまで止めないため。
+# JSON の中では改行・タブが \n・\t と書かれる。前も後ろも \n・\t のことがあるため、語だけで見る（空白の並びは、取り出した後の $tf で見る）。
+# terra"form" のような形も拾うため、引用符と \ を取り除いた入力でも見る
+input=$(cat)
+printf '%s' "$input" | grep -qE '(^|[^[:alnum:]_-]|\\[nrt])terraform([^[:alnum:]_-]|$)' ||
+  printf '%s' "$input" | tr -d "\"'\\\\" | grep -qE '(^|[^[:alnum:]_-])terraform([^[:alnum:]_-]|$)' || exit 0
+
+# 渡された JSON からコマンド文字列を取り出し、コマンドが無ければ即座に素通りさせる。Monitor の WebSocket を見張る形には、コマンドが無い
+command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
+[ -z "$command" ] && exit 0
+
+# 照合には、引用符と \ を取り除いた文字列を使う。terraform "apply"・ap"ply"・\apply のように、シェルが同じ語にする形も止めるため
+normalized=$(printf '%s' "$command" | tr -d "\"'\\\\")
+
 # terraform を呼ばないコマンドは素通りさせる
-printf '%s' "$command" | grep -qE "$tf" || exit 0
+printf '%s' "$normalized" | grep -qE "$tf" || exit 0
 
 # 理由を添えて実行を止める
 deny() {
@@ -55,25 +67,25 @@ deny_patterns=(
 )
 
 for p in "${deny_patterns[@]}"; do
-  if printf '%s' "$command" | grep -qE "${tf}${p}([[:space:]]|$)"; then
+  if printf '%s' "$normalized" | grep -qE "${tf}${p}([[:space:]]|$)"; then
     deny "Terraform でインフラや state を変えるコマンドは、人が実行する: $command
 Claude は terraform plan -out=tfplan までを行い、plan の結果を示して、人に terraform apply tfplan を頼むこと。"
   fi
 done
 
 # init で state を別の backend へ移すと、移す先を誤ったときに state が失われる
-if printf '%s' "$command" | grep -qE "${tf}init([[:space:]]|$)" &&
-  printf '%s' "$command" | grep -qE '[[:space:]]-(migrate-state|force-copy)([[:space:]=]|$)'; then
+if printf '%s' "$normalized" | grep -qE "${tf}init([[:space:]]|$)" &&
+  printf '%s' "$normalized" | grep -qE '[[:space:]]-(migrate-state|force-copy)([[:space:]=]|$)'; then
   deny "state を移す terraform init は、人が実行する: $command"
 fi
 
 # plan は保存して、人が中身を確かめた plan だけを apply する。-target は一部だけを反映し、設定と実際のずれに気づけなくなる
-if printf '%s' "$command" | grep -qE "${tf}plan([[:space:]]|$)"; then
-  if printf '%s' "$command" | grep -qE '[[:space:]]-target(=|[[:space:]])'; then
+if printf '%s' "$normalized" | grep -qE "${tf}plan([[:space:]]|$)"; then
+  if printf '%s' "$normalized" | grep -qE '[[:space:]]-target(=|[[:space:]])'; then
     deny "terraform plan で -target を使わない: $command
 一部だけを反映すると、設定と実際のずれに気づけなくなる。復旧などの例外の場面では、人が実行する。"
   fi
-  if ! printf '%s' "$command" | grep -qE '[[:space:]]-out(=|[[:space:]])'; then
+  if ! printf '%s' "$normalized" | grep -qE '[[:space:]]-out(=|[[:space:]])'; then
     deny "terraform plan は -out=tfplan で plan を保存すること: $command
 例: terraform plan -out=tfplan"
   fi
@@ -82,7 +94,7 @@ fi
 # workspace の切り替えはインフラを変えないが、誤った workspace のまま plan すると別の環境の plan ができる。
 # workspace で環境を分けている既存の構成では plan に要るため、止めずに承認を求める。
 # 同じコマンドの中の止める操作を先に判定するため、最後に置く
-if printf '%s' "$command" | grep -qE "${tf}workspace[[:space:]]+select([[:space:]]|$)"; then
+if printf '%s' "$normalized" | grep -qE "${tf}workspace[[:space:]]+select([[:space:]]|$)"; then
   jq -n --arg reason "terraform workspace を切り替える: $command
 切り替え先が、作業する環境の workspace かを確かめてから承認すること。" '{
   hookSpecificOutput: {

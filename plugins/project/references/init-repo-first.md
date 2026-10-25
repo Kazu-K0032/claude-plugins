@@ -15,6 +15,6 @@
 
 | スキル | 伝える影響 |
 | --- | --- |
-| `gas` | このスキルの動きは変わらないが、秘匿ファイルの deny・破壊的な操作を止めるフック・`CLAUDE.md` などの土台は入らない |
+| `gas` | フック（`guard-clasp.sh`）と認証情報の deny を登録できない。秘匿ファイルの deny・破壊的な操作を止めるフック・`CLAUDE.md` などの土台も入らない |
 | `wordpress` | `lefthook.yml` も無ければ、PHP の Lint をフックで動かせない（Lint の設定と規約は入る）。`guard-destructive.sh` も無ければ、`docker compose down -v` を止められない。秘匿ファイルの deny も入らない |
 | `terraform` | フック（`guard-terraform.sh`）と秘匿ファイルの deny を登録できない。`lefthook.yml` も無ければ、`terraform fmt` をフックで動かせない |

@@ -9,15 +9,18 @@
     "package-lock.json",
     "pnpm-lock.yaml",
     "*.lock",
-    "go.sum"
+    "go.sum",
+    "**/*.drawio"
   ],
   "words": [
     "aidd",
+    "commitlint",
     "davidanson",
     "envrc",
     "frontmatter",
     "ghaction",
     "lefthook",
+    "pgoptions",
     "pycache",
     "pythondontwritebytecode",
     "segs",

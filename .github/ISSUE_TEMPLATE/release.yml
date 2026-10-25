@@ -8,7 +8,7 @@ body:
       value: |
         この Issue を作ると、Actions が `develop` から `release/v<version>` を作り、`main` への PR を開きます。PR をマージすると、タグと GitHub Release ができます。
 
-        先に `develop` で 3 つの `plugin.json` の版を上げ、`/aidd:harness-audit` で監査を済ませておいてください。`plugins/` を変えていない docs だけのリリースと、hotfix では、この Issue を使いません。
+        先に `develop` で 3 つの `plugin.json` の版を上げ、前のリリースからの差分を `/aidd:harness-audit --diff`（MAJOR では範囲「全体」）と `claude-security` で点検しておいてください。`plugins/` を変えていない docs だけのリリースと、hotfix では、この Issue を使いません。
   - type: textarea
     id: notes
     attributes:

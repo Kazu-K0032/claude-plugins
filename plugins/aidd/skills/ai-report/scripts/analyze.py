@@ -77,10 +77,13 @@ INTERRUPT_PREFIX = "[Request interrupted by user"
 RUNNER_CMDS = {"pnpm", "npm", "npx", "yarn", "bun"}
 # 検証コマンド分類: Bash コマンド全文への substring / 単語境界マッチ。
 # `&&` 連結で複数カテゴリに該当する場合はそれぞれに計上する（概算）。
+# JS 以外の道具も並べる。\btest\b は `pytest` を、\blint\b は `eslint` を拾わないため、名前で足す。
 VERIFY_CATEGORIES = [
-    ("テスト実行", re.compile(r"vitest|playwright|\btest\b")),
-    ("型チェック", re.compile(r"type-check|\btsc\b")),
-    ("Lint/Format", re.compile(r"\blint\b|biome")),
+    ("テスト実行", re.compile(
+        r"vitest|playwright|jest|mocha|pytest|unittest|rspec|phpunit|\bbats\b|\bctest\b|\btest\b")),
+    ("型チェック", re.compile(r"type-check|\btsc\b|mypy|pyright|phpstan|psalm")),
+    ("Lint/Format", re.compile(
+        r"lint\b|biome|prettier|ruff|flake8|\bblack\b|isort|rubocop|clippy|gofmt|rustfmt|shellcheck")),
     ("ビルド", re.compile(r"\bbuild\b")),
 ]
 
@@ -221,17 +224,23 @@ def _error_reason(content):
 def _settings_files():
     """Claude Code の設定ファイルのパスを列挙する（存在しないものは読み込み側で無視する）。
 
-    公式の設定階層（user / project / local / managed）に対応する。managed は Linux/WSL の
-    パスのみ扱う（本リポジトリの開発環境が WSL2 前提のため）。
+    公式の設定階層（user / project / local / managed）に対応する。managed の置き場所は OS ごとに違う。
+    Ref: https://code.claude.com/docs/en/managed-settings
     """
     home = os.path.expanduser("~")
     root = repo_root()
+    if sys.platform == "darwin":
+        managed = "/Library/Application Support/ClaudeCode"
+    elif sys.platform == "win32":
+        managed = r"C:\Program Files\ClaudeCode"
+    else:
+        managed = "/etc/claude-code"
     return [
         os.path.join(home, ".claude", "settings.json"),
         os.path.join(root, ".claude", "settings.json"),
         os.path.join(root, ".claude", "settings.local.json"),
-        "/etc/claude-code/managed-settings.json",
-        *sorted(glob.glob("/etc/claude-code/managed-settings.d/*.json")),
+        os.path.join(managed, "managed-settings.json"),
+        *sorted(glob.glob(os.path.join(managed, "managed-settings.d", "*.json"))),
     ]
 
 
@@ -478,12 +487,13 @@ def git_branch():
 
 
 def out_dir():
-    """レポート出力先ディレクトリ tmp/<ブランチ名>/ のパスを返す。
+    """レポート出力先ディレクトリ <リポジトリのルート>/tmp/<ブランチ名>/ のパスを返す。
 
     ブランチ名の `/` は `-` に置換する（例: tmp/issues-1449-.../）。
     規約は aidd の README.md の「ブランチ名の `/` は `-` に置き換える」。
+    cwd ではなくルートから組み立てる。サブディレクトリで実行しても、同じ tmp/ に書くため。
     """
-    return os.path.join("tmp", git_branch().replace("/", "-"))
+    return os.path.normpath(os.path.join(repo_root(), "tmp", git_branch().replace("/", "-")))
 
 
 def custom_agent_names():
@@ -2104,8 +2114,8 @@ def cmd_collect(start, end, pricing, project_dirs=None):
         print("（該当なし）")
 
     print(f"\n# 次のアクション")
-    print(f"出力先: {out_dir()}/")
-    print(f"定性分析を {out_dir()}/{QUAL_FILE} に Write したのち "
+    print(f"出力先: {os.path.join(out_dir(), '')}")
+    print(f"定性分析を {os.path.join(out_dir(), QUAL_FILE)} に Write したのち "
           f"`report {start} {end}` を実行してください。\n"
           f"SUMMARY / PROMPTS に加え、トークン効率・コスト最適化は TOKEN_EFFICIENCY ブロック、"
           f"完了時間・手戻り削減は WORKFLOW_EFFICIENCY ブロック、"
@@ -2222,6 +2232,11 @@ def cmd_report(start, end, pricing=None):
 
 def main():
     """引数を検証し、collect / report サブコマンドへ振り分けるエントリポイント。"""
+    # Windows では標準出力が cp932 になり、「—」などを書けずに落ちる。日本語も UTF-8 で読む
+    # Claude Code には化けて届く。そのため、OS に依らず UTF-8 で書く。
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     usage = ("usage: analyze.py collect <START YYYY-MM-DD> <END YYYY-MM-DD> [--pricing <JSON>]\n"
              "                          [--project-dirs <NAME> [<NAME> ...]]\n"
              "       analyze.py report  <START YYYY-MM-DD> <END YYYY-MM-DD>")

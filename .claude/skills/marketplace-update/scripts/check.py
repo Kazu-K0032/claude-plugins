@@ -205,6 +205,7 @@ def check_plugin(repo, plugin_name, plugin, prefixes):
 
     # 本文で実行を指示している gh / git と削除のコマンドを拾う（人が手で実行する例も含むため WARN）
     # 手順の細部は参照ファイルへ移すため（P9）、SKILL.md だけでなく、スキルが読む md も見る
+    # 行頭が「! 」の行は、人がプロンプトに打つコマンドのため拾わない（下の正規表現が一致しない）
     for path in instruction_files(plugin, skills_dir, skill_names):
         for num, line in enumerate(read(path).splitlines(), 1):
             stripped = line.strip().lstrip("$ ").strip("`")

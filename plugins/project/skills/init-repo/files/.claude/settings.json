@@ -153,7 +153,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|PowerShell",
+        "matcher": "Bash|PowerShell|Monitor",
         "hooks": [
           {
             "type": "command",
@@ -171,16 +171,6 @@
             "command": "bash .claude/hooks/post-edit-lint.sh",
             "timeout": 15,
             "statusMessage": "Lint チェック中..."
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/session-start.sh"
           }
         ]
       }

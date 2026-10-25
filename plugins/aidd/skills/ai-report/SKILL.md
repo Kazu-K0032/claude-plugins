@@ -3,7 +3,7 @@ name: ai-report
 description: このリポジトリの Claude Code セッションログを分析し、利用状況や改善点を図表付きレポートにする。AI 利用実績の振り返り・トークンコストの棚卸しを求められた時に使用する
 model: opus
 disable-model-invocation: true
-allowed-tools: Bash(date:*), Read, Agent, Edit(tmp/*/.ai-report-qualitative.md), AskUserQuestion
+allowed-tools: Bash(date:*), Bash(git check-ignore:*), Read, Agent, Edit(tmp/*/.ai-report-qualitative.md), AskUserQuestion
 argument-hint: "[開始日 終了日（任意。省略時は期間を質問する。例: 2026-09-01 2026-09-30）]"
 ---
 
@@ -18,13 +18,14 @@ argument-hint: "[開始日 終了日（任意。省略時は期間を質問す�
 
 | ファイル | いつ読むか |
 | --- | --- |
+| `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/` の除外を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/pricing.md` | 手順 1 で、単価と為替を調べて JSON にするとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py` | 手順 3・5 で実行する（定量の集計・図表・レポートの出力） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/log-coverage.md` | 手順 3 で、「走査対象ログ（カバレッジ）」を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/output-template.md` | 手順 4 で、定性パートを書くとき（ブロックごとの書き方とマーカーの形） |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-research.md` | 手順 4 で、提案する機能の仕様を書くとき（未検証の値を断定しない） |
 | `${CLAUDE_PLUGIN_ROOT}/references/plain-language.md` | 手順 4 で、機能名などをかみ砕くとき（平易化の技法） |
-| `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/errors.md` | 単価の調査に失敗した・世代ごとに単価が分かれていたとき、定性が「（未記入）」になった・`report` が失敗したとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/errors.md` | 単価の調査に失敗した・世代ごとに単価が分かれていたとき、`python3` が動かないとき、定性が「（未記入）」になった・`report` が失敗したとき |
 
 本文の `analyze.py`・`output-template.md` と、`output-template.md` が「プラグインの `references/...`」と書いている箇所は、どれも上の表のパスを指す。
 
@@ -41,6 +42,8 @@ argument-hint: "[開始日 終了日（任意。省略時は期間を質問す�
 - `.ai-report-data.json`：中間データ（手順 3 の `collect` が書く）
 
 中間データと定性パートは、`work/<目的>/` ではなく、レポートと同じ `tmp/<ブランチ名>/` の直下に置く。`analyze.py` の `collect` と `report` が `out_dir()` の直下の決まった名前で 2 つを受け渡し、`allowed-tools` の `Edit(tmp/*/.ai-report-qualitative.md)` も 1 階層だけに当たるため。
+
+手順 1 の前に、`tmp-ignore.md` で `tmp/` の除外を確かめる。中間データには、プロンプトの全文が入るため。
 
 ## 手順
 
@@ -65,6 +68,8 @@ argument-hint: "[開始日 終了日（任意。省略時は期間を質問す�
 python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" collect <START> <END> --pricing '<手順 1 で組み立てた JSON>'
 ```
 
+`python3` が動かないときは、`errors.md` の「`python3` が動かないとき」に従う。
+
 標準出力に、定量のサマリ・typed プロンプトの一覧・出力先のパスが出る。出力の冒頭の「走査対象ログ（カバレッジ）」を必ず確かめ、`log-coverage.md` に従って、意図したディレクトリが含まれているかを見る。
 
 ### 4. 定性パートを書く
@@ -77,7 +82,7 @@ typed プロンプトの一覧・昇格候補エージェントの関連プロ�
 
 ### 5. レポートを作る（report）
 
-手順 4 の Write を終えてから実行する。同じメッセージで並列に実行しない。並列だと定性パートを読む前に走り、定性が「（未記入）」になるため。
+手順 4 の Write を終えてから実行する。同じメッセージで並列に実行しない。並列だと定性パートを読む前に走り、定性が「（未記入）」になるため。`python3` は、手順 3 で動いたもの（`python`・`py -3`）に替える。
 
 ```bash
 python3 -B "${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py" report <START> <END>

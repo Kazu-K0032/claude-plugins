@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # docs-sync 機械チェック実行スクリプト
-# 担当: ブランチ差分の列挙 / 変更 md の 相対リンク切れ・markdown 規約 / 全走査のリンク切れ・SSOT ポインタ
+# 担当: ブランチ差分の列挙 / 変更 md の 相対リンク切れ・markdown 規約 / 全走査のリンク切れ・SSOT ポインタ・囲まれた @import
 # 基準ブランチ上と main・master では停止する。docs 追従要否の LLM 判定は SKILL.md 側で実施する。
 #
 # 使い方: run-checks.sh [--base <ref>]
@@ -14,6 +14,22 @@
 # リンク検査（変更 md・全走査）は、リポジトリ直下の .docs-sync-link-ignore に当たるファイルを対象から外す。
 
 set -uo pipefail
+
+# --- 使う道具の確認 ---------------------------------------------------------
+# bash 4.4 未満では、mapfile・declare -A と、set -u での空の配列の展開で止まる。
+# perl・awk が無いと、検査の出力が空になり、黙って PASS と出る。そのため、検査の前に止める。
+# 見つかっても動かないもの（Windows の空のコマンドなど）を通さないよう、実際に動かして確かめる。
+if (( BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4) )); then
+  echo "ERROR: bash 4.4 以上が要ります（今は ${BASH_VERSION}）。macOS 標準の bash 3.2 では動かないため、新しい bash を入れる" >&2
+  exit 2
+fi
+MISSING_TOOLS=""
+perl -e 1 >/dev/null 2>&1 || MISSING_TOOLS="$MISSING_TOOLS perl（リンク切れ・SSOT ポインタ・@import の検査）"
+awk 'BEGIN { exit 0 }' </dev/null >/dev/null 2>&1 || MISSING_TOOLS="$MISSING_TOOLS awk（markdown 規約の検査）"
+if [[ -n "$MISSING_TOOLS" ]]; then
+  echo "ERROR: 次の道具が動きません:${MISSING_TOOLS}。入れてから実行し直す" >&2
+  exit 2
+fi
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
   echo "ERROR: git リポジトリのルートを取得できません" >&2
@@ -92,7 +108,9 @@ DOC_PATTERN='^(docs?|documentation)/|(^|/)(README|CLAUDE|CONTRIBUTING|AGENTS)\.m
 EXCLUDE_PATTERN='(^|/)(node_modules|vendor|dist|build|tmp)/'
 
 # 差分ファイル（分岐点以降のコミット＋作業ツリーの変更）
-mapfile -t ALL_CHANGED < <(git diff --name-only "$MERGE_BASE")
+# ファイル名を出す git には -c core.quotepath=false を付ける。
+# 既定では日本語名が "docs/\346..." の形で出て、[[ -e ]] で見つからず検査から外れるため。
+mapfile -t ALL_CHANGED < <(git -c core.quotepath=false diff --name-only "$MERGE_BASE")
 
 MD_CHANGED=()      # 変更された md 全部（一覧表示用）
 CODE_CHANGED=()    # 変更された非 md（docs 追従判定の入力）
@@ -114,11 +132,15 @@ done
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-touch "$TMP/links.txt" "$TMP/md.txt" "$TMP/links_all.txt" "$TMP/ssot.txt"
+touch "$TMP/links.txt" "$TMP/md.txt" "$TMP/links_all.txt" "$TMP/ssot.txt" "$TMP/enclosed.txt"
 
 # 全走査用: 差分に関係なく全散文 md を列挙する。
 # 既存ファイルの壊れリンク・壊れ SSOT ポインタは差分に現れないため、ここだけはリポジトリ全体を対象にする。
-mapfile -t ALL_DOC_MD < <(git ls-files | grep -E '\.md$' | grep -E "$DOC_PATTERN" | grep -vE "$EXCLUDE_PATTERN")
+mapfile -t ALL_DOC_MD < <(git -c core.quotepath=false ls-files | grep -E '\.md$' | grep -E "$DOC_PATTERN" | grep -vE "$EXCLUDE_PATTERN")
+
+# 囲まれた @import の検査対象。Claude Code が @path を import として展開する指示ファイル（CLAUDE.md・AGENTS.md）に限る。
+# .docs-sync-link-ignore は使わない。テンプレートの files/ は導入先と同じ構成のため、相対パスはその中で解決できる。
+mapfile -t ENTRY_MD < <(printf '%s\n' "${ALL_DOC_MD[@]}" | grep -E '(^|/)(CLAUDE|AGENTS)\.md$')
 
 # リンク検査だけから外すファイル。リポジトリ直下の .docs-sync-link-ignore（書式は .gitignore と同じ）で指定する。
 # 導入先のリポジトリを基準にリンクを書いたテンプレートなど、そのリポジトリの中では解決できないファイルのため。
@@ -128,7 +150,7 @@ declare -A LINK_IGNORED=()
 if [[ -f "$LINK_IGNORE_FILE" ]]; then
   while IFS= read -r f; do
     [[ -n "$f" ]] && LINK_IGNORED["$f"]=1
-  done < <(git ls-files --cached --ignored --exclude-from="$LINK_IGNORE_FILE")
+  done < <(git -c core.quotepath=false ls-files --cached --ignored --exclude-from="$LINK_IGNORE_FILE")
 fi
 
 # 引数のうち、リンク検査から外すファイルに当たらないものを 1 行ずつ出力する
@@ -172,6 +194,39 @@ check_links() {
       if [[ "$path" = /* ]]; then resolved="$ROOT$path"; else resolved="$dir/$path"; fi
       [[ ! -e "$resolved" ]] && echo "FAIL: $f:$ln -> $target" >> "$out"
     done
+  done
+}
+
+# 指定ファイルの、バッククォートで囲まれていて読み込まれない @path を検出し、FAIL 行を第1引数のファイルへ追記する。
+# Claude Code は import の解析で Markdown のコードスパンとコードブロックを飛ばす。読ませたい文書を囲むと、エラーも出ずに読み込まれない。
+# 参照先のファイルが実在するものだけを挙げる。@param や pkg@v4 のように実在しないものは、import の意図ではないため。
+# ~ と / で始まるパスは、機械ごとに違って存在を確かめられないため飛ばす。
+# 囲まれた範囲は、フェンスの中と、同じ行の中のコードスパン。複数行にまたがるコードスパンは見ない。
+check_enclosed_imports() {
+  out="$1"; shift
+  for f in "$@"; do
+    [[ -e "$f" ]] || continue
+    perl -ne '
+      BEGIN { ($dir = $ARGV[0]) =~ s{[^/]*$}{}; $fence = ""; }
+      sub scan {
+        my ($t) = @_;
+        while ($t =~ /(?<![\w\@])\@((?:\\ |[^\s`])+)/g) {
+          my $p = $1;
+          $p =~ s/\\ / /g;
+          $p =~ s/(?:[.,;:!?)\]}>"\x27]|、|。|）|」|』)+$//;
+          next if $p eq "" || $p =~ m{^[~/]};
+          my $r = $dir . $p;
+          printf "FAIL: %s:%d \@%s -> %s（囲まれていて読み込まれない）\n", $ARGV, $., $p, $r if -f $r;
+        }
+      }
+      if ($fence eq "") {
+        if (/^\s*(`{3,})[^`]*$/ or /^\s*(~{3,})/) { $fence = substr($1, 0, 1); $flen = length($1); next; }
+        scan($2) while /(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)/g;
+      } else {
+        if (/^\s*(\Q$fence\E{$flen,})\s*$/) { $fence = ""; next; }
+        scan($_);
+      }
+    ' "$f" >> "$out"
   done
 }
 
@@ -265,11 +320,25 @@ else
   if [[ -s "$TMP/ssot.txt" ]]; then cat "$TMP/ssot.txt"; else echo "PASS"; fi
 fi
 
+# 5. 囲まれた @import（全走査・差分非依存）
+# CLAUDE.md・AGENTS.md が無いリポジトリでは、使っていない規約で FAIL を出さないため SKIP を返す。
+echo
+echo "## 囲まれた @import（全走査）"
+if [[ ${#ENTRY_MD[@]} -eq 0 ]]; then
+  echo "SKIP: CLAUDE.md・AGENTS.md が見つからないため検査しない。"
+else
+  echo "CLAUDE.md・AGENTS.md の、バッククォートで囲まれていて読み込まれない @path を検出する。対象は ${#ENTRY_MD[@]} 件。"
+  echo "Claude Code は import の解析でコードスパンとコードブロックを飛ばす。参照先のファイルが実在するものだけを挙げる。"
+  check_enclosed_imports "$TMP/enclosed.txt" "${ENTRY_MD[@]}"
+  if [[ -s "$TMP/enclosed.txt" ]]; then cat "$TMP/enclosed.txt"; else echo "PASS"; fi
+fi
+
 # --- サマリ -----------------------------------------------------------------
 LINK_FAIL=$(wc -l < "$TMP/links.txt" | tr -d ' ')
 MD_FAIL=$(wc -l < "$TMP/md.txt" | tr -d ' ')
 ALLLINK_FAIL=$(wc -l < "$TMP/links_all.txt" | tr -d ' ')
 SSOT_FAIL=$(wc -l < "$TMP/ssot.txt" | tr -d ' ')
+ENCLOSED_FAIL=$(wc -l < "$TMP/enclosed.txt" | tr -d ' ')
 
 echo
 echo "## サマリ"
@@ -281,8 +350,13 @@ if [[ -z "$SSOT_FILE" ]]; then
 else
   echo "SSOT ポインタ FAIL（全走査）: ${SSOT_FAIL:-0}"
 fi
+if [[ ${#ENTRY_MD[@]} -eq 0 ]]; then
+  echo "囲まれた @import FAIL（全走査）: スキップ（CLAUDE.md・AGENTS.md なし）"
+else
+  echo "囲まれた @import FAIL（全走査）: ${ENCLOSED_FAIL:-0}"
+fi
 
-TOTAL=$((LINK_FAIL + MD_FAIL + ALLLINK_FAIL + SSOT_FAIL))
+TOTAL=$((LINK_FAIL + MD_FAIL + ALLLINK_FAIL + SSOT_FAIL + ENCLOSED_FAIL))
 if [[ $TOTAL -gt 0 ]]; then
   exit 1
 fi

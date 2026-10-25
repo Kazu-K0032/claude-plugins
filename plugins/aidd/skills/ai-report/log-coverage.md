@@ -20,4 +20,4 @@ python3 -B <analyze.py のパス> collect <START> <END> \
   --pricing '<JSON>' --project-dirs -home-user-repo -home-user-repo-2
 ```
 
-`<analyze.py のパス>` は、`SKILL.md` の「参照ファイル」の表にあるパスにする。場所を表す変数は `SKILL.md` の中でしか置き換わらないため、この文書では使わない。
+`<analyze.py のパス>` は、`SKILL.md` の「参照ファイル」の表にあるパスにする。場所を表す変数は `SKILL.md` の中でしか置き換わらないため、この文書では使わない。`python3` は、手順 3 で動いたもの（`python`・`py -3`）に替える。
