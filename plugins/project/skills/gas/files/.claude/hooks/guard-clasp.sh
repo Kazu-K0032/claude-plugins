@@ -14,16 +14,20 @@ set -Eeuo pipefail
 trap 'echo "guard-clasp.sh が判定できなかったため止めた（jq が無い、など）。jq を入れるか、人に実行を頼むこと。" >&2; exit 2' ERR
 
 # clasp の語が入力のどこにも無ければ、jq を使わずに素通りさせる。jq が無い環境で、clasp と関係ないコマンドまで止めないため。
-# JSON の中では改行・タブが \n・\t と書かれるため、その直後の clasp も拾う
+# JSON の中では改行・タブが \n・\t と書かれるため、その直後の clasp も拾う。cl"asp" のような形も拾うため、引用符と \ を取り除いた入力でも見る
 input=$(cat)
-printf '%s' "$input" | grep -qE '(^|[^[:alnum:]_-]|\\[nrt])clasp([^[:alnum:]_-]|$)' || exit 0
+printf '%s' "$input" | grep -qE '(^|[^[:alnum:]_-]|\\[nrt])clasp([^[:alnum:]_-]|$)' ||
+  printf '%s' "$input" | tr -d "\"'\\\\" | grep -qE '(^|[^[:alnum:]_-])clasp([^[:alnum:]_-]|$)' || exit 0
 
 # 渡された JSON からコマンド文字列を取り出し、コマンドが無ければ即座に素通りさせる。Monitor の WebSocket を見張る形には、コマンドが無い
 command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 [ -z "$command" ] && exit 0
 
+# 照合には、引用符と \ を取り除いた文字列を使う。clasp "push"・p"ush"・\push のように、シェルが同じ語にする形も止めるため
+normalized=$(printf '%s' "$command" | tr -d "\"'\\\\")
+
 # clasp を呼ばないコマンドは素通りさせる
-printf '%s' "$command" | grep -qE '(^|[^[:alnum:]_-])clasp([^[:alnum:]_-]|$)' || exit 0
+printf '%s' "$normalized" | grep -qE '(^|[^[:alnum:]_-])clasp([^[:alnum:]_-]|$)' || exit 0
 
 # clasp と、サブコマンドの前に置けるオプション（-P <ディレクトリ>・--user <名前> など）までに当たる正規表現。
 # 同じコマンドの区切り（; & |）は越えない。別のコマンドの単語に当たらないようにするため
@@ -63,8 +67,8 @@ deny_patterns=(
 )
 
 for p in "${deny_patterns[@]}"; do
-  # サブコマンドの直後が英数字・_・- でなければ当てる。bash -c 'clasp push' のように引用符が続く形も止めるため
-  if printf '%s' "$command" | grep -qE "${clasp}${p}([^[:alnum:]_-]|$)"; then
+  # サブコマンドの直後が英数字・_・- でなければ当てる。bash -c 'clasp push'; ls のように、区切りが続く形も止めるため
+  if printf '%s' "$normalized" | grep -qE "${clasp}${p}([^[:alnum:]_-]|$)"; then
     deny "clasp で Apps Script 側へ反映・取り込み・認証をするコマンドは、人が実行する: $command
 Claude はコードの編集までを行い、人に clasp push などの実行を頼むこと。"
   fi
