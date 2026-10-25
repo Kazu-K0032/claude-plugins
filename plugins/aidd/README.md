@@ -33,6 +33,16 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 収録は上記 9 スキル。WordPress / AWS 固有の Skillは案件リポジトリのローカルに残し、このプラグインには含めない。リポジトリへ規約一式を導入する `init-repo` は [project](../project/README.md) プラグインへ移した（`/project:init-repo`）。
 
+## 導入
+
+スコープ（user / project / local）は問わない。`/project:init-repo` を使うリポジトリで project スコープに入れるときは、`init-repo` の後に入れる。先に入れると、登録が書き込まれた `.claude/settings.json` と、`init-repo` がコピーするものが衝突するため。
+
+```bash
+/plugin install aidd@kazu
+```
+
+同梱の Workflow（`pr-review` など）は、Claude Code の動的ワークフロー（dynamic workflows）で動く。切れていると `/` の候補に出ず、`/aidd:harness-audit` も監査の前に止まる。出ないときは、`/config` の「Dynamic workflows」の行をオンにする。Pro では初期設定でオフのため。ほかに止まる設定は、[harness-audit の errors.md](skills/harness-audit/errors.md) の「Workflow が使えないとき」にある。Ref: [Orchestrate subagents at scale with dynamic workflows](https://code.claude.com/docs/en/workflows)
+
 ## ディレクトリ構成
 
 ```text
