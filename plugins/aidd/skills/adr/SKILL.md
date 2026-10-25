@@ -142,4 +142,6 @@ AI は一覧の題だけを読んで、関係する ADR を探す。そのため
 
 `allowed-tools` に `Write`・`Edit` を含めていない。ADR ディレクトリはプロジェクトごとに異なりパスパターンを固定できないため、白紙委任せず通常の許可プロンプトを通す。
 
+`_template-short.md` の形は、`project:init-repo` が配る ADR の雛形（`project` の `skills/init-repo/files/docs/adr/`）と同じにしている。直したら、そちらも合わせる。
+
 $ARGUMENTS

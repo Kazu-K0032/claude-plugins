@@ -3,7 +3,7 @@
 | 区分 | 内容 |
 | --- | --- |
 | 対象 | `project`（`init-repo`・`gas`・`wordpress`・`terraform`） |
-| 例外 | `init-repo` の `settings.json` の `env` に入れる `PYTHONDONTWRITEBYTECODE=1` は、Python 専用だが配る。Claude の作業スクリプトは、リポジトリの言語に関係なく Python で書かれやすく、入れても害が無いため。`commitlint.config.mjs` は Node のプロジェクトが前提だが配る。コミット規約の検証は土台の考え方で、Node はその道具にすぎないため。入れる条件で Node のプロジェクトに絞る。`lefthook.yml` の `commit-msg` は、commitlint を呼ぶ形でどのリポジトリにも配る。commitlint が入っていなければ飛ばすため、Node でないリポジトリでも害が無い |
+| 例外 | `init-repo` の `settings.json` の `env` に入れる `PYTHONDONTWRITEBYTECODE=1` は、Python 専用だが配る。Claude の作業スクリプトは、リポジトリの言語に関係なく Python で書かれやすく、入れても害が無いため。`commitlint.config.mjs` は Node のプロジェクトが前提だが配る。コミット規約の検証は土台の考え方で、Node はその道具にすぎないため。入れる条件で Node のプロジェクトに絞る。`lefthook.yml` の `commit-msg` は、commitlint を呼ぶ形でどのリポジトリにも配る。commitlint が入っていなければ飛ばすため、Node でないリポジトリでも害が無い。`init-repo` の `docs/architecture/` の構成図の雛形は、AWS を例に描く。構成図の描き方（draw.io のソースと、書き出した PNG の対）を見せる見本で、実際の構成に描き直す前提のため。実物を作ったら雛形の削除を提案する（[P10](p10-template-lifecycle.md)） |
 | 価値 | [V5](../values/v05-mechanisms-over-habits.md) |
 
 土台（`init-repo`）は、このリポジトリのハーネスの設計思想を配る。技術スタック別のスキル（`gas` など）は、その上に技術に依るものを重ねる。土台だけでも思想を受け継げ、技術別のスキルを重ねても思想が崩れないようにする。

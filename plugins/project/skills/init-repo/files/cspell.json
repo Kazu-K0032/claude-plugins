@@ -9,7 +9,8 @@
     "package-lock.json",
     "pnpm-lock.yaml",
     "*.lock",
-    "go.sum"
+    "go.sum",
+    "**/*.drawio"
   ],
   "words": [
     "aidd",
