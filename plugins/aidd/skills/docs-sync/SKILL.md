@@ -2,7 +2,7 @@
 name: docs-sync
 description: 現在のブランチと、そのマージ先との差分を分析し、コード・インフラ変更に追従して更新すべき md ドキュメントを特定して更新を提案する。ブランチの変更にドキュメントが追従しているか点検したい時に使用する。マージ先が無いブランチ（既定ブランチなど）と main・master では停止する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
+allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(git check-ignore:*), Bash(gh pr view:*), Bash(date:*), Edit(tmp/*/docs-sync_*.md)
 ---
 
 # ドキュメント追従チェック（docs-sync）
@@ -16,6 +16,7 @@ allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr vie
 
 | ファイル | いつ読むか |
 | --- | --- |
+| `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/` の除外を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 1 で、比べるブランチを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh` | 手順 2 で実行する（差分の列挙・機械チェック） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/errors.md` | 手順 2 でスクリプトが `STOP`・`ERROR` を返したとき、終了コードの意味を確かめるとき |
@@ -32,6 +33,8 @@ allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(gh pr vie
 ## 出力先
 
 `tmp/<ブランチ名>/docs-sync_<yyyymmdd_hhmmss>.md` に書く。ブランチ名は `git branch --show-current` で取り、`/` は `-` に置き換える（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。タイムスタンプは `date +%Y%m%d_%H%M%S` で取る。
+
+手順 1 の前に、`tmp-ignore.md` で `tmp/` の除外を確かめる。
 
 ## 手順
 

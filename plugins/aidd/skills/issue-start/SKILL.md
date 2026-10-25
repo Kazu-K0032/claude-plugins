@@ -3,7 +3,7 @@ name: issue-start
 description: 指定した Issue に着手し、実装と PR の下書きまで進める。Issue の記述を今のコード・引用元と突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする。関係する ADR を読み、計画モードで決めることを選択肢の質問で詰めて計画を作り、承認後に実装し、docs-sync の手順で文書の追従を点検して直す。決めた仕様で Issue を更新し、決めたことを ADR にするかを聞き、実装したファイルをステージに置き、コミットメッセージを tmp.md に、PR 本文と検証コメントを tmp/ に書いて終わる。コミット・push はしない。Issue に取りかかる時に使用する
 argument-hint: "<Issue番号|URL>"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(gh pr list:*), Bash(git status:*), Bash(git branch --show-current), Bash(git branch --list *), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start/*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md), Edit(tmp/*/docs-sync_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(gh pr list:*), Bash(git status:*), Bash(git branch --show-current), Bash(git branch --list *), Bash(git check-ignore:*), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start/*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md), Edit(tmp/*/docs-sync_*.md)
 ---
 
 # Issue の着手
@@ -20,7 +20,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-checks.md` | 手順 2・3 で、Issue の記述を確かめて判定するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-research.md` | 手順 2 で、引用元を確かめた結果を扱うとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/errors.md`・`comment-template.md` | 止めるとき・コメントするとき・書き込みに失敗した（止められた）とき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/branch-setup.md` | 手順 4・5 で、ブランチを用意するとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/branch-setup.md`・`${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 4・5 で、ブランチを用意するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 5 で、ブランチの規約と起点のブランチを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/requirements-tree.md` | 手順 7・8 で、計画モードに入れなかったときと、要件を詰めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-update.md` | 手順 9・14 で、Issue の本文を書き換えるとき |
@@ -67,7 +67,7 @@ git log --oneline --all --grep "#<番号>"
 
 ### 4. 作業ツリーを確かめる
 
-`git status --porcelain` に出力があれば、ブランチを作る前に止め、`branch-setup.md` に従って扱いを聞く。
+`tmp-ignore.md` で除外を確かめる。`git status --porcelain` に `tmp/`・`tmp.md` 以外の出力があれば、ブランチを作る前に止め、`branch-setup.md` に従って扱いを聞く。
 
 ### 5. ブランチを用意する
 

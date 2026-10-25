@@ -3,7 +3,7 @@ name: pr-create
 description: 現在のブランチのコミット内容とIssue情報から、リポジトリの PR テンプレートに沿ったPR本文の下書きと、レビュワー向けの検証コメントを tmp 配下に生成する。ユーザーが PR 本文作成を求めた時に使用する
 argument-hint: "[Issue番号（任意。省略時はブランチ名の issues/・hotfix/ の後ろの番号。取れなければ質問する。複数なら空白で区切る）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Read, Glob, Grep, Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md)
 ---
 
 # PR本文と検証コメントの作成
@@ -17,6 +17,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show
 
 | ファイル | いつ読むか |
 | --- | --- |
+| `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/` の除外を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 5 で、比べるブランチを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | 手順 7 で、PR テンプレートを探すとき（探す順と、無いときの節） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/pr-body-guide.md` | 手順 7 で、PR 本文を書くとき（節ごとの書き方） |
@@ -35,6 +36,8 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show
 
 - `pr-create_<yyyymmdd_hhmmss>.md`：PR 本文
 - `pr-verify_<yyyymmdd_hhmmss>.md`：検証コメント
+
+手順 1 の前に、`tmp-ignore.md` で `tmp/` の除外を確かめる。
 
 ## 手順
 

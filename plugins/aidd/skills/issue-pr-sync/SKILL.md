@@ -3,7 +3,7 @@ name: issue-pr-sync
 description: 指定した Issue（省くとブランチ名の番号）と PR（省くと今のブランチの PR）を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える。閉じる Issue が複数なら、全てが伝わる案を出す）・ラベル等のサイドバーを直接反映する（既存の記述を消すなどの重要な変更だけ、反映前に承認を取る）。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
 argument-hint: "[Issue番号|URL（任意。省略時はブランチ名の issues/・hotfix/ の後ろの番号。取れなければ質問する）] [PR番号|URL（任意。省略時は今のブランチの PR）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(git branch --show-current), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
 ---
 
 # Issue / PR の同期更新
@@ -26,6 +26,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md`・`${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 手順 3 で、本文を書く・数えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/approval-rules.md` | 手順 3・4 で、変更が承認を取るものかを決めるとき・承認を求めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/result-format.md` | 手順 6 で、結果を伝えるとき |
+| `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/` の除外を確かめるとき |
 
 ## 想定している引数
 
@@ -41,6 +42,8 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(gh pr diff:*), Ba
 
 - `<ts>_issue.md`・`<ts>_pr.md`：反映する本文
 - `<ts>_issue_before.md`・`<ts>_pr_before.md`：反映前の本文。承認なしで反映した変更も、ここから戻せるようにするため
+
+手順 1 の前に、`tmp-ignore.md` で `tmp/` の除外を確かめる。
 
 ## 手順
 

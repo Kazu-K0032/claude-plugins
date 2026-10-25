@@ -2,7 +2,7 @@
 name: harness-audit
 description: リポジトリが、本マーケットプレイスの設計思想（AIDD × DocDD）とそのリポジトリの規約に合うかを、全体・差分（今のブランチの変更）・ディレクトリから範囲を選んで監査する。規約違反・価値に反する箇所・規約のずれ・土台の仕組みの欠けと、ファイル間の値の矛盾・重複記述・参照方向違反を見る。実行前にトークンを多く使うことと、対象の件数・総量・エージェント数の見込みを示して続けるかを聞き、Workflow（harness-audit-run）で各指摘を敵対的に検証して tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md に出力する。init-repo から作り直した後や、統合ブランチ（develop・stg・main）へのマージ前の最終チェック（全体）と、PR の前の確認（差分）に使用する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(gh pr view:*)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git check-ignore:*), Bash(gh pr view:*)
 argument-hint: "[範囲（任意。省略時は全体・差分・ディレクトリから質問する。例: --diff、plugins/aidd docs）]"
 ---
 
@@ -17,6 +17,7 @@ argument-hint: "[範囲（任意。省略時は全体・差分・ディレクト
 
 | ファイル | いつ読むか |
 | --- | --- |
+| `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/` の除外を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/harness-audit/scope.md` | 手順 2・3 で、範囲を決めて対象を列挙するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 3 で、差分のマージ先を決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/harness-audit/viewpoints.md` | 監査で何を見るか（観点・物差し・範囲を絞ったときに見るもの・扱わないもの）を確かめる・説明するとき |
@@ -31,6 +32,8 @@ argument-hint: "[範囲（任意。省略時は全体・差分・ディレクト
 ## 出力先
 
 Workflow が `tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md` にレポートを書く。ブランチ名の `/` は `-` に置き換える（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。
+
+手順 1 の前に、`tmp-ignore.md` で `tmp/` の除外を確かめる。
 
 ## 手順
 
@@ -116,4 +119,4 @@ Workflow の戻り値から、次を伝えて終わる。戻り値に `stopped` 
 
 - 監査の本体は Workflow の `harness-audit-run` で、このスキルはその入口になる
 - 手順 6 の実行の前に、Workflow の許可プロンプトが出る。`allowed-tools` に `Workflow` を入れていないため
-- `allowed-tools` の 2 つの `Bash` は、`docs-sync` と同じ読み取り。`git diff` は、前方一致の規則ではオプションを除けず書き込みも通すため、`git fetch` は書き込み先が `tmp/` に決まらないため入れず、許可プロンプトを通す（P1）
+- `allowed-tools` の 3 つの `Bash` は、`docs-sync` と同じ読み取り。`git diff` は、前方一致の規則ではオプションを除けず書き込みも通すため、`git fetch` は書き込み先が `tmp/` に決まらないため入れず、許可プロンプトを通す（P1）

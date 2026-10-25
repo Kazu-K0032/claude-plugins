@@ -3,7 +3,7 @@ name: ai-report
 description: このリポジトリの Claude Code セッションログを分析し、利用状況や改善点を図表付きレポートにする。AI 利用実績の振り返り・トークンコストの棚卸しを求められた時に使用する
 model: opus
 disable-model-invocation: true
-allowed-tools: Bash(date:*), Read, Agent, Edit(tmp/*/.ai-report-qualitative.md), AskUserQuestion
+allowed-tools: Bash(date:*), Bash(git check-ignore:*), Read, Agent, Edit(tmp/*/.ai-report-qualitative.md), AskUserQuestion
 argument-hint: "[開始日 終了日（任意。省略時は期間を質問する。例: 2026-09-01 2026-09-30）]"
 ---
 
@@ -18,6 +18,7 @@ argument-hint: "[開始日 終了日（任意。省略時は期間を質問す�
 
 | ファイル | いつ読むか |
 | --- | --- |
+| `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/` の除外を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/pricing.md` | 手順 1 で、単価と為替を調べて JSON にするとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/scripts/analyze.py` | 手順 3・5 で実行する（定量の集計・図表・レポートの出力） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/ai-report/log-coverage.md` | 手順 3 で、「走査対象ログ（カバレッジ）」を確かめるとき |
@@ -41,6 +42,8 @@ argument-hint: "[開始日 終了日（任意。省略時は期間を質問す�
 - `.ai-report-data.json`：中間データ（手順 3 の `collect` が書く）
 
 中間データと定性パートは、`work/<目的>/` ではなく、レポートと同じ `tmp/<ブランチ名>/` の直下に置く。`analyze.py` の `collect` と `report` が `out_dir()` の直下の決まった名前で 2 つを受け渡し、`allowed-tools` の `Edit(tmp/*/.ai-report-qualitative.md)` も 1 階層だけに当たるため。
+
+手順 1 の前に、`tmp-ignore.md` で `tmp/` の除外を確かめる。中間データには、プロンプトの全文が入るため。
 
 ## 手順
 
