@@ -9,6 +9,7 @@
 # カスタマイズ方針:
 #   プロジェクト固有の破壊的操作（クラウド CLI の delete 系・本番ホストへの SSH 等）は
 #   下部の patterns 配列に追記する。判定は grep -iE の正規表現で行う。
+#   当てる先は、引用符・バッククォート・\ を取り除いたコマンドにする。パターンには引用符を書かない。
 #   PowerShell はコマンド名・オプションの大文字小文字を区別しないため、大文字小文字を区別せずに判定する。
 
 # エラーで即座に止めるための厳格モード
@@ -33,6 +34,9 @@ else
   command=$(printf '%s' "$input" | sed 's/\\[nrt]/ /g')
 fi
 
+# 照合には、引用符・バッククォート・\ を取り除いた文字列を使う。rm "-rf"・"rm" -rf・r\m のように、シェルが同じ語にする形も検出するため
+normalized=$(printf '%s' "$command" | tr -d "\"'\`\\\\")
+
 patterns=(
 # -r・-R・-f（--recursive・--force）のどれかが付いた rm。再帰削除・強制削除はファイル復元ができない
 # オプションはファイル名の後ろにも置けるため、同じコマンドの中（; & | の手前まで）を探す
@@ -50,7 +54,7 @@ patterns=(
 )
 
 for p in "${patterns[@]}"; do
-if printf '%s' "$command" | grep -qiE "$p"; then
+if printf '%s' "$normalized" | grep -qiE "$p"; then
     command -v jq >/dev/null 2>&1 || ask_fallback "jq が無く、コマンドを取り出せなかった。破壊的な操作の可能性がある"
     jq -n --arg cmd "$command" '{
     hookSpecificOutput: {
