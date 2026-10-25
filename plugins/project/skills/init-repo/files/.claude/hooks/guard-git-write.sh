@@ -21,22 +21,33 @@
 #   `!` プレフィックスでユーザー自身がシェル実行するコマンドは Bash ツールを介さないため、
 #   この PreToolUse フックの対象外（＝人間は従来どおり commit / push できる）。
 #
-# フェイルオープン方針:
-#   想定外エラーで誤爆して全 Bash を止めないよう set -e は使わない。最終的に exit 0（許可）。
-#   直接コマンドは deny 層でも二重に止まるため、フックの取りこぼしは限定的。
-set -uo pipefail
+# 判定できないときは止める:
+#   jq が無いときと、想定外のエラーで失敗したときは exit 2 で止める。
+#   2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。
+# エラーで即座に止めるための厳格モード。-E は、関数の中の失敗でも、下の ERR のトラップを動かすため
+set -Eeuo pipefail
+
+trap 'echo "guard-git-write.sh が判定できなかったため止めた（入力の JSON が壊れている、など）。人に実行を頼むこと。" >&2; exit 2' ERR
 
 input="$(cat)"
 
-# jq があれば使う。無ければ grep でフォールバック（command と cwd を取り出す）
-# command は \" で途切れないよう、\ で始まる 2 文字を飛ばして取り出し、JSON の \n・\t などを空白に戻す
-if command -v jq >/dev/null 2>&1; then
-    cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
-    cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
-else
-    cmd="$(printf '%s' "$input" | grep -oP '"command"\s*:\s*"\K(?:[^"\\]|\\.)*' | sed 's/\\[nrt]/ /g' || true)"
-    cwd="$(printf '%s' "$input" | grep -oP '"cwd"\s*:\s*"\K[^"]*' || true)"
+# jq が無いと command を正しく取り出せないため、止める候補の語が入力のどこかにあれば止める。
+# 候補は git・gh と、スクリプトを実行するシェル・source・.（下の (2) で中身を見るもの）。
+# 語が無ければ通す。jq が無い環境で、関係ないコマンドまで止めないため。
+# JSON の中では改行・タブが \n・\t と書かれるため、その直後の語も拾う。g"it" のような形も拾うため、引用符と \ を取り除いた入力でも見る。
+# x.sh のようなファイル名で止めないよう、語の直前の . は区切りとみなさない
+if ! command -v jq >/dev/null 2>&1; then
+    words='(^|[^[:alnum:]_./-]|\\[nrt])((git|gh|bash|sh|zsh|dash|ksh|source)([^[:alnum:]_-]|$)|\.([[:space:]]|\\[nrt]))'
+    stripped="$(printf '%s' "$input" | tr -d "\"'\`\\\\")"
+    if grep -qE "$words" <<< "$input" || grep -qE "$words" <<< "$stripped"; then
+        echo "guard-git-write.sh が jq が無く判定できなかったため止めた。jq を入れるか、人に実行を頼むこと。" >&2
+        exit 2
+    fi
+    exit 0
 fi
+
+cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
+cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
 
 # コマンドが空なら通す
 [ -z "${cmd:-}" ] && exit 0

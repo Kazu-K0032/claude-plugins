@@ -82,7 +82,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 
 ## 前提と制約
 
-- フックは `bash` と [`jq`](https://jqlang.org/) を使う。`bash` が無い環境ではフックが動かない。`jq` が無いときは、ガードは止める側に倒れる（`guard-destructive.sh` は当たったコマンドを承認に回し、`guard-clasp.sh`・`guard-terraform.sh` は当たったコマンドを止める）。フックが 2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。`onFailure: "block"` は使わない。フックが起動できない環境（Git Bash の無い Windows）で、すべてのコマンドが止まるため
+- フックは `bash` と [`jq`](https://jqlang.org/) を使う。`bash` が無い環境ではフックが動かない。`jq` が無いときは、ガードは止める側に倒れる（`guard-destructive.sh` は当たったコマンドを承認に回し、`guard-clasp.sh`・`guard-terraform.sh`・`guard-git-write.sh` は当たったコマンドを止める）。フックが 2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。`onFailure: "block"` は使わない。フックが起動できない環境（Git Bash の無い Windows）で、すべてのコマンドが止まるため
 - PreToolUse のフックの `matcher` は `Bash|PowerShell|Monitor` にする。`Monitor`（コマンドを裏で動かし続けるツール）も Bash と同じシェルで動くため。deny の `Bash(...)` の規則は `Monitor` にも効くが、フックは `matcher` に無いツールでは動かない
 - 編集後の Lint・整形は [lefthook](https://lefthook.dev/)（1.6.11 以降）を使う。lefthook が無いか、`lefthook.yml` に `claude-edit` が無いときは、フックは何もしない。`lefthook run` は既定で `.git/` の下を書き換えるため、フックは `--no-auto-install` を付けて呼ぶ
 - Claude が npm で lefthook を入れるときは、`--ignore-scripts` を付ける。npm 版は、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため（[P1](../../../../docs/policies/p01-operation-boundary.md)）。人のコミットにも検査をかけるときは、人が `lefthook install` を実行する
