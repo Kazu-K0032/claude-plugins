@@ -31,6 +31,13 @@ test('読み取り用のコマンドと、その組み合わせは通す', () =>
     'grep "foo$" a.txt',
     "rg 'x{2,3}' src",
     'gh pr list \\\n  --state open',
+    'ls src/*.md',
+    'ls ./*',
+    'cat a?.txt',
+    'ls \\*.md',
+    "ls '*'.md",
+    'gh api repos/owner/repo/pulls?state=open',
+    'uniq -c a.txt',
   ]
 
   for (const command of commands) {
@@ -105,6 +112,14 @@ test('書き込み・ほかのコマンドの起動・確かめられない書�
     'find . $"-delete"',
     'find . x$IFS-delete',
     'echo -delete; find . "$_"',
+    'sort *',
+    'sort *.txt',
+    'ls -*',
+    'ls ""*',
+    "ls '-o'*",
+    'rg foo [-a]*',
+    'find * -name x',
+    'uniq a*',
   ]
 
   for (const command of commands) {
