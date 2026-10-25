@@ -95,8 +95,4 @@ hotfix で、手で Release を作るときの手順。通常のリリースで�
    ```
 
 1. **Settings** → **Actions** → **General** → **Workflow permissions** で、**Allow GitHub Actions to create and approve pull requests** を有効にする。無効だと、`release.yml` が PR を作れない
-1. Claude Code に `claude-security` を入れる。「リリースの流れ」の手順 3 の点検で使う。2 つの点検は Workflow を使うため、`/config` の **Dynamic workflows** も有効にする
-
-   ```text
-   /plugin install claude-security@claude-plugins-official
-   ```
+1. `/config` の **Dynamic workflows** を有効にする。「リリースの流れ」の手順 3 の 2 つの点検が、Workflow を使うため。`claude-security` は `.claude/settings.json` の `enabledPlugins` で有効にしてあり、入れなくてよい。手元で外すときは、`.claude/settings.local.json` で `false` にする
