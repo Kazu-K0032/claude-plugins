@@ -51,7 +51,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `gh`（GitHub CLI。ログイン済み） | `issue-start`・`issue-pr-sync`・`pr-create`・`pr-review`・`docs-sync`・`harness-audit` | Issue・PR を読めない |
 | Node.js | `issue-start`・`issue-pr-sync`・`pr-create` | 本文の文字数を数えずに進む |
 | Python 3.9 以上 | `ai-report` | 集計できない |
-| bash 4 以上・perl・awk | `docs-sync`（`issue-start` の点検も） | 点検できない。macOS 標準の bash 3.2 では止まる |
+| bash 4.4 以上・perl・awk | `docs-sync`（`issue-start` の点検も） | 足りないと止まる。macOS 標準の bash 3.2 も止まる |
 | `sh` | `commit`（`issue-start` も） | シンボリックリンクを確かめられず止まる |
 
 下書きとレポートは `tmp/` と `tmp.md` に書く。`.gitignore` に入れなくても動くが、入れるとコミットに混ざらない。`init-repo` は入れて配る。
