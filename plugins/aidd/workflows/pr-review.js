@@ -111,9 +111,14 @@ const REPORT_SCHEMA = {
 // チェック項目は言語・フレームワークを名指ししない。プロジェクト固有の規約は
 // 各エージェントがリポジトリ内の規約ファイルを探して補う（buildReviewPrompt の「規約の探索」を参照）。
 
-const isCodeFile = (f) =>
-  /\.(php|jsx?|tsx?|mjs|cjs|py|rb|go|rs|java|kt|swift|cs|sh|bash|tf|tftpl)$/.test(f) ||
-  f.startsWith('.githooks/')
+// コードでないファイル（文書・画像などのメディア・ロックファイル・ライセンス）を並べ、それ以外をコードとみなす。
+// コードの拡張子を並べると、一覧に無い言語（C/C++・Dart・SQL・.ps1 など）だけの PR で、バグ・テストの観点が動かないため。
+// 設定ファイル（json・yaml など）と拡張子の無いファイル（フック・Dockerfile など）は、動きを変えるためコードに数える。
+const isNonCodeFile = (f) =>
+  /\.(md|mdx|markdown|txt|rst|adoc|csv|tsv|png|jpe?g|gif|webp|avif|svg|ico|bmp|pdf|mp3|mp4|mov|webm|wav|woff2?|ttf|otf|eot)$/i.test(f) ||
+  /(^|\/)(package-lock\.json|pnpm-lock\.yaml|go\.sum|[^/]+\.lock)$/.test(f) ||
+  /(^|\/)(LICENSE|NOTICE|COPYING)(\.[^/]*)?$/.test(f)
+const isCodeFile = (f) => !isNonCodeFile(f)
 
 // 画面に出る要素を触る差分（レイアウト耐性の対象）
 const isFrontendFile = (f) =>
@@ -304,6 +309,12 @@ if (active.length === 0) {
   )
 }
 const skipped = DIMENSIONS.filter((d) => !active.includes(d)).map((d) => d.key)
+// 省いた観点と、動かす方法を示す。自動の判定で省いたと分からないと、観点の抜けに気づけないため
+const skippedNote = !skipped.length
+  ? ''
+  : onlyDimensions
+    ? `（args の dimensions で外した観点: ${skipped.join(', ')}）`
+    : `（該当するファイルが差分に無いため省略: ${skipped.join(', ')}。動かすには args の dimensions で指定する）`
 
 // 解決済みのレビュースレッドと同じ位置の指摘を、検証の前に除く。
 // 一度直して解決にした指摘を、再実行のたびに出し直さないため。
@@ -341,7 +352,7 @@ const reviewUnits = isSmall
 
 log(
   `PR #${pr}「${ctx.title}」変更 ${ctx.files.length} ファイル / ${ctx.totalChangedLines} 行。` +
-    `観点: ${active.map((d) => d.key).join(', ')}${skipped.length ? `（対象差分なしのため省略: ${skipped.join(', ')}）` : ''}` +
+    `観点: ${active.map((d) => d.key).join(', ')}${skippedNote}` +
     `${isSmall ? ' / 小規模のため統合レビュアーに縮退' : ''} / 出力は tmp のみ（PR へ投稿しない）` +
     (ctx.resolvedThreadsError
       ? ` / 解決済みのスレッドを取得できず、除外はしない（${ctx.resolvedThreadsError}）`
@@ -534,6 +545,7 @@ return {
     'file のパスは、前後を半角スペースか改行で区切って伝える。全角の「：」などが続くと、その文字までリンクに含まれ、Ctrl + クリックで開けないため',
   pr,
   dimensions: active.map((d) => d.key),
+  skipped,
   small: isSmall,
   candidates: allVerified.length,
   confirmed: confirmed.length,
