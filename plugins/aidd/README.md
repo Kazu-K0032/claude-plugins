@@ -43,6 +43,8 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 同梱の Workflow（`pr-review` など）は、Claude Code の動的ワークフロー（dynamic workflows）で動く。切れていると `/` の候補に出ず、`/aidd:harness-audit` も監査の前に止まる。出ないときは、`/config` の「Dynamic workflows」の行をオンにする。Pro では初期設定でオフのため。ほかに止まる設定は、[harness-audit の errors.md](skills/harness-audit/errors.md) の「Workflow が使えないとき」にある。Ref: [Orchestrate subagents at scale with dynamic workflows](https://code.claude.com/docs/en/workflows)
 
+`pr-review` は、モデルと effort を段ごとに固定せず、呼んだセッションのものを引き継ぐ。使った設定は、開始時のログ・レポートの注記・戻り値に出る。どの設定で見た結果かを確かめられるようにするため。`harness-audit-run` は段ごとに固定する（「ハーネス監査は、設計思想を物差しにし、実行前に見込みを示す」の「モデル」）。
+
 ## ディレクトリ構成
 
 ```text
