@@ -72,6 +72,7 @@ aidd/
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
     ├── short-body.md    # Issue・PR の本文の長さ
+    ├── tmp-ignore.md    # tmp/・tmp.md の除外の確かめ方
     ├── ai-research.md   # AI 出力を引用として扱わないための規約
     └── harness-principles.md # 設計思想の要約（harness-audit の物差し）
 ```
