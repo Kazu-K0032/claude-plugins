@@ -195,7 +195,8 @@ type Token =
 const UNCHECKABLE = Symbol('uncheckable')
 
 /**
- * コマンド文字列を字句に分ける。コマンド置換・プロセス置換・ヒアドキュメント・サブシェルは確かめられないので UNCHECKABLE を返す
+ * コマンド文字列を字句に分ける。コマンド置換・プロセス置換・ヒアドキュメント・サブシェルと、
+ * 変数などの展開・ブレース展開は、実行される語が字面から分からないので UNCHECKABLE を返す
  * @param command - Bash ツールに渡されたコマンド
  * @returns 字句の列か UNCHECKABLE
  */
@@ -204,6 +205,8 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
   let word = ''
   let hasWord = false
   let quote: "'" | '"' | null = null
+  // 引用符の外の { の深さ。ブレース展開かを見分けるため
+  let braceDepth = 0
 
   const endWord = () => {
     if (hasWord) {
@@ -211,6 +214,7 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
     }
     word = ''
     hasWord = false
+    braceDepth = 0
   }
 
   for (let index = 0; index < command.length; index++) {
@@ -226,8 +230,14 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
       continue
     }
 
-    if (char === '`' || (char === '$' && following === '(')) {
+    // コマンド置換と、$_・$IFS・${...} などの展開。ダブルクォートの中でも展開される
+    if (char === '`' || (char === '$' && /[\w(@*#?$!{[-]/.test(following))) {
       return UNCHECKABLE
+    }
+    // 行の継続。bash は \ と改行を消して、前後を 1 つの語につなぐ
+    if (char === '\\' && following === '\n') {
+      index++
+      continue
     }
 
     if (quote === '"') {
@@ -242,6 +252,10 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
       continue
     }
 
+    // $'...' と $"..." は、中身を置き換えてから語にする
+    if (char === '$' && (following === "'" || following === '"')) {
+      return UNCHECKABLE
+    }
     if (char === "'" || char === '"') {
       quote = char
       hasWord = true
@@ -258,6 +272,14 @@ function tokenize(command: string): Token[] | typeof UNCHECKABLE {
       continue
     }
     if (char === '(' || char === ')' || (char === '{' && !hasWord)) {
+      return UNCHECKABLE
+    }
+    // { } の中に , か .. があると、bash が語を増やす（-{delete,print} など）。HEAD@{1} は展開されない
+    if (char === '{') {
+      braceDepth++
+    } else if (char === '}') {
+      braceDepth = Math.max(braceDepth - 1, 0)
+    } else if (braceDepth > 0 && (char === ',' || (char === '.' && following === '.'))) {
       return UNCHECKABLE
     }
 
