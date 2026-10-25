@@ -40,8 +40,8 @@ printf '%s\n' "$violations" | while IFS= read -r file; do
 done
 echo ""
 echo "対処方法:"
-echo "  1. リンク元（実体ファイル）を編集する"
+echo "  1. リンク先（実体ファイル）を編集する"
 echo "  2. symlink をステージから外す: git restore --staged <file>"
 echo ""
-echo "詳細: commit-rule.md 禁止事項「シンボリックリンク側を更新してはいけない、元の情報を更新する」"
+echo "詳細: commit-rule.md の「禁止事項」"
 exit 1
