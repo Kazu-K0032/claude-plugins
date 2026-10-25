@@ -72,6 +72,7 @@ aidd/
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
     ├── short-body.md    # Issue・PR の本文の長さ
+    ├── tmp-ignore.md    # tmp/・tmp.md の除外の確かめ方
     ├── ai-research.md   # AI 出力を引用として扱わないための規約
     └── harness-principles.md # 設計思想の要約（harness-audit の物差し）
 ```
@@ -146,7 +147,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 | `issue-pr-sync` | Issue / PR の本文・タイトル・サイドバーを、実態に合わせて更新する |
 | `issue-start` | Issue に紐づく作業用のブランチを作り、自分を担当者に足す。決めた仕様に合わせて Issue の本文とタスクを書き換える。着手を見送ったときは、ユーザーが選べば理由をコメントする |
 
-`issue-start` が Issue の本文を書き換えるのは、計画モードで決めた仕様を、実装中・PR のレビュー中・後から Issue を読む人に届けるため。セッション内の報告や `tmp/`（`.gitignore` 済み）では、その人たちに届かない。
+`issue-start` が Issue の本文を書き換えるのは、計画モードで決めた仕様を、実装中・PR のレビュー中・後から Issue を読む人に届けるため。セッション内の報告や `tmp/`（コミットしない）では、その人たちに届かない。
 
 どちらも `gh` の書き込み系サブコマンドを `allowed-tools` に載せず、通常の許可プロンプトを通す。`gh issue develop` は一覧の表示（`--list`）とブランチの作成が同じ前方一致になるため、一覧の表示も含めて載せない。
 
@@ -166,6 +167,12 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `skills/ai-report/scripts/analyze.py` の `out_dir()`
 - `workflows/` の `pr-review.js`・`harness-audit-run.js`
 - `project` の `init-repo` が配る `.claude/rules/tmp-output.md`（このリポジトリの `.claude/rules/tmp-output.md` と組）。サブディレクトリに書くスキルを増やす・改名するときも直す
+
+### `tmp/` の除外が無くても書き、利用者に伝える
+
+`tmp/`・`tmp.md` に書くスキルは、書く前に `.gitignore` で除外されているかを確かめる。除外が無くても止めずに書き、足すと混ざらないと伝える。既にある `tmp.md` は、上書きの前に聞く。`.gitignore` は利用者が直す。手順は `references/tmp-ignore.md` にある。
+
+`tmp/` に書くスキル・ワークフローを足すときは、この確かめも入れる。ワークフローは `references/` を読めないため、`pr-review.js` は Context の段で確かめ、戻り値の `tmpNote` で伝える。
 
 ### Issue 番号を省いたら、ブランチ名から取る
 
