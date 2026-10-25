@@ -10,7 +10,7 @@
 | `config:plugin-feedback` | `.claude/settings.local.json` の `env` に 1 キーを足す | deny にこのファイルの `Edit` を入れない。`.gitignore` には入れる | 止まらない |
 | `config:plugin-feedback` | `gh issue create`・`gh issue comment` | deny に入れない | `create` が止まり、下書きを Web の画面に貼る手順になる |
 | `aidd:issue-start` | `gh issue develop`・`gh issue edit`・`gh issue comment` | deny に入れない | `edit`（担当者の追加と本文の更新）が止まる。本文は `tmp/` に下書きを残すところまでになる |
-| `aidd:issue-start` | `git add <ファイル>`（実装で直したファイルと、作った ADR だけをステージに置く） | deny に `git add` を入れない | 止まらない |
+| `aidd:issue-start` | `git add <ファイル>`（実装で直したファイル・点検で直した md・作った ADR だけをステージに置く） | deny に `git add` を入れない | 止まらない |
 | `init-repo` の `CLAUDE.md`（「実装がひと区切りついたとき」） | `git add <ファイル>`（その区切りで直したファイルだけ）と、`tmp.md` への書き込み | deny に `git add` を入れない | 止まらない |
 | `init-repo` の `post-edit-lint.sh` | 編集したファイルに `lefthook run claude-edit` をかける。整形のツールはファイルを書き換える。`--no-auto-install` を付け、`.git/` は書き換えない | なし（フックは deny の対象外） | 止まらない |
 | `project:init-repo` | 「Claude が入れる」を選んだときの、lefthook と Lint・整形のツールの導入。`package.json` があれば `npm install --save-dev`（lefthook は `--ignore-scripts` を付け、`.git/hooks` を書き換えない）で `package.json`・lock・`node_modules` に書き込む。無ければ winget・Homebrew でリポジトリの外に入れる | deny に `npm install` と、`package.json` の `Edit` を入れない | 止まらない |

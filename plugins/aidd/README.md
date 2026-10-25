@@ -9,7 +9,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | スキル | 用途 |
 | --- | --- |
 | `/aidd:adr` | ADR（判断の記録）の作成・ステータス更新。小さな技術的判断も対象にし、重さ（極小・簡易・詳細）を選んで書き、一覧に 1 行足す。判断が決まると Claude から作るかを聞く |
-| `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う） |
+| `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。実装の後は `docs-sync` の手順で文書の追従を点検して直し、Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う） |
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:issue-pr-sync` | Issue / PR の本文（PR 本文が空なら新規作成）・タイトル・サイドバーを、現在の差分とレビュー対応に合わせて更新 |
 | `/aidd:commit` | ステージ済み差分と会話の経緯から Conventional Commits 形式のメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を添える） |
@@ -127,7 +127,7 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 
 `${CLAUDE_PLUGIN_ROOT}` が frontmatter の `allowed-tools` で展開されるかは公式に記載が無い。プラグインの実体パスはインストール先で変わるため、当てにせず通常の許可プロンプトを通す（[P1](../../docs/policies/p01-operation-boundary.md)）。
 
-`ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。`pr-create`・`issue-start`・`issue-pr-sync` が本文を数える `scripts/body_length.js` も載せていない。
+`ai-report`・`commit`・`docs-sync` の 3 スキルが同梱スクリプトを持つが、いずれもスクリプト実行の `Bash` パターンは載せていない。`issue-start` が `docs-sync` の `run-checks.sh` を動かすときも同じ。`pr-create`・`issue-start`・`issue-pr-sync` が本文を数える `scripts/body_length.js` も載せていない。
 
 ### エージェント名にプラグイン名を付けない
 
