@@ -1,7 +1,7 @@
 ---
 name: research
 description: IT 技術の公式ドキュメントを調査し、引用付きで事実ベースの回答を返す。英語引用には必ず日本語和訳を添える。技術調査を依頼されたときに使用する
-tools: WebSearch,WebFetch,mcp__context7__resolve-library-id,mcp__context7__query-docs
+tools: Read,WebSearch,WebFetch,mcp__context7__resolve-library-id,mcp__context7__query-docs
 model: sonnet
 ---
 
