@@ -26,10 +26,10 @@
 
 | 順 | スキル |
 | --- | --- |
-| 1〜5 | `/aidd:issue-start`（Issue の確認・要件の詰め・実装・コミットメッセージの下書き） |
+| 1〜5・7 | `/aidd:issue-start`（Issue の確認・要件の詰め・実装・文書の追従の点検・コミットメッセージの下書き） |
 | 5 | `/aidd:commit` |
 | 6 | `/aidd:pr-create`・`/aidd:pr-review` |
-| 7 | `/aidd:docs-sync` |
+| 7 | `/aidd:docs-sync`（`/aidd:issue-start` を使わなかったとき） |
 
 ## このプロジェクトでの決まり
 
