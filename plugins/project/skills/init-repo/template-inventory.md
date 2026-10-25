@@ -69,7 +69,8 @@
 - `.github/workflows/sync-labels.yml` は `.github/labels.yml` を読む
 - `.claude/rules/tmp-output.md` は、`.gitignore` の `tmp/` を前提にする。`tmp/` が除外されていないと、作業ファイルがコミットに混ざる
 - `CLAUDE.md` の `@docs/adr/README.md` と `.claude/rules/adr.md` は、`docs/adr/README.md` を読む。入れないときは、取り込みの行と `adr.md` も外す。ADR を別の場所（`doc/adr/`・`docs/decisions/` など）に置いているときは、取り込みの行と `adr.md` のパスをその場所に直す
-- `docs/README.md` の表は、`docs/specs/`・`docs/architecture/` の `README.md` へリンクする。入れないフォルダがあるときは、表のその行のリンクも外す（壊れたリンクになるため）
+- `docs/README.md` の表は、`docs/specs/`・`docs/architecture/` の `README.md` へリンクする。`CLAUDE.md` は、SSOT 一覧・ディレクトリの図・参照ドキュメント（`@` の行）で、2 つのフォルダの実物を指す。フォルダごと入れないときは、これらの行も外す。残すと、リンクが切れ、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
+- 雛形のあるフォルダの `README.md` の一覧は、雛形（`*.template.*`）へリンクする。雛形だけを入れないときは、一覧の雛形の行も外す（壊れたリンクになるため）
 - `CLAUDE.md` の「SSOT 一覧」は、`docs/strategies/` の 3 つの文書（`ai-driven-development.md`・`development.md`・`test-strategy.md`）を指す。入れないときは、一覧のその行も外す。残すと、一覧が実在しない文書を指し、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
 - `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`ssot` 等）も誤字として出て、PR のチェックが落ちる
 - Issue テンプレートの `labels:` は `labels.yml` のラベルを前提にしている

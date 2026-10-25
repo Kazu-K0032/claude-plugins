@@ -65,7 +65,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.vscode/settings.json` | 保存時の整形（末尾改行・行末空白の削除・LF） | そのまま使える |
 | `files/docs/adr/` | ADR の一覧（`README.md`。`CLAUDE.md` が読み込む。表の見出しだけ）と、ADR の雛形（`YYYY-MM-DD-判断の対象.template.md`。`/aidd:adr` の簡易の形） | 最初の ADR を作ったら、雛形の削除を提案する |
 | `files/docs/README.md` | ドキュメントの案内板（サブディレクトリの振り分け表と、雛形から実物を作る手順） | 使わない行の削除・サブディレクトリ作成時のリンク追加 |
-| `files/docs/specs/` | 仕様書の案内板と、要件定義書の雛形（`specifications.template.md`。機能要件・非機能要件・制約） | 雛形から実物（`specifications.md`）を作り、雛形の削除を提案する |
+| `files/docs/specs/` | 要件の案内板と、要件定義書の雛形（`specifications.template.md`。機能要件・非機能要件・制約） | 雛形から実物（`specifications.md`）を作り、雛形の削除を提案する |
 | `files/docs/architecture/` | 構成の案内板と、アーキテクチャ概要の雛形（`architecture.template.md`）、構成図の雛形（`architecture.template.drawio` と、draw.io で書き出した `architecture.template.png`。AWS を例にしている） | 雛形から実物を作る。構成図は実際の構成に描き直して PNG を書き出し、雛形の削除を提案する |
 | `files/docs/strategies/README.md` | 開発・テストの方針の案内板 | 文書を足したら表に行を足す |
 | `files/docs/strategies/ai-driven-development.md` | AI 駆動開発の戦略（AI・機械・人の分担と振り分け方、文書で AI の向かう先をそろえる方法）。ハーネスの考え方そのもの | そのまま使える（変えるときは ADR を残す） |

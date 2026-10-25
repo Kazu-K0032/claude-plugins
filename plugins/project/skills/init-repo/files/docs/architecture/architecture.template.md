@@ -11,9 +11,9 @@
 
 ## 構成図
 
-![構成図の雛形](architecture.template.png)
+![構成図](architecture.template.png)
 
-構成図のソースは `architecture.template.drawio`。採用した理由は、ADR（`docs/adr/`）に書き、ここには書かない。
+構成図のソースは、同じフォルダの draw.io のファイル。採用した理由は、ADR（`docs/adr/`）に書き、ここには書かない。
 
 ## 構成要素
 

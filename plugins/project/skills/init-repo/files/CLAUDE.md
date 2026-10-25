@@ -118,7 +118,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 │   └── workflows/                        # CI/CD
 ├── docs/
 │   ├── README.md                         # 全ドキュメントの案内板
-│   ├── specs/                            # 仕様書（機能・非機能要件）。雛形は specifications.template.md
+│   ├── specs/                            # 要件定義書（機能・非機能要件）。雛形は specifications.template.md
 │   ├── architecture/                     # アーキテクチャ図（.drawio と書き出した .png）・CI/CD・全体構成。雛形は architecture.template.*
 │   ├── strategies/                       # AI 駆動開発の戦略・開発の流れ・テストの方針
 │   ├── adr/                              # ADR（個別判断の履歴）。雛形は YYYY-MM-DD-判断の対象.template.md
