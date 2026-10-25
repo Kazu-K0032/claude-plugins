@@ -11,14 +11,14 @@ argument-hint: "[重点的に見たい範囲（任意。省略時はすべての
 このリポジトリ（claude-plugins）の変更を push する前に、**テンプレートの権限設定と各スキルの整合**を検査して直し、スキルが同梱する mod を検証・テストする。`init-repo` が配る deny は導入先で常に効く。スキルが deny に当たるコマンドを使うと、導入先でそのスキルだけが動かなくなる。両者は別ファイルのため、片方だけ直すとずれる。
 
 - 外へ書き込むもの：なし。直すのは、手順 3〜5 で見つけたこのリポジトリのファイル
-- 人がすること：deny を緩めるか・NG を直さずに残すかの判断、前から上限を超えている文書を縮めるかの判断、`git fetch origin`（`--base` を付けるとき）、コミット・push
+- 人がすること：deny を緩めるか・食い違いを直さずに残すかの判断、前から上限を超えている文書を縮めるかの判断、`git fetch origin`（`--base` を付けるとき）、コミット・push
 
 ## 参照ファイル
 
 | ファイル | いつ読むか |
 | --- | --- |
 | `.claude/skills/marketplace-update/scripts/check.py` | 手順 2 で実行する。NG・WARN が何を見ているかを確かめるときに読む |
-| `.claude/skills/marketplace-update/ng-warn.md` | 手順 3・4 で、カテゴリごとの NG の直し方・WARN の判断のしかたを調べるとき |
+| `.claude/skills/marketplace-update/ng-warn.md` | 手順 3・4 で、カテゴリごとの NG・WARN の直し方と、WARN を残してよい場合を調べるとき |
 | `docs/release.md` | `version` の NG を直すとき（版を上げてよいブランチを確かめる） |
 
 ## 想定している引数
@@ -57,13 +57,13 @@ python .claude/skills/marketplace-update/scripts/check.py --base origin/main
 
 NG を 1 件ずつ直す。直し方は、`ng-warn.md` の「NG の直し方」を読む。
 
-### 4. WARN を判断する
+### 4. WARN を直す
 
-WARN を 1 件ずつ見て、直すか残すかを決める。WARN は、機械的に白黒を付けられないものを拾っているため。判断のしかたは、`ng-warn.md` の「WARN の判断」を読む。
+WARN を 1 件ずつ直す。直し方と、残してよい場合は、`ng-warn.md` の「WARN の判断」を読む。それ以外で残すのは、利用者が決めたときだけ。
 
-### 5. 機械チェックが見ない箇所を確認する
+### 5. 機械チェックが見ない箇所を確かめて直す
 
-次の箇所を、目で確かめる。
+次の箇所を目で確かめ、食い違いがあれば直す。
 
 - 各プラグインの `.claude-plugin/plugin.json` の `description` と、`marketplace.json` の `description` が、現在の収録スキルと合っているか
 - ルート `README.md` の収録プラグイン表と案内文が実態と合っているか
@@ -74,6 +74,8 @@ WARN を 1 件ずつ見て、直すか残すかを決める。WARN は、機械�
 - 変更が `docs/policies/` の方針に反していないか。新しく決めた方針・認めた例外を、方針のファイルと一覧（`docs/policies/README.md`・`.claude/rules/plugin-policies.md`）に書いたか
 - スキル・フックが利用先で触れるもの（`tmp/` 以外への書き込み・設定ファイル・`gh` / `git` の書き込み系・環境変数）か、`init-repo` の権限・フック・`.gitignore` を変えた場合、`docs/policies/permissions.md` を直し、ほかのプラグインの操作を止めていないかを確かめたか（機械チェックは `allowed-tools` と本文のコマンドだけを見る）
   - deny・フックの線引きを変えた場合は、配る規約 `plugins/project/skills/init-repo/files/.claude/rules/permissions.md` と、監査の物差し `plugins/aidd/references/harness-principles.md`（「土台の仕組み」）も直したか（機械チェックの `deny-sync` は、物差しの例に当たる deny がテンプレートに残っているかだけを見る）
+
+直したら、手順 2 をもう一度実行する。今の変更より前からある食い違いを直したときは、今の変更と別のコミットにするよう伝える。目的の違う差分が混ざると、レビューで追いにくいため。
 
 ### 6. マニフェストを検証し、テストを動かす
 

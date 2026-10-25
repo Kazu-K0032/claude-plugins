@@ -171,5 +171,8 @@
   "env": {
     "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
     "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "enabledPlugins": {
+    "claude-security@claude-plugins-official": true
   }
 }
