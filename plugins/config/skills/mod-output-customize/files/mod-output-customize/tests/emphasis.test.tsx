@@ -136,6 +136,7 @@ test('==語句== を赤の太字、{{仕様}} を緑で描く', async $ => {
 })
 
 test('印のない応答は engine の描画に任せる', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   let isEngineDrawn = false
   on('ui.render', { component: 'AssistantMessage' }, ($, e) => {
     isEngineDrawn = true
@@ -168,6 +169,7 @@ const BAND_PROPS = {
 } as const
 
 test('ボタンには数字キーを割り当てず、クリックでだけ切り替える', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   on('session.surfaces', () => ({ value: ['terminal'] }))
 
   const band = await $.ui.mount({
@@ -185,6 +187,7 @@ test('ボタンには数字キーを割り当てず、クリックでだけ切�
 })
 
 test('端末に描く実行ではプロンプトに記法の説明を文脈として添える', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   let surfaces: readonly ('terminal' | 'desktop')[] = ['terminal']
   on('session.surfaces', () => ({ value: surfaces }))
   on('prompt.submit', (_$, e) => ({ text: e.text, context: e.context }))
@@ -210,6 +213,7 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
 })
 
 test('応答カスタムのボタンで OFF にすると、記法を使わせない文を添えて保存する', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   const saved: [string, unknown][] = []
   on('store.set', (_$, e) => {
     saved.push([e.key, e.value])
@@ -236,6 +240,7 @@ test('応答カスタムのボタンで OFF にすると、記法を使わせな
 })
 
 test('文書を簡潔にのボタンで OFF にすると、解除の文を添えて保存する', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   const saved: [string, unknown][] = []
   on('store.set', (_$, e) => {
     saved.push([e.key, e.value])
@@ -262,6 +267,7 @@ test('文書を簡潔にのボタンで OFF にすると、解除の文を添え
 })
 
 test('チャットモードのボタンで ON にすると、読み取り用のツールとコマンドだけを通す', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   const saved: unknown[] = []
   on('store.set', (_$, e) => {
     saved.push(e.value)
