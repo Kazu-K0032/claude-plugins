@@ -182,7 +182,7 @@ const FORBIDDEN_ARGS: Record<string, readonly string[]> = {
   git: ['--output', '-O', '--open-files-in-pager', '--ext-diff'],
   rg: ['--pre', '--hostname-bin'],
   sort: ['-o', '--output', '--compress-program'],
-  tree: ['-o'],
+  tree: ['-o', '-R'],
 }
 
 /** シェルの字句。単語（glob は引用符の外の * ? [ を含むか）、区切り（; && || | & 改行）、リダイレクト（> >> < とその向き先） */
