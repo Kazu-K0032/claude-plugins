@@ -266,6 +266,19 @@ test('文書を簡潔にのボタンで OFF にすると、解除の文を添え
   await band.unmount()
 })
 
+test('session.start が来なくても、保存した OFF を読み直して、プロンプトに解除の文を添える', async ($, on) => {
+  // /clear などで $.state が既定値に戻った後と同じく、session.start を通さずに送る
+  on('store.get', () => ({ value: false }))
+  on('session.surfaces', () => ({ value: ['terminal'] }))
+  on('prompt.submit', (_$, e) => ({ text: e.text, context: e.context }))
+
+  const submitted = await $.prompt.submit(PROMPT)
+  expect(submitted.context?.some(block => block.includes('# 応答の色分け'))).toBe(false)
+  expect(submitted.context?.some(block => block.includes('# 応答の形式') && block.includes('今回は通常の形式'))).toBe(true)
+  expect(submitted.context?.some(block => block.includes('文字数を少なく'))).toBe(false)
+  expect(submitted.context?.some(block => block.includes('# 文書の書き方') && block.includes('解除'))).toBe(true)
+})
+
 test('チャットモードのボタンで ON にすると、読み取り用のツールとコマンドだけを通す', async ($, on) => {
   on('store.get', () => ({ value: undefined }))
   const saved: unknown[] = []

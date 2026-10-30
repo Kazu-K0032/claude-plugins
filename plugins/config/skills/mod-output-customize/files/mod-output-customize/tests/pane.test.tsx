@@ -215,3 +215,17 @@ test('次アクションに「Claude：」の項目があれば、入力欄の�
   await $.turn.complete({ ...turn, turnId: 't2', answer: '次アクションの無い返答' })
   expect(suggested).toHaveLength(1)
 })
+
+test('session.start が来なくても、保存した応答カスタムが OFF なら、入力欄の候補に出さない', async ($, on) => {
+  // /clear などで $.state が既定値に戻った後と同じく、session.start を通さずに返答を終える
+  on('store.get', () => ({ value: false }))
+  const suggested: string[] = []
+  on('prompt.suggest', (_$, e) => {
+    suggested.push(e.text)
+    return { isShown: true }
+  })
+  on('turn.complete', (_$, e) => ({ text: e.answer }))
+
+  await $.turn.complete({ durationMs: 1000, isAborted: false, turnId: 't1', reason: 'answer', answer: ANSWER })
+  expect(suggested).toEqual([])
+})
