@@ -47,6 +47,7 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 
 ## 前提と制約
 
+- 1 つのリポジトリに、Apps Script のプロジェクトが 1 つある構成だけを対象にする。`.clasp.json` を直下で探し、規約の `paths` を `src/**` に決めているため。サブフォルダごとに `.clasp.json` がある構成は試しておらず、Skill は導入せずに止まる
 - JavaScript（V8 ランタイム）だけを対象にする。clasp は TypeScript を変換しないため、TypeScript を使うにはバンドラー（Rollup 等）の導入が要る。Ref: [clasp](https://github.com/google/clasp)
 - `.clasp.json` はコミットする前提にしている。`scriptId` は秘匿値ではなく、clone してすぐ push できるようにするため。開発用と本番用で `scriptId` を切り替える運用の場合は、`.gitignore` に入れて手元で管理する
 - `.clasprc.json`（`clasp login --creds` で作業ディレクトリに保存される認証情報）は `.gitignore` に入れる。Skill が追記を提案する

@@ -43,7 +43,9 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 ### 1. 現状を確かめる
 
-`init-repo-first.md` で土台の有無を確かめ、`install-flow.md` の「状態を確かめる」に従って `--skill gas --check` を実行する。あわせて、既存の GAS コードを Glob で探す（`**/*.gs`・`**/*.js`・`**/*.html`・`**/appsscript.json`・`.clasp.json`。`node_modules/` は除く）。
+`init-repo-first.md` で土台の有無を確かめ、`install-flow.md` の「状態を確かめる」に従って `--skill gas --check` を実行する。あわせて、既存の GAS コードを Glob で探す（`**/*.gs`・`**/*.js`・`**/*.html`・`**/appsscript.json`・`**/.clasp.json`。`node_modules/` は除く）。
+
+`.clasp.json` が直下以外にも見つかったら、プロジェクトが複数ある構成には対応していないと伝えて終わる。どのプロジェクトに入れるかを決められないため（README の「前提と制約」）。
 
 既存のコードがあり、`.clasp.json` の `rootDir` が `src` 以外（未指定・絶対パスを含む）なら、`existing-layout.md` の方針 A・B から選んでもらう。決めずにコピーすると、既存のコードと別の場所（`src/`）にテンプレートのコードができてしまうため。
 
