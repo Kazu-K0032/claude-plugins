@@ -122,8 +122,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 │   ├── architecture/                     # アーキテクチャ図（.drawio と書き出した .png）・CI/CD・全体構成。雛形は architecture.template.*
 │   ├── strategies/                       # AI 駆動開発の戦略・開発の流れ・テストの方針
 │   ├── adr/                              # ADR（個別判断の履歴）。雛形は YYYY-MM-DD-判断の対象.template.md
-│   ├── runbook/                          # 環境構築・デプロイ・運用の手順
-│   └── log/                              # 実作業の経緯（時系列の作業ログ）。雛形は YYYY-MM-DD-作業の対象.template.md
+│   └── runbook/                          # 環境構築・デプロイ・運用の手順
 ├── .gitattributes                        # シェルスクリプト（*.sh）の改行を LF に固定する
 ├── .gitignore
 ├── cspell.json                           # スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有）

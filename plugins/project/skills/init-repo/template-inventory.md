@@ -43,7 +43,6 @@
 | `docs/specs/`（`README.md`・`specifications.template.md`） | 要件の置き場所の案内板と、要件定義書の雛形 | `docs/README.md` を入れる | 要件定義書・仕様書の置き場所（`docs/spec.md`・`docs/specifications/`・`requirements/`） |
 | `docs/architecture/`（`README.md`・`architecture.template.md`・`.drawio`・`.png`） | 構成の置き場所の案内板と、アーキテクチャ概要・構成図の雛形 | `docs/README.md` を入れる | 構成図・設計書の置き場所（`docs/architecture*`・`docs/design/`・Wiki の構成図） |
 | `docs/strategies/README.md` + `ai-driven-development.md` + `development.md` + `test-strategy.md` | AI 駆動開発の戦略（AI・機械・人の分担）と、開発の流れ・テストの方針（`CLAUDE.md` の SSOT 一覧が指す） | `docs/README.md` を入れる | `CONTRIBUTING.md`・`docs/` 内の開発・テストの方針 |
-| `docs/log/`（`README.md`・作業ログの雛形） | 実作業の経緯を時系列で残す場所と、作業ログの雛形 | 手順 2 で入れると選ばれた | `docs/` 内の作業ログ・日報 |
 | `CLAUDE.md` | Claude Code 向けのガイド | Claude Code を使う（常に該当） | `CLAUDE.md`・`.claude/CLAUDE.md`・`AGENTS.md` |
 | `README.md` | リポジトリの入口（案内板） | 常に該当 | `README.md`・`README.*` |
 
