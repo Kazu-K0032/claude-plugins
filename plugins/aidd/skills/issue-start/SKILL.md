@@ -17,7 +17,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 
 | ファイル | いつ読むか |
 | --- | --- |
-| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-checks.md` | 手順 2・3 で、Issue の記述を確かめて判定するとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-checks.md` | 手順 1〜3 で、Issue と今の状態を集め、記述を確かめて判定するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-research.md` | 手順 2 で、引用元を確かめた結果を扱うとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/errors.md`・`comment-template.md` | 止めるとき・コメントするとき・書き込みに失敗した（止められた）とき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/branch-setup.md`・`${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 4・5 で、ブランチを用意するとき |
@@ -49,13 +49,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 
 ### 1. Issue と今の状態を集める
 
-```bash
-gh issue view <Issue> --json number,title,body,state,labels,assignees,comments,closedByPullRequestsReferences,url
-gh repo view --json nameWithOwner,defaultBranchRef
-gh issue develop --list <Issue>
-git status --porcelain
-git log --oneline --all --grep "#<番号>"
-```
+`issue-checks.md` の「集める」のコマンドを実行する。
 
 ### 2. Issue の記述を確かめる
 
