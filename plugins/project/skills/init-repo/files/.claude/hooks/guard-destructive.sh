@@ -36,6 +36,9 @@ fi
 
 # 照合には、引用符・バッククォート・\ を取り除いた文字列を使う。rm "-rf"・"rm" -rf・r\m のように、シェルが同じ語にする形も検出するため
 normalized=$(printf '%s' "$command" | tr -d "\"'\`\\\\")
+# git とサブコマンドの間に置けるオプション（-C <場所>・-c <設定>・--git-dir=<場所>・--no-pager など）を除く。
+# git -C . restore のように挟むと、git restore の形のパターンに当たらず、確認なしで通るため
+normalized=$(printf '%s' "$normalized" | sed -E 's/(^|[^[:alnum:]_-])[Gg][Ii][Tt](([[:space:]]+(-C|-c|--git-dir|--work-tree|--namespace|--config-env)([[:space:]]+|=)[^[:space:];&|]+)|([[:space:]]+(-p|-P|--paginate|--no-pager|--bare|--no-replace-objects|--no-optional-locks|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs)))+([[:space:]]|$)/\1git\8/g')
 
 patterns=(
 # -r・-R・-f（--recursive・--force）のどれかが付いた rm。再帰削除・強制削除はファイル復元ができない
