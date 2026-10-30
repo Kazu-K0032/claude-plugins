@@ -47,6 +47,16 @@ patterns=(
 '(^|[^[:alnum:]_-])(remove-item|ri|del|erase|rd|rmdir)[[:space:]]+([^;&|]*[[:space:]])?-(r|re|rec|recu|recur|recurs|recurse|fo|for|forc|force)([[:space:]:]|$)'
 # ステージング・ワーキングツリーをコミットに強制リセットする。未コミット変更が消える
 'git[[:space:]]+reset[[:space:]]+--hard'
+# 未コミットの変更を作業ツリーから戻す。消した変更は履歴に残らず、戻せない。
+# ブランチを切り替えるだけの checkout・switch は当てない。ファイル名だけを渡す形（git checkout a.txt）はブランチ名と見分けられず、当たらない。
+# restore は --staged だけの形（ステージから外すだけ）も当たる
+'git[[:space:]]+checkout[[:space:]]+([^;&|]*[[:space:]])?(--|\.|-[a-zA-Z]*f[a-zA-Z]*|--force)([[:space:]]|$)'
+'git[[:space:]]+switch[[:space:]]+([^;&|]*[[:space:]])?(-[a-zA-Z]*f[a-zA-Z]*|--force|--discard-changes)([[:space:]]|$)'
+'git[[:space:]]+restore([[:space:]]|$)'
+# Git の設定を書き換える。core.hooksPath などで、フックを外せる。Edit(./.git/**) の deny は git コマンドに効かないため、ここで見る。
+# 値を書く形（キーと値の 2 つを渡す）と、消す・足す・開いて直すオプションに当てる。読むだけの形（git config user.name）は当てない
+'git[[:space:]]+config([[:space:]]+-[^[:space:];&|]+)*[[:space:]]+[^-[:space:];&|][^[:space:];&|]*[[:space:]]+[^-[:space:];&|]'
+'git[[:space:]]+config[[:space:]]+([^;&|]*[[:space:]])?(--unset|--unset-all|--add|--replace-all|--edit|-e|--rename-section|--remove-section)([[:space:]]|$)'
 # 未追跡ファイルを強制削除する。-f で復元できないファイルが消える
 'git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*f'
 # リモートブランチを強制上書きする。他者のコミットや履歴が失われる
