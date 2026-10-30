@@ -16,12 +16,10 @@ Google Apps Script（GAS）のリポジトリへ「clasp で push する `src/` 
 
 | 引数 | 動き |
 | --- | --- |
-| `--rules-only` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけを入れる |
-| `--hooks-only` | `.claude/hooks/guard-clasp.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
-| `--src-only` | `src/` 配下だけを入れる |
-| `--keep-existing` | 既存ファイルに触らない |
-
-「規約だけ」「既存は置き換えない」のような同じ意味の言い方も、同じに扱う。
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけを入れる |
+| `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-clasp.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
+| `--src-only`（「src だけ」なども同じ） | `src/` 配下だけを入れる |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルに触らない |
 
 既存の GAS コードがある場合は、規約に沿って関数をどのファイルへ移すかの案を出す。トリガー・カスタムメニュー・エディタの実行メニューから名前で呼ばれている関数は改名しない。コードが `src/` 以外にある場合は、先に `src/` へ移すか、今の場所のまま規約だけを入れるかを選ぶ。手順の詳細は [SKILL.md](SKILL.md) を参照。
 

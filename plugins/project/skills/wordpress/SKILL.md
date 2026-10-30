@@ -37,12 +37,12 @@ argument-hint: "[--rules-only | --lint-only（任意。省略時はテンプレ�
 
 | 引数 | 対象・扱い |
 | --- | --- |
-| `--rules-only` | `.claude/rules/wordpress.md`・`wordpress-security.md`・`wordpress-templates.md` だけ |
-| `--lint-only` | `wordpress/composer.json`・`wordpress/phpcs.xml.dist` だけ（手順 8 のフックも対象）。`vendor/`・`auth.json` が Git の対象外になっていなければ、`.gitignore` に足す案を出す |
-| `--no-docker` | `wordpress/compose.yaml`・`wordpress/.env.example` を入れない。手順 2 で聞かない |
-| `--keep-existing` | `DIFF` はすべて据え置き、手順 6 を飛ばす。手順 8 のフックと手順 9 の ADR の一覧は、既存のファイルでも追記する |
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/wordpress.md`・`wordpress-security.md`・`wordpress-templates.md` だけ |
+| `--lint-only`（「Lint だけ」なども同じ） | `wordpress/composer.json`・`wordpress/phpcs.xml.dist` だけ（手順 8 のフックも対象）。`vendor/`・`auth.json` が Git の対象外になっていなければ、`.gitignore` に足す案を出す |
+| `--no-docker`（「Docker なし」なども同じ） | `wordpress/compose.yaml`・`wordpress/.env.example` を入れない。手順 2 で聞かない |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | `DIFF` はすべて据え置き、手順 6 を飛ばす。手順 8 のフックと手順 9 の ADR の一覧は、既存のファイルでも追記する |
 
-「規約だけ」「Docker なし」のような同じ意味の言い方も、同じに扱う。表に無い指定は補足として、手順 3 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
+表に無い指定は補足として、手順 3 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
 
 ## 手順
 

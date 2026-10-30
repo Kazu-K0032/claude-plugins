@@ -34,12 +34,12 @@ argument-hint: "[--rules-only | --hooks-only | --src-only（任意。省略時�
 
 | 引数 | 対象・扱い |
 | --- | --- |
-| `--rules-only` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけ |
-| `--hooks-only` | `.claude/hooks/guard-clasp.sh` だけ（手順 8 の登録も対象） |
-| `--src-only` | `src/` 配下だけ |
-| `--keep-existing` | `DIFF` はすべて据え置き、手順 5 を飛ばす |
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけ |
+| `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-clasp.sh` だけ（手順 8 の登録も対象） |
+| `--src-only`（「src だけ」なども同じ） | `src/` 配下だけ |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | `DIFF` はすべて据え置き、手順 5 を飛ばす |
 
-「規約だけ」「既存は置き換えない」のような同じ意味の言い方も、同じに扱う。表に無い指定（入れないファイルなど）は補足として、手順 2 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
+表に無い指定（入れないファイルなど）は補足として、手順 2 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
 
 ## 手順
 

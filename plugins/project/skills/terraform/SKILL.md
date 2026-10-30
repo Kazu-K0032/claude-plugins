@@ -36,11 +36,11 @@ argument-hint: "[--rules-only | --hooks-only（任意。省略時はテンプレ
 
 | 引数 | 対象・扱い |
 | --- | --- |
-| `--rules-only` | `.claude/rules/terraform.md` だけ |
-| `--hooks-only` | `.claude/hooks/guard-terraform.sh` だけ（手順 6 の登録も対象） |
-| `--keep-existing` | `DIFF` はすべて据え置き、手順 5 を飛ばす |
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/terraform.md` だけ |
+| `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-terraform.sh` だけ（手順 6 の登録も対象） |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | `DIFF` はすべて据え置き、手順 5 を飛ばす |
 
-「規約だけ」「既存は置き換えない」のような同じ意味の言い方も、同じに扱う。表に無い指定（入れないファイルなど）は補足として、手順 2 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
+表に無い指定（入れないファイルなど）は補足として、手順 2 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
 
 ## 手順
 

@@ -16,12 +16,10 @@ WordPress のリポジトリへ「`wordpress/wp-content/` 配下のテーマと 
 
 | 引数 | 動き |
 | --- | --- |
-| `--rules-only` | `.claude/rules/` の 3 つの規約（`wordpress.md`・`wordpress-security.md`・`wordpress-templates.md`）だけを入れる |
-| `--lint-only` | `composer.json`・`phpcs.xml.dist` だけを入れ、フックに PHP の Lint を足す |
-| `--no-docker` | Docker のローカル環境を入れない |
-| `--keep-existing` | 既存のファイルと内容が違うもの（`DIFF`）は、すべて据え置く。フックへの PHP の Lint と Docker の検出の追記と、ADR の一覧への行の追加は、既存のファイルにも行う |
-
-「規約だけ」「既存は置き換えない」のような同じ意味の言い方も、同じに扱う。
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/` の 3 つの規約（`wordpress.md`・`wordpress-security.md`・`wordpress-templates.md`）だけを入れる |
+| `--lint-only`（「Lint だけ」なども同じ） | `composer.json`・`phpcs.xml.dist` だけを入れ、フックに PHP の Lint を足す |
+| `--no-docker`（「Docker なし」なども同じ） | Docker のローカル環境を入れない |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存のファイルと内容が違うもの（`DIFF`）は、すべて据え置く。フックへの PHP の Lint と Docker の検出の追記と、ADR の一覧への行の追加は、既存のファイルにも行う |
 
 既にテーマがある場合は、テーマの雛形を入れない。WordPress が `wordpress/wp-content/` 以外の場所にある場合は、ファイルを動かさず、規約と Lint の設定を今の場所に合わせて入れる。手順の詳細は [SKILL.md](SKILL.md) を参照。
 

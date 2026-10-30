@@ -16,11 +16,9 @@ Terraform でインフラを管理するリポジトリへ「`infra/` 配下の�
 
 | 引数 | 動き |
 | --- | --- |
-| `--rules-only` | `.claude/rules/terraform.md` だけを入れる |
-| `--hooks-only` | `.claude/hooks/guard-terraform.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
-| `--keep-existing` | 既存ファイルに触らない |
-
-「規約だけ」「既存は置き換えない」のような同じ意味の言い方も、同じに扱う。
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/terraform.md` だけを入れる |
+| `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-terraform.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルに触らない |
 
 既に `.tf` がある場合は、ファイルを動かさず、規約とフックだけを入れて、規約を今の構成に合わせる。手順の詳細は [SKILL.md](SKILL.md) を参照。
 
