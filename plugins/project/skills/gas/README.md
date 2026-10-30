@@ -14,12 +14,14 @@ Google Apps Script（GAS）のリポジトリへ「clasp で push する `src/` 
 
 衝突状況の確認 → 計画の提示 → 承認 → 既存コードの `src/` への移動（必要な場合） → コピー → 既存コードの振り分け → `.gitignore` の調整 → フックと deny の登録 → スペルチェックの除外語の追加、の順に進む。
 
-| 引数の例 | 動き |
+| 引数 | 動き |
 | --- | --- |
-| `規約だけ` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけを入れる |
-| `フックだけ` | `.claude/hooks/guard-clasp.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
-| `src だけ` | `src/` 配下だけを入れる |
-| `既存は置き換えない` | 既存ファイルに触らない |
+| `--rules-only` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけを入れる |
+| `--hooks-only` | `.claude/hooks/guard-clasp.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
+| `--src-only` | `src/` 配下だけを入れる |
+| `--keep-existing` | 既存ファイルに触らない |
+
+「規約だけ」「既存は置き換えない」のような同じ意味の言い方も、同じに扱う。
 
 既存の GAS コードがある場合は、規約に沿って関数をどのファイルへ移すかの案を出す。トリガー・カスタムメニュー・エディタの実行メニューから名前で呼ばれている関数は改名しない。コードが `src/` 以外にある場合は、先に `src/` へ移すか、今の場所のまま規約だけを入れるかを選ぶ。手順の詳細は [SKILL.md](SKILL.md) を参照。
 

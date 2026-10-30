@@ -3,7 +3,7 @@ name: terraform
 description: Terraform でインフラを管理するリポジトリに、infra/ 配下の構成（環境ごとのルートモジュール stg・prod と modules/）、置き場所・ファイルの分け方・変数・秘匿値・実行の手順をまとめた規約（.claude/rules/terraform.md）、Claude による apply・destroy・state の書き換えと -out の無い plan を止めるフック（.claude/hooks/guard-terraform.sh）を導入する。Terraform のプロジェクトを立ち上げる時、または既存の Terraform リポジトリへ規約とフックを後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*)
-argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象。例: 規約だけ / フックだけ / 既存は置き換えない）]"
+argument-hint: "[--rules-only | --hooks-only（任意。省略時はテンプレート全体。付けると規約だけ・フックだけ）] [--keep-existing（任意。省略時は既存ファイルを 1 件ずつ聞く。付けると置き換えない）]"
 ---
 
 # Terraform プロジェクトのセットアップ（terraform）
@@ -34,11 +34,13 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 引数は「どのファイルを入れるか」と「既存物をどうするか」の指定として読む。省略時はテンプレート全体が対象で、`DIFF` は手順 5 で 1 件ずつ判断してもらう。範囲を絞ったときは、手順 3 で `--only` に `NEW` のファイルだけを並べる。
 
-| 引数の例 | 対象・扱い |
+| 引数 | 対象・扱い |
 | --- | --- |
-| `規約だけ` | `.claude/rules/terraform.md` だけ |
-| `フックだけ` | `.claude/hooks/guard-terraform.sh` だけ（手順 6 の登録も対象） |
-| `既存は置き換えない` | `DIFF` はすべて据え置き、手順 5 を飛ばす |
+| `--rules-only` | `.claude/rules/terraform.md` だけ |
+| `--hooks-only` | `.claude/hooks/guard-terraform.sh` だけ（手順 6 の登録も対象） |
+| `--keep-existing` | `DIFF` はすべて据え置き、手順 5 を飛ばす |
+
+「規約だけ」「既存は置き換えない」のような同じ意味の言い方も、同じに扱う。表に無い指定（入れないファイルなど）は補足として、手順 2 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
 
 ## 手順
 
@@ -71,7 +73,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 ### 6. フックと deny を登録する
 
-`settings-additions.md` に従い、`.claude/settings.json` にフック（`guard-terraform.sh`）と秘匿ファイルの deny を足す案を差分で示し、承認を得てから足す。引数が `規約だけ` のときは飛ばす。
+`settings-additions.md` に従い、`.claude/settings.json` にフック（`guard-terraform.sh`）と秘匿ファイルの deny を足す案を差分で示し、承認を得てから足す。引数が `--rules-only` のときは飛ばす。
 
 ### 7. Lint のフックに terraform fmt を足す
 

@@ -3,7 +3,7 @@ name: wordpress
 description: WordPress のリポジトリに、wordpress/wp-content/ 配下のテーマ（クラシックテーマの最小構成）と mu-plugins の置き場所、Docker のローカル環境（MySQL・WordPress・WP-CLI。入れるかは実行時に聞く）、PHP の Lint（phpcs）の設定、置き場所・出力のエスケープ・入力の検証・国際化などをまとめた規約（.claude/rules/wordpress*.md）を導入する。WordPress のプロジェクトを立ち上げる時、または既存の WordPress リポジトリへ規約と Lint を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(date:*), Bash(git ls-files:*)
-argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象で、Docker は実行時に聞く。例: 規約だけ / Lint だけ / Docker なし / 既存は置き換えない）]"
+argument-hint: "[--rules-only | --lint-only（任意。省略時はテンプレート全体。付けると規約だけ・Lint だけ）] [--no-docker（任意。省略時は Docker を入れるか実行時に聞く。付けると入れない）] [--keep-existing（任意。省略時は既存ファイルを 1 件ずつ聞く。付けると置き換えない）]"
 ---
 
 # WordPress プロジェクトのセットアップ（wordpress）
@@ -35,12 +35,14 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 引数は「どのファイルを入れるか」と「既存物をどうするか」の指定として読む。省略時はテンプレート全体が対象で、Docker のローカル環境は手順 2 で聞き、`DIFF` は手順 6 で 1 件ずつ判断してもらう。範囲を絞ったときは、手順 4 で `--only` に `NEW` のファイルだけを並べる。
 
-| 引数の例 | 対象・扱い |
+| 引数 | 対象・扱い |
 | --- | --- |
-| `規約だけ` | `.claude/rules/wordpress.md`・`wordpress-security.md`・`wordpress-templates.md` だけ |
-| `Lint だけ` | `wordpress/composer.json`・`wordpress/phpcs.xml.dist` だけ（手順 8 のフックも対象）。`vendor/`・`auth.json` が Git の対象外になっていなければ、`.gitignore` に足す案を出す |
-| `Docker なし` | `wordpress/compose.yaml`・`wordpress/.env.example` を入れない。手順 2 で聞かない |
-| `既存は置き換えない` | `DIFF` はすべて据え置き、手順 6 を飛ばす。手順 8 のフックと手順 9 の ADR の一覧は、既存のファイルでも追記する |
+| `--rules-only` | `.claude/rules/wordpress.md`・`wordpress-security.md`・`wordpress-templates.md` だけ |
+| `--lint-only` | `wordpress/composer.json`・`wordpress/phpcs.xml.dist` だけ（手順 8 のフックも対象）。`vendor/`・`auth.json` が Git の対象外になっていなければ、`.gitignore` に足す案を出す |
+| `--no-docker` | `wordpress/compose.yaml`・`wordpress/.env.example` を入れない。手順 2 で聞かない |
+| `--keep-existing` | `DIFF` はすべて据え置き、手順 6 を飛ばす。手順 8 のフックと手順 9 の ADR の一覧は、既存のファイルでも追記する |
+
+「規約だけ」「Docker なし」のような同じ意味の言い方も、同じに扱う。表に無い指定は補足として、手順 3 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
 
 ## 手順
 
@@ -56,7 +58,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 ### 2. テーマの名前とローカル環境を決める
 
-`placeholder-names.md` に従い、A ではスラッグと表示名を聞き、B・C では既存のテーマから名前を調べる。A・B で、ローカル環境のファイルが無く、引数に `Docker なし` も無ければ、Docker でローカル環境を作るかを `AskUserQuestion` で聞く。
+`placeholder-names.md` に従い、A ではスラッグと表示名を聞き、B・C では既存のテーマから名前を調べる。A・B で、ローカル環境のファイルが無く、引数に `--no-docker` も無ければ、Docker でローカル環境を作るかを `AskUserQuestion` で聞く。
 
 | 選択肢 | 扱い |
 | --- | --- |
