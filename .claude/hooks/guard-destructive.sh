@@ -36,6 +36,9 @@ fi
 
 # 照合には、引用符・バッククォート・\ を取り除いた文字列を使う。rm "-rf"・"rm" -rf・r\m のように、シェルが同じ語にする形も検出するため
 normalized=$(printf '%s' "$command" | tr -d "\"'\`\\\\")
+# git とサブコマンドの間に置けるオプション（-C <場所>・-c <設定>・--git-dir=<場所>・--no-pager など）を除く。
+# git -C . restore のように挟むと、git restore の形のパターンに当たらず、確認なしで通るため
+normalized=$(printf '%s' "$normalized" | sed -E 's/(^|[^[:alnum:]_-])[Gg][Ii][Tt](([[:space:]]+(-C|-c|--git-dir|--work-tree|--namespace|--config-env)([[:space:]]+|=)[^[:space:];&|]+)|([[:space:]]+(-p|-P|--paginate|--no-pager|--bare|--no-replace-objects|--no-optional-locks|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs)))+([[:space:]]|$)/\1git\8/g')
 
 patterns=(
 # -r・-R・-f（--recursive・--force）のどれかが付いた rm。再帰削除・強制削除はファイル復元ができない
@@ -47,6 +50,16 @@ patterns=(
 '(^|[^[:alnum:]_-])(remove-item|ri|del|erase|rd|rmdir)[[:space:]]+([^;&|]*[[:space:]])?-(r|re|rec|recu|recur|recurs|recurse|fo|for|forc|force)([[:space:]:]|$)'
 # ステージング・ワーキングツリーをコミットに強制リセットする。未コミット変更が消える
 'git[[:space:]]+reset[[:space:]]+--hard'
+# 未コミットの変更を作業ツリーから戻す。消した変更は履歴に残らず、戻せない。
+# ブランチを切り替えるだけの checkout・switch は当てない。ファイル名だけを渡す形（git checkout a.txt）はブランチ名と見分けられず、当たらない。
+# restore は --staged だけの形（ステージから外すだけ）も当たる
+'git[[:space:]]+checkout[[:space:]]+([^;&|]*[[:space:]])?(--|\.|-[a-zA-Z]*f[a-zA-Z]*|--force)([[:space:]]|$)'
+'git[[:space:]]+switch[[:space:]]+([^;&|]*[[:space:]])?(-[a-zA-Z]*f[a-zA-Z]*|--force|--discard-changes)([[:space:]]|$)'
+'git[[:space:]]+restore([[:space:]]|$)'
+# Git の設定を書き換える。core.hooksPath などで、フックを外せる。Edit(./.git/**) の deny は git コマンドに効かないため、ここで見る。
+# 値を書く形（キーと値の 2 つを渡す）と、消す・足す・開いて直すオプションに当てる。読むだけの形（git config user.name）は当てない
+'git[[:space:]]+config([[:space:]]+-[^[:space:];&|]+)*[[:space:]]+[^-[:space:];&|][^[:space:];&|]*[[:space:]]+[^-[:space:];&|]'
+'git[[:space:]]+config[[:space:]]+([^;&|]*[[:space:]])?(--unset|--unset-all|--add|--replace-all|--edit|-e|--rename-section|--remove-section)([[:space:]]|$)'
 # 未追跡ファイルを強制削除する。-f で復元できないファイルが消える
 'git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*f'
 # リモートブランチを強制上書きする。他者のコミットや履歴が失われる

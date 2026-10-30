@@ -50,6 +50,9 @@ const isCustomized = atom({ plugin: 'mod-output-customize', key: 'isCustomized' 
 /** Issue・PR の本文やコメントなど、外に書き出す文書を簡潔に書かせるか */
 const isDocConcise = atom({ plugin: 'mod-output-customize', key: 'isDocConcise' } as const, true)
 
+/** 保存した on/off を $.state に読み込んだか。/clear・/resume・/branch で $.state が既定値に戻ると false に戻る */
+const hasLoadedToggles = atom({ plugin: 'mod-output-customize', key: 'hasLoadedToggles' } as const, false)
+
 /**
  * 最新の応答の次アクションにあった、Claude ができる作業の依頼文。無ければ空文字。
  * エンジン自身の入力欄の候補が後から来たときに、この文に差し替えるために持っておく
@@ -141,6 +144,33 @@ async function loadSavedToggles($: Pick<CoreEngineInterface, 'state' | 'store'>)
   ])
   await update($, isCustomized, () => savedCustomized !== false)
   await update($, isDocConcise, () => savedDocConcise !== false)
+  await update($, hasLoadedToggles, () => true)
+}
+
+/**
+ * 応答のカスタマイズの on/off を読む。$.state が既定値に戻った後（/clear・/resume・/branch）は、保存した値を読む
+ * （戻った後に読み直せる classic.SessionStart は、管理設定のある環境ではユーザーの mod で動かないため）。
+ * 描く間は $.state に書けないので、ここでは読むだけにし、$.state への読み込みはボタンを押したときに行う
+ * @param $ - フックが受け取った engine のインターフェース
+ * @returns 応答を mod の形式で書かせるか
+ */
+async function readCustomized($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<boolean> {
+  if (await read($, hasLoadedToggles)) {
+    return read($, isCustomized)
+  }
+  return (await $.store.get(CUSTOMIZED_STORE_KEY)) !== false
+}
+
+/**
+ * 文書の書き方の指定の on/off を読む。読み方は readCustomized と同じ
+ * @param $ - フックが受け取った engine のインターフェース
+ * @returns 外に書き出す文書を簡潔に書かせるか
+ */
+async function readDocConcise($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<boolean> {
+  if (await read($, hasLoadedToggles)) {
+    return read($, isDocConcise)
+  }
+  return (await $.store.get(DOC_CONCISE_STORE_KEY)) !== false
 }
 
 /**
@@ -151,8 +181,8 @@ async function loadSavedToggles($: Pick<CoreEngineInterface, 'state' | 'store'>)
 async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<ToggleState[]> {
   const [chatMode, customized, docConcise] = await Promise.all([
     read($, isChatMode),
-    read($, isCustomized),
-    read($, isDocConcise),
+    readCustomized($),
+    readDocConcise($),
   ])
 
   return [
@@ -167,6 +197,9 @@ async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>)
       toggle: CUSTOMIZED_TOGGLE,
       isOn: customized,
       onPress: async () => {
+        // $.state が既定値に戻った後は保存した値を描いているため、先に 2 つとも読み込んでから切り替える。
+        // 片方だけ読み込むと、読み込み済みの印が立ち、もう片方が既定値で描かれてしまう
+        await loadSavedToggles($)
         const value = await update($, isCustomized, isOnNow => !isOnNow)
         await $.store.set(CUSTOMIZED_STORE_KEY, value)
       },
@@ -175,6 +208,7 @@ async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>)
       toggle: DOC_CONCISE_TOGGLE,
       isOn: docConcise,
       onPress: async () => {
+        await loadSavedToggles($)
         const value = await update($, isDocConcise, isOnNow => !isOnNow)
         await $.store.set(DOC_CONCISE_STORE_KEY, value)
       },
@@ -384,8 +418,8 @@ export const register: Register = on => {
 
     const [chatMode, customized, docConcise] = await Promise.all([
       read($, isChatMode),
-      read($, isCustomized),
-      read($, isDocConcise),
+      readCustomized($),
+      readDocConcise($),
     ])
     const added = [
       customized ? GUIDE_TEXT : PLAIN_TEXT,
@@ -453,12 +487,6 @@ export const register: Register = on => {
     return closed
   })
 
-  // /clear・/resume・/branch は $.state を既定値に戻し、session.start は再び来ないので読み直す
-  on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
-    await loadSavedToggles($)
-    return next(e)
-  })
-
   // サイドバーに置けないとき（全画面でない表示・端末の幅が足りない・閉じた）だけ、入力欄の上の帯にボタンを出す
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     // アンケートが帯を使っている間は譲る
@@ -519,7 +547,7 @@ export const register: Register = on => {
       return completed
     }
 
-    const request = !e.isAborted && (await read($, isCustomized)) ? nextClaudeRequest(e.answer) : null
+    const request = !e.isAborted && (await readCustomized($)) ? nextClaudeRequest(e.answer) : null
     await update($, nextSuggestion, () => request ?? '')
     if (request !== null) {
       try {

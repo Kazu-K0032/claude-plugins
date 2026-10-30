@@ -17,6 +17,6 @@
 | `Time` | セッションの経過時間と、括弧内に API の応答待ちの合計時間 | `cost.total_duration_ms` / `total_api_duration_ms` |
 | `Limit` | 利用上限の 5 時間枠・7 日枠の消費率と、リセットされる時刻（`↻`）。高いほうの消費率で色が変わる（基準は `Ctx` と同じ） | `rate_limits.five_hour` / `seven_day` |
 
-- `Limit` は claude.ai の Pro / Max プランでのみ、セッションの最初の応答の後から表示される
+- `Limit` は claude.ai の Pro / Max プランでのみ、セッションの最初の応答の後から表示される。ほかのプランや API キーでの利用では出ない
 - 値が無い項目（初回応答前のコンテキストなど）は表示しない。入力の仕様は [ステータスラインの公式ドキュメント](https://code.claude.com/docs/ja/statusline) を参照
 - 区切りの斜め三角は Powerline グリフ（Nerd Font 等）を使う。対応フォントが無い端末で文字化けする場合は、環境変数 `CLAUDE_STATUSLINE_PLAIN=1` を設定すると区切りなしの色帯表示になる（`settings.json` の `env` に入れればよい）

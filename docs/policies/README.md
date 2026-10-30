@@ -16,6 +16,7 @@
 | [P8](p08-short-body.md) | Issue・PR の本文は、人が読み切れる長さにすること | Issue・PR の本文やコメントを書く手順・テンプレートを直すとき |
 | [P9](p09-readable-ai-docs.md) | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・参照ファイル・規約を書く・直すとき |
 | [P10](p10-template-lifecycle.md) | 雛形は、実物を作ったら削除を提案し、削除は人が行うこと | `init-repo` の `docs/` に雛形を足す・直すとき |
+| [P11](p11-options-and-supplements.md) | 動きはオプションで切り替え、自然な言葉の補足は承認の前に示すこと | スキルの引数（「想定している引数」・`argument-hint`）を足す・直すとき |
 
 スキルの操作と、`init-repo` が配る権限設定との対応は [permissions.md](permissions.md) にまとめる。
 

@@ -12,7 +12,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。実装の後は `docs-sync` の手順で文書の追従を点検して直し、Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う） |
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:issue-pr-sync` | Issue / PR の本文（PR 本文が空なら新規作成）・タイトル・サイドバーを、現在の差分とレビュー対応に合わせて更新 |
-| `/aidd:commit` | ステージ済み差分と会話の経緯から Conventional Commits 形式のメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を、Discussion で決めたことのコミットには決めた場の Discussion を添える） |
+| `/aidd:commit` | ステージ済み差分と会話の経緯から、リポジトリのコミット規約（無ければ同梱の Conventional Commits 形式の規約）に沿ったメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を、Discussion で決めたことのコミットには決めた場の Discussion を添える） |
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
@@ -193,7 +193,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### Issue 番号を省いたら、ブランチ名から取る
 
-`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` か `hotfix/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名が `issues/<番号>-` か `hotfix/<番号>-` の形のときだけ番号を取る。ほかの形なら、番号を推測せず Issue 無しでレビューする。
+`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` か `hotfix/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名が `issues/<番号>-` か `hotfix/<番号>-` の形のときだけ番号を取る。ほかの形なら、番号を推測せず Issue 無しでレビューする。また、`pr-review` は、手元の HEAD が PR の先頭と違えば止まる。レビューの段が手元のファイルを読むため、別のブランチのコードで判定しないようにする。
 
 ブランチ名の形を変えるときは、次の箇所もそろえて直す。
 

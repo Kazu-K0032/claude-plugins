@@ -32,6 +32,7 @@ const BAND_PROPS = {
 const PLACED_PANE = { id: PANE_ID, title: '出力の設定', isShown: true, isFocused: false, isPlaced: true }
 
 test('サイドバーにボタンを縦に並べ、クリックで on/off を切り替える', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   on('store.set', () => ({ value: undefined }))
 
   for (const surface of SURFACES) {
@@ -58,7 +59,44 @@ test('サイドバーにボタンを縦に並べ、クリックで on/off を切
   }
 })
 
+test('session.start が来なくても、保存した応答カスタムと文書を簡潔にの OFF を読み直して描く', async ($, on) => {
+  // /clear などで $.state が既定値に戻った後と同じく、session.start を通さずに描く
+  on('store.get', () => ({ value: false }))
+
+  const pane = await $.ui.mount({
+    plugin: 'mod-output-customize',
+    surface: 'terminal',
+    component: 'Pane',
+    requestId: PANE_ID,
+    props: DOCKED_PANE_PROPS,
+  })
+  const labels = await pane.findAll({ type: 'Text', text: / O(N|FF)$/ })
+  expect(labels.map(label => label.text.endsWith(' OFF'))).toEqual([true, true, true])
+
+  await pane.unmount()
+})
+
+test('session.start が来ないまま片方のボタンを押しても、もう片方は保存した値のまま描く', async ($, on) => {
+  on('store.get', (_$, e) => ({ value: e.key === 'isDocConcise' ? false : undefined }))
+  on('store.set', () => ({ value: undefined }))
+
+  const pane = await $.ui.mount({
+    plugin: 'mod-output-customize',
+    surface: 'terminal',
+    component: 'Pane',
+    requestId: PANE_ID,
+    props: DOCKED_PANE_PROPS,
+  })
+  await pane.press({ key: 'toggle-customized' })
+  const labels = await pane.findAll({ type: 'Text', text: / O(N|FF)$/ })
+  // チャットモード・応答カスタム（押して OFF）・文書を簡潔に（保存した OFF）の順
+  expect(labels.map(label => label.text.endsWith(' OFF'))).toEqual([true, true, true])
+
+  await pane.unmount()
+})
+
 test('サイドバーが描かれている間は、入力欄の上の帯にボタンを出さない', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   on('ui.panes', () => ({ value: [PLACED_PANE] }))
   on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
     const { Text } = $.ui.resolve(e)
@@ -77,6 +115,7 @@ test('サイドバーが描かれている間は、入力欄の上の帯にボ�
 })
 
 test('サイドバーが描かれていないときは、入力欄の上の帯にボタンを出す', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   on('ui.panes', () => ({ value: [{ ...PLACED_PANE, isPlaced: false }] }))
 
   const band = await $.ui.mount({
@@ -123,6 +162,7 @@ const ANSWER = [
 ].join('\n')
 
 test('チャットモード中は、画面下のモード表示に「チャット」を足す', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   let modes: readonly string[] = []
   on('ui.render', { component: 'SessionMode' }, ($, e) => {
     modes = e.props.modes
@@ -160,6 +200,7 @@ test('チャットモード中は、画面下のモード表示に「チャッ�
 })
 
 test('次アクションに「Claude：」の項目があれば、入力欄の候補に出す', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   const suggested: string[] = []
   on('prompt.suggest', (_$, e) => {
     suggested.push(e.text)
@@ -173,4 +214,18 @@ test('次アクションに「Claude：」の項目があれば、入力欄の�
 
   await $.turn.complete({ ...turn, turnId: 't2', answer: '次アクションの無い返答' })
   expect(suggested).toHaveLength(1)
+})
+
+test('session.start が来なくても、保存した応答カスタムが OFF なら、入力欄の候補に出さない', async ($, on) => {
+  // /clear などで $.state が既定値に戻った後と同じく、session.start を通さずに返答を終える
+  on('store.get', () => ({ value: false }))
+  const suggested: string[] = []
+  on('prompt.suggest', (_$, e) => {
+    suggested.push(e.text)
+    return { isShown: true }
+  })
+  on('turn.complete', (_$, e) => ({ text: e.answer }))
+
+  await $.turn.complete({ durationMs: 1000, isAborted: false, turnId: 't1', reason: 'answer', answer: ANSWER })
+  expect(suggested).toEqual([])
 })
