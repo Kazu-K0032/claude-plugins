@@ -8,5 +8,5 @@
 
 ## プラグインでの表れ
 
-- `aidd:adr` は小さな判断も残し、`project:init-repo` が配る `CLAUDE.md` で一覧を毎回読み込む
+- `aidd:adr` は、理由をコードのコメントに書けない判断を残し、`project:init-repo` が配る `CLAUDE.md` で一覧を毎回読み込む
 - このリポジトリの方針は、1 つずつ理由と Q&A を付けて残す
