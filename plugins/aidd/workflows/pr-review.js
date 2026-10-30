@@ -138,13 +138,15 @@ const isFrontendFile = (f) =>
 
 // 自動デプロイに乗らない・環境差分が出やすい差分（反映経路の対象）
 // ディレクトリはルート直下に限らない（例：identity-center/terraform/・database/migrations/・backend/apps/x/migrations/）。
+// フォルダ名で当てるときは、コード・設定のファイルだけを当てる。文書だけの変更（terraform/README.md など）で観点が動かないため。
+// fixtures/ は、テスト用のフォルダの下ならテストのデータのため当てない
 // db/・database/ だけはルート直下に限る。深い位置の db/ は、DB を扱うコードのことが多いため
 // GAS は clasp で手で反映するため、.gs と設定ファイルも対象にする
 const isDeliverySensitive = (f) =>
-  /(^|\/)(infra|terraform|deploy|ops|provisioning)\//.test(f) ||
+  (/(^|\/)(infra|terraform|deploy|ops|provisioning|migrations?|seeds?|seeders)\//.test(f) && isCodeFile(f)) ||
+  (/(^|\/)fixtures\//.test(f) && isCodeFile(f) && !isTestFile(f)) ||
   /\.(tf|tfvars|hcl)$/.test(f) ||
   /^\.github\/workflows\//.test(f) ||
-  /(^|\/)(migrations?|seeds?|seeders|fixtures)\//.test(f) ||
   /^(db|database)\//.test(f) ||
   /(^|\/)(Dockerfile|docker-compose\.ya?ml|compose\.ya?ml|Procfile)$/.test(f) ||
   /\.gs$/.test(f) ||
