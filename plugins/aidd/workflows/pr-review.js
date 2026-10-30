@@ -123,18 +123,26 @@ const isNonCodeFile = (f) =>
 const isCodeFile = (f) => !isNonCodeFile(f)
 
 // 画面に出る要素を触る差分（レイアウト耐性の対象）
+// Liquid と sections・snippets・layouts は、Shopify などのテーマの構成
 const isFrontendFile = (f) =>
   /\.(css|scss|sass|less|vue|svelte|astro)$/.test(f) ||
   /\.(jsx|tsx)$/.test(f) ||
-  /\.(html|erb|twig|hbs|ejs|pug)$/.test(f) ||
-  /\/(templates?|views?|components?|assets|theme|themes)\//.test(f)
+  /\.(html|erb|twig|hbs|ejs|pug|liquid)$/.test(f) ||
+  /(^|\/)(templates?|views?|components?|assets|theme|themes|sections|snippets|layouts?)\//.test(f)
 
 // 自動デプロイに乗らない・環境差分が出やすい差分（反映経路の対象）
+// ディレクトリはルート直下に限らない（例：identity-center/terraform/・database/migrations/・backend/apps/x/migrations/）。
+// db/・database/ だけはルート直下に限る。深い位置の db/ は、DB を扱うコードのことが多いため
+// GAS は clasp で手で反映するため、.gs と設定ファイルも対象にする
 const isDeliverySensitive = (f) =>
-  /^(infra|terraform|deploy|ops|provisioning)\//.test(f) ||
+  /(^|\/)(infra|terraform|deploy|ops|provisioning)\//.test(f) ||
+  /\.(tf|tfvars|hcl)$/.test(f) ||
   /^\.github\/workflows\//.test(f) ||
-  /^(migrations?|db|seed|seeds|fixtures)\//.test(f) ||
+  /(^|\/)(migrations?|seeds?|seeders|fixtures)\//.test(f) ||
+  /^(db|database)\//.test(f) ||
   /(^|\/)(Dockerfile|docker-compose\.ya?ml|compose\.ya?ml|Procfile)$/.test(f) ||
+  /\.gs$/.test(f) ||
+  /(^|\/)(appsscript\.json|\.clasp\.json)$/.test(f) ||
   /\/(mu-plugins|plugins)\//.test(f)
 
 const isTestFile = (f) =>
