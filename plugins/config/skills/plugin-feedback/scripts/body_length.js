@@ -1,29 +1,27 @@
 #!/usr/bin/env node
-// Issue・PR の本文が、文字数の上限に収まっているかを数える。読み取り専用。外部パッケージは使わない。
+// Issue・PR の本文とコメントの概要（最初の節）が、文字数の上限に収まっているかを数える。読み取り専用。外部パッケージは使わない。
 //
 // 上限と数え方の正典は、このスクリプトから見て ../references/short-body.md。
-//   全体: 500 文字以内。HTML コメントと定型の節（見出しに「チェックリスト」か「関連 Issue」を含む節）は数えない。
-//         見出し・記号は数え、改行と行頭・行末の空白は数えない。リンクは見える文字だけ数える
-//   項目: 箇条書きの 1 項目と、地の文の 1 文は 50 文字以内。見出し・表・引用・コードブロックは対象外
+//   概要: 最初の節。先頭の見出しから、同じ大きさ以上の次の見出しの前まで（先頭が # 1 つなら ## でも区切る）。
+//         先頭が地の文なら、最初の見出しの前まで。見出しが無ければ本文全体。300 文字以内
+//         HTML コメント・定型の節（見出しに「チェックリスト」か「関連 Issue」を含む節）・改行・行頭と行末の空白・リンクの URL は数えない
+//   概要より後の節（再現手順・要件など）は数えない。詳しく書いてよいため
 //
-// 使い方: node body_length.js <ファイル | -> [--item-only]
-//   -            標準入力から読む（下書きのファイルを作らないスキル用）
-//   --item-only  項目だけを確かめ、全体は数えない（検証コメント用）
+// 使い方: node body_length.js <ファイル | ->
+//   -  標準入力から読む（下書きのファイルを作らないスキル用）
 // 終了コード: 上限内なら 0、超えていれば 1、引数の誤りや読めないときは 2
 
 'use strict';
 
 const fs = require('fs');
 
-const TOTAL_LIMIT = 500;
-const ITEM_LIMIT = 50;
+const SUMMARY_LIMIT = 300;
 
-const USAGE = 'node body_length.js <ファイル | -> [--item-only]';
+const USAGE = 'node body_length.js <ファイル | ->';
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})/;
 const HEADING = /^ {0,3}(#{1,6})\s+(.*)$/;
 const FIXED_SECTION = /チェックリスト|関連\s*issue/i;
-const LIST_MARKER = /^\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?/;
 const LINK = /!?\[([^\]]*)\]\([^)]*\)/g;
 const COMMENT = /<!--[\s\S]*?-->/g;
 
@@ -74,94 +72,74 @@ function stripComments(text) {
   return out;
 }
 
-// 行ごとに { counted, inFence } を返す。定型の節は、下位の見出しも含めて数えない
-function classify(lines) {
+// リンクは見える文字だけにし、行頭・行末の空白を除く
+function visible(line) {
+  return line.replace(LINK, '$1').trim();
+}
+
+// 概要の行を返す。最初の節（先頭の見出しから、同じ大きさ以上の次の見出しの前まで）。定型の節は、下位の見出しも含めて除く
+// 区切りの大きさ: 先頭が見出しなら、その見出しの # の数（ただし # 1 つなら ## でも区切る）。先頭が地の文なら、どの見出しでも区切る
+// Issue フォームは各欄を ### の見出しで書き出すため、### で始まる本文は、最初の欄が概要になる
+function summaryLines(lines) {
   const result = [];
   let inFence = false;
   let marker = '';
   let skipLevel = 0;
+  let seen = false;
+  let boundary = 0;
   for (const line of lines) {
     const m = line.match(FENCE);
     if (inFence) {
-      result.push({ counted: skipLevel === 0, inFence: true });
+      if (!skipLevel) result.push(line);
       if (closesFence(m, marker)) inFence = false;
       continue;
     }
     if (m) {
       inFence = true;
       marker = m[1];
-      result.push({ counted: skipLevel === 0, inFence: true });
+      if (!skipLevel) {
+        result.push(line);
+        if (!seen) boundary = 6;
+        seen = true;
+      }
       continue;
     }
     const h = line.match(HEADING);
     if (h) {
       const level = h[1].length;
+      // 中身が出た後の、区切りの大きさ以上の見出しで概要を終える。定型の節は中身に数えないため、その後の見出しから概要が始まる
+      if (seen && level <= boundary) break;
       if (skipLevel && level <= skipLevel) skipLevel = 0;
       if (!skipLevel && FIXED_SECTION.test(h[2])) skipLevel = level;
+      if (!skipLevel && !seen) boundary = Math.max(level, 2);
     }
-    result.push({ counted: skipLevel === 0, inFence: false });
+    if (skipLevel) continue;
+    result.push(line);
+    if (visible(line)) {
+      if (!seen && !h) boundary = 6;
+      seen = true;
+    }
   }
   return result;
 }
 
-// リンクは見える文字だけにし、行頭・行末の空白を除く
-function visible(line) {
-  return line.replace(LINK, '$1').trim();
-}
-
-// 50 文字を超える項目・文を { num, length, text } で返す
-function itemOverflows(num, line) {
-  const text = visible(line);
-  if (!text || /^[#|>]/.test(text)) return [];
-  if (LIST_MARKER.test(line)) {
-    const item = visible(line.replace(LIST_MARKER, ''));
-    const length = charCount(item);
-    return length > ITEM_LIMIT ? [{ num, length, text: item }] : [];
-  }
-  const sentences = (text.match(/[^。！？]*[。！？]?/g) || []).map(s => s.trim()).filter(Boolean);
-  return sentences
-    .map(s => ({ num, length: charCount(s), text: s }))
-    .filter(s => s.length > ITEM_LIMIT);
-}
-
 function main(argv) {
-  const args = argv.filter(a => a !== '--item-only');
-  const itemOnly = args.length !== argv.length;
-  if (args.length !== 1) {
+  if (argv.length !== 1 || argv[0].startsWith('--')) {
     console.error('使い方: ' + USAGE);
     return 2;
   }
   let text;
   try {
-    text = readInput(args[0]);
+    text = readInput(argv[0]);
   } catch (e) {
     console.error('読めない: ' + e.message);
     return 2;
   }
 
   const lines = stripComments(text.replace(/\r\n/g, '\n'));
-  const kinds = classify(lines);
-  let total = 0;
-  const overflows = [];
-  lines.forEach((line, i) => {
-    if (!kinds[i].counted) return;
-    total += charCount(visible(line));
-    if (!kinds[i].inFence) overflows.push(...itemOverflows(i + 1, line));
-  });
-
-  let ng = overflows.length > 0;
-  if (itemOnly) {
-    console.log('全体: 数えない（--item-only）');
-  } else {
-    ng = ng || total > TOTAL_LIMIT;
-    console.log(`全体: ${total} / ${TOTAL_LIMIT} 文字（${total > TOTAL_LIMIT ? 'NG' : 'OK'}）`);
-  }
-  if (overflows.length) {
-    console.log(`${ITEM_LIMIT} 文字を超える項目・文:`);
-    for (const o of overflows) console.log(`  ${o.num} 行目: ${o.length} 文字「${o.text}」`);
-  } else {
-    console.log(`${ITEM_LIMIT} 文字を超える項目・文: なし`);
-  }
+  const total = summaryLines(lines).reduce((n, line) => n + charCount(visible(line)), 0);
+  const ng = total > SUMMARY_LIMIT;
+  console.log(`概要: ${total} / ${SUMMARY_LIMIT} 文字（${ng ? 'NG' : 'OK'}）`);
   return ng ? 1 : 0;
 }
 

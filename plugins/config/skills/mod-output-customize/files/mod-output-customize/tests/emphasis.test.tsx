@@ -202,9 +202,9 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
       block => block.includes('### 変えた設定') && block.includes('反映に要る操作') && block.includes('止め方と戻し方'),
     ),
   ).toBe(true)
-  expect(drawn.context?.some(block => block.includes('# 文書の書き方') && block.includes('文字数を少なく'))).toBe(true)
+  expect(drawn.context?.some(block => block.includes('# 文書の書き方') && block.includes('概要は短く保ち'))).toBe(true)
   // 上限の数は、方針 P8（docs/policies/p08-short-body.md）とそろえる
-  expect(drawn.context?.some(block => block.includes('1 項目は 50 文字以内') && block.includes('全体を 500 文字以内'))).toBe(true)
+  expect(drawn.context?.some(block => block.includes('概要（最初の節）を 300 文字以内') && block.includes('Issue は種類で書き分ける'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('チャットモード'))).toBe(false)
 
   surfaces = []
@@ -258,7 +258,7 @@ test('文書を簡潔にのボタンで OFF にすると、解除の文を添え
   await band.press({ key: 'toggle-doc-concise' })
 
   const submitted = await $.prompt.submit(PROMPT)
-  expect(submitted.context?.some(block => block.includes('文字数を少なく'))).toBe(false)
+  expect(submitted.context?.some(block => block.includes('概要は短く保ち'))).toBe(false)
   expect(submitted.context?.some(block => block.includes('# 文書の書き方') && block.includes('解除'))).toBe(true)
   expect(submitted.context?.some(block => block.includes('# 応答の色分け'))).toBe(true)
   expect(saved).toEqual([['isDocConcise', false]])
@@ -275,7 +275,7 @@ test('session.start が来なくても、保存した OFF を読み直して、�
   const submitted = await $.prompt.submit(PROMPT)
   expect(submitted.context?.some(block => block.includes('# 応答の色分け'))).toBe(false)
   expect(submitted.context?.some(block => block.includes('# 応答の形式') && block.includes('今回は通常の形式'))).toBe(true)
-  expect(submitted.context?.some(block => block.includes('文字数を少なく'))).toBe(false)
+  expect(submitted.context?.some(block => block.includes('概要は短く保ち'))).toBe(false)
   expect(submitted.context?.some(block => block.includes('# 文書の書き方') && block.includes('解除'))).toBe(true)
 })
 
