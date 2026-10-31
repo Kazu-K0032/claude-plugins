@@ -42,7 +42,8 @@ case "${1:-}" in
         status=1
         continue
       fi
-      git diff --name-only "$base" "$local_sha" | check_files || status=1
+      # --no-renames で、改名・移動を「消した元のパス」と「作った先のパス」の 2 件にする。付けないと先のパスだけが出て、protected のファイルを protected でない場所へ動かして消せてしまうため
+      git diff --name-only --no-renames "$base" "$local_sha" | check_files || status=1
     done
     exit "$status"
     ;;

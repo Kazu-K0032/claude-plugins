@@ -167,7 +167,8 @@ jobs:
           PR: ${{ steps.pr.outputs.number }}
           DIR: ${{ steps.pr.outputs.dir }}
         run: |
-          if gh pr view "$PR" --json files -q '.files[].path' | bash "$RUNNER_TEMP/trusted/guard-paths.sh" --files > "$DIR/guard.log" 2>&1; then
+          # gh pr view --json files は、改名・移動したファイルの新しいパスしか返さない。元のパス（previous_filename）も渡すため、API で取る
+          if gh api --paginate "repos/$GH_REPO/pulls/$PR/files" -q '.[] | .filename, (.previous_filename // empty)' | bash "$RUNNER_TEMP/trusted/guard-paths.sh" --files > "$DIR/guard.log" 2>&1; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
             echo "ok=false" >> "$GITHUB_OUTPUT"
@@ -558,7 +559,8 @@ jobs:
           # 最後の CI で決める。レビューの直しで変わったなら 2 段目、変わっていなければ 1 段目
           if [ "$CHANGED" = true ]; then final=$CI2; else final=$CI1; fi
           # bot が変えてはいけないファイルが、直しの後も含めて PR に入っていないかを、もう一度確かめる
-          if gh pr view "$PR" --json files -q '.files[].path' | bash "$RUNNER_TEMP/trusted/guard-paths.sh" --files > "$DIR/guard.log" 2>&1; then
+          # 改名・移動の元のパス（previous_filename）も渡すため、gh pr view ではなく API で取る
+          if gh api --paginate "repos/$GH_REPO/pulls/$PR/files" -q '.[] | .filename, (.previous_filename // empty)' | bash "$RUNNER_TEMP/trusted/guard-paths.sh" --files > "$DIR/guard.log" 2>&1; then
             blocked=false
           else
             blocked=true
