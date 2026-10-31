@@ -24,7 +24,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 7 で、PR テンプレートに「AI を使った確認」の欄があるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` | 手順 8・9 で、チェック項目を洗い出し、検証コメントを書くとき（方針・洗い出しの表・出力の形） |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 手順 7・9 で書くとき、手順 11 で数えるとき（長さの上限・数え方・書き方） |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 手順 11 で、本文を数えるとき |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 手順 11 で、PR 本文の概要を数えるとき |
 
 ## 想定している引数
 
@@ -83,11 +83,10 @@ PR 本文と検証コメントを、「出力先」の 2 つのファイルに**
 
 ### 11. 長さを数える
 
-`short-body.md` の「確かめ方」に従い、2 つのファイルを数える。超えていたら縮めて書き直し、もう一度数える。3 回直しても収まらなければ、超えた箇所を報告に書く。Node.js が無い・実行を断られたときは、数えずに進み、報告に書く。
+`short-body.md` の「確かめ方」に従い、PR 本文の概要を数える。検証コメントは上限が無いため数えない。超えていたら縮めて書き直し、もう一度数える。3 回直しても収まらなければ、超えた箇所を報告に書く。Node.js が無い・実行を断られたときは、数えずに進み、報告に書く。
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/pr-create_<yyyymmdd_hhmmss>.md
-node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" --item-only tmp/<ブランチ名>/pr-verify_<yyyymmdd_hhmmss>.md
 ```
 
 ### 12. 報告する

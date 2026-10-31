@@ -9,6 +9,7 @@ GitHub は、このフォルダのファイルを自動では読まない。フ�
 | ファイル | 対象 | 止めること |
 | --- | --- | --- |
 | `main.json` | `main` | 削除、force push、PR を経ない変更、merge commit 以外のマージ |
+| `develop.json` | `develop` | 削除、force push。PR を経ない push は止めない（`issues/` の作業の起点で、手元の作業にも使うため）。bot（[docs/claude-bot.md](../../docs/claude-bot.md)）が履歴を書き換えるのを止める守りでもある |
 
 ## 反映する場合
 
@@ -25,7 +26,7 @@ id=$(gh api 'repos/{owner}/{repo}/rulesets' --jq '.[] | select(.name == "main") 
 gh api --method PUT "repos/{owner}/{repo}/rulesets/$id" --input .github/rulesets/main.json
 ```
 
-`gh api` は、`{owner}` と `{repo}` を今のリポジトリに置き換える。
+`gh api` は、`{owner}` と `{repo}` を今のリポジトリに置き換える。`develop` も同じで、ファイルを `develop.json`、名前を `develop` に替える。
 
 ## 画面で変えた場合
 

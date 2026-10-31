@@ -8,11 +8,11 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 
 | スキル | 用途 |
 | --- | --- |
-| `/aidd:adr` | ADR（判断の記録）の作成・ステータス更新。小さな技術的判断も対象にし、重さ（極小・簡易・詳細）を選んで書き、一覧に 1 行足す。判断が決まると Claude から作るかを聞く |
+| `/aidd:adr` | ADR（判断の記録）の作成・ステータス更新。戻しにくく、見送った案があり、理由をコードのコメントに書けない判断を対象にし、重さ（極小・簡易・詳細）を選んで書き、一覧に 1 行足す。判断が決まると Claude から作るかを聞く |
 | `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。実装の後は `docs-sync` の手順で文書の追従を点検して直し、Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う） |
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:issue-pr-sync` | Issue / PR の本文（PR 本文が空なら新規作成）・タイトル・サイドバーを、現在の差分とレビュー対応に合わせて更新 |
-| `/aidd:commit` | ステージ済み差分と会話の経緯から Conventional Commits 形式のメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を添える） |
+| `/aidd:commit` | ステージ済み差分と会話の経緯から、リポジトリのコミット規約（無ければ同梱の Conventional Commits 形式の規約）に沿ったメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を、Discussion で決めたことのコミットには決めた場の Discussion を添える） |
 | `/aidd:research` | 技術調査を `aidd:research` エージェントに委譲し、引用付きで回答 |
 | `/aidd:ai-report` | セッションログを分析し、利用状況・トークンコスト・改善点をレポート化 |
 | `/aidd:docs-sync` | ブランチ差分にドキュメントが追従しているかを点検 |
@@ -88,7 +88,7 @@ aidd/
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
-    ├── short-body.md    # Issue・PR の本文の長さ
+    ├── short-body.md    # Issue・PR の本文の書き方と長さ
     ├── tmp-ignore.md    # tmp/・tmp.md の除外の確かめ方
     ├── ai-research.md   # AI 出力を引用として扱わないための規約
     └── harness-principles.md # 設計思想の要約（harness-audit の物差し）
@@ -193,7 +193,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### Issue 番号を省いたら、ブランチ名から取る
 
-`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` か `hotfix/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名が `issues/<番号>-` か `hotfix/<番号>-` の形のときだけ番号を取る。ほかの形なら、番号を推測せず Issue 無しでレビューする。
+`pr-create`・`issue-pr-sync` は、Issue 番号を省くと、ブランチ名の `issues/<番号>-` か `hotfix/<番号>-` から番号を取る。取れなければ質問する。`issue-start` が作るブランチ名（`issues/<番号>-<説明>`）と組み合わせ、番号を調べて渡す手間を省くため。`issue-pr-sync` は Issue を直接書き換えるため、PR 本文の Issue への参照と食い違うときは、反映の前に聞く。`pr-review` も、PR 本文に Issue への参照が無ければ、ブランチ名が `issues/<番号>-` か `hotfix/<番号>-` の形のときだけ番号を取る。ほかの形なら、番号を推測せず Issue 無しでレビューする。また、`pr-review` は、手元の HEAD が PR の先頭と違えば止まる。レビューの段が手元のファイルを読むため、別のブランチのコードで判定しないようにする。
 
 ブランチ名の形を変えるときは、次の箇所もそろえて直す。
 
@@ -201,9 +201,9 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `workflows/` の `pr-review.js`
 - `project` の `init-repo` が配る `.claude/rules/branch.md`（このリポジトリの `.claude/rules/branch.md` と組）
 
-### Issue・PR の本文は 500 文字以内にする
+### Issue・PR の本文は、冒頭の概要を 300 文字以内にする
 
-`pr-create`・`issue-start`・`issue-pr-sync` は、本文を 500 文字以内、1 文・1 項目を 50 文字以内で書く。書いたら `scripts/body_length.js` で数える。長い本文は読まれないため（[P8](../../docs/policies/p08-short-body.md)）。上限と数え方は `references/short-body.md` にある。
+`pr-create`・`issue-start`・`issue-pr-sync` は、本文の冒頭の概要（最初の節）を 300 文字以内で書き、`scripts/body_length.js` で数える。概要より後の節は上限なしで、Issue は種類（バグ修正・新機能・文書や版の更新）で詳しく書く節を変える。長い本文の全体は読まれなくても、冒頭は読まれるため（[P8](../../docs/policies/p08-short-body.md)）。上限・数え方・書き分けは `references/short-body.md` にある。
 
 ### 点検レポートは同じ構成にする
 
