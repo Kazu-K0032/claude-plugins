@@ -6,7 +6,15 @@ body:
     attributes:
       value: |
         振り返りの内容を記入し、対象 Issue のコメントとして貼り付けてください。
-        最初の欄は 300 文字以内で書いてください。経緯や推測は書かず、技術的な内容は引用かリンクで示してください。
+        最初の「概要」は 300 文字以内で書いてください。経緯や推測は書かず、技術的な内容は引用かリンクで示してください。
+
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      placeholder: この振り返りで分かったことを一文で説明してください
+    validations:
+      required: true
 
   - type: input
     id: period
