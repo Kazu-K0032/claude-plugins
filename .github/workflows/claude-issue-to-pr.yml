@@ -126,25 +126,28 @@ jobs:
           pr=$(gh pr list --head "$BRANCH" --state open --json number,changedFiles,additions,deletions,files --jq '.[0] // empty')
           [ -n "$pr" ] || exit 0
           # レビューの effort を、規模（ファイル数と変更行数の重いほう）で決め、影響の大きいファイルを触っていたら 1 段上げる（routing）
-          # 段階: 3 ファイル・100 行以下は low、10 ファイル・500 行以下は medium、それより多いと high
+          # 段階: 3 ファイル・100 行以下は medium、10 ファイル・500 行以下も medium、それより多いと high（low は使わない）
+          # ファイルの種類で 1 段上がるのは、2 段目（medium）から high へのときだけ。最小の段は、上がっても medium のまま
           files=$(jq .changedFiles <<< "$pr")
           lines=$(jq '.additions + .deletions' <<< "$pr")
           level=0
-          if [ "$files" -gt 10 ] || [ "$lines" -gt 500 ]; then level=2
+          # コードレビューのモデル。差分が多い（最大の段）ときは sonnet、それ以外は opus（ファイルの種類では変えない）
+          cr_model=opus
+          if [ "$files" -gt 10 ] || [ "$lines" -gt 500 ]; then level=2; cr_model=sonnet
           elif [ "$files" -gt 3 ] || [ "$lines" -gt 100 ]; then level=1
           fi
           if jq -r '.files[].path' <<< "$pr" | grep -qE '^\.github/|(^|/)\.claude/(settings\.json|hooks/)|(^|/)plugin\.json$|\.(sh|py|js|mjs|ts|tsx)$'; then
             level=$(( level < 2 ? level + 1 : 2 ))
           fi
           case "$level" in
-            0) effort=low ;;
+            0) effort=medium ;;
             1) effort=medium ;;
             *) effort=high ;;
           esac
           # 記録の置き場所。issue-to-pr スキルが計画と確かめたことを書く場所と同じ（.claude/rules/tmp-output.md）
           dir="tmp/${BRANCH//\//-}/issue-to-pr"
           mkdir -p "$dir"
-          { echo "number=$(jq .number <<< "$pr")"; echo "dir=$dir"; echo "effort=$effort"; } >> "$GITHUB_OUTPUT"
+          { echo "number=$(jq .number <<< "$pr")"; echo "dir=$dir"; echo "effort=$effort"; echo "cr_model=$cr_model"; } >> "$GITHUB_OUTPUT"
 
       # 直しの step の許可に、作業ブランチだけへの push を足す。完全一致で書くため、--force や別のブランチへの push は許可に当たらない
       - name: 直しの許可を決める
@@ -337,6 +340,7 @@ jobs:
           plugins: code-review@claude-plugins-official
           prompt: /code-review:code-review --comment ${{ github.repository }}/pull/${{ steps.pr.outputs.number }}
           claude_args: |
+            --model ${{ steps.pr.outputs.cr_model }}
             --effort ${{ steps.pr.outputs.effort }}
             --max-turns 60
             --allowedTools "mcp__github_inline_comment__create_inline_comment"
