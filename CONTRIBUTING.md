@@ -34,3 +34,19 @@
 - `develop` へのマージでは、GitHub は `Closes #<番号>` で Issue を閉じない。代わりに `.github/workflows/close-linked-issues.yml` が、PR 本文の `Closes #<番号>` などを読んで閉じる
 - 閉じたくない Issue は、`Closes` でなく `Ref: Issue #<番号>` と書く。PR の画面で Issue を紐づけているときは、その紐づけも外す
 - 閉じられなかったとき（fork からの PR など）は、マージした人が手で閉じる
+
+## Claude の bot に頼む場合
+
+bot を使えるようにする準備（App・environment・secret）、確かめ方、トークンの更新、止め方は [docs/claude-bot.md](docs/claude-bot.md) にある。
+
+- Issue のコメントに `@claude` と書くと、GitHub Actions の Claude が Issue を実装し、`develop` 向けの PR を作る（[.github/workflows/claude-issue-to-pr.yml](.github/workflows/claude-issue-to-pr.yml)。手順は [.claude/skills/issue-to-pr/SKILL.md](.claude/skills/issue-to-pr/SKILL.md)）。頼めるのは、リポジトリに書き込める人だけ
+- bot は Issue の本文とコメントを読んで動く。決めたこと・変えるファイル・確かめ方を Issue に書いておくと、意図どおりに動きやすい
+- bot のブランチ名は `issues/<Issue番号>-claude-<日時>` になる
+- bot は、まず下書きの PR を作る。CI が落ちたら、bot がログを読んで直す（最大 3 回）
+- CI が通ると PR はレビュー待ちになり、セキュリティレビュー（`/security-review`）とコードレビュー（公式の code-review）が動く。直すべき指摘があれば bot が 1 回だけ直し、もう一度 CI が通るまで直す（最大 3 回）
+- 最後の CI が通らなければ、PR は下書きに戻る。どちらの場合も、計画・CI・レビューの記録が PR にコメントされる
+- マージは、ほかの PR と同じく人が行う
+- `.github/workflows/`・`.github/scripts/`・`.claude/settings.json` の変更は、PR の本文に diff で届く。人が確かめて当てる
+- PR を作れなかったときは、理由が Issue にコメントされる
+- 動くのは `main` にあるワークフローのため、ワークフローを変えたら、リリースするまで反映されない
+- 手元の Claude は、`@claude` を含むコメントを書かない。deny とフック（`.claude/hooks/guard-claude-mention.sh`）で止めている

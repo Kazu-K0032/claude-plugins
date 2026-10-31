@@ -1,0 +1,570 @@
+name: Claude による Issue の実装
+
+# Issue のコメントに @claude と書くと、次の順に動く。作りは Anthropic の「Building effective agents」の型にならう
+# （https://www.anthropic.com/research/building-effective-agents）。手順は .claude/skills/issue-to-pr/SKILL.md
+#   1. 実装：Claude Code が Issue を実装し、作業ブランチ（issues/<Issue 番号>-claude-<日時>）に push して、develop 向けの下書きの PR を作る
+#   2. CI の直し：CI（PR のチェック）を待ち、落ちたらログを渡して直させる。最大 3 回（停止条件はワークフローが数える）
+#   3. レビュー：CI が通ったら PR をレビュー待ちにし、/security-review と公式の code-review を流す。どちらもファイルは変えない
+#   4. レビューの直し：直すべき指摘があれば、1 回だけ直させる
+#   5. CI の直し：4 で直したら、もう一度 CI を待ち、落ちたら直させる。最大 3 回
+#   6. 記録：計画・CI・レビュー・直しを PR にコメントする。最後の CI が通らなければ、PR を下書きに戻す
+# PR を作れなかったときは、Claude の最後の返答を理由として Issue にコメントする。マージは人が行う
+# Claude にコミット・push を任せるのは、P1 の例外（docs/policies/p01-operation-boundary.md）
+# PR の作成と push は、実装・直しの step の中で Claude App のトークンで行う。action は step の最後にこのトークンを取り消し、
+# GITHUB_TOKEN で作った PR・push では CI（plugin-checks.yml）が動かないため。ワークフローの step は GITHUB_TOKEN で、コメントと下書きの切り替えだけを行う
+# Issue・コメントのイベントでは、既定ブランチ（main）にあるこのファイルが使われる。変えても、リリースして main に入るまで反映されない
+#
+# 使えるようにする準備（App・environment・secret）、確かめ方、トークンの更新、止め方は docs/claude-bot.md にある
+# 準備は、リポジトリの設定と secret の変更のため、人が行う。Claude は行わない
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  claude:
+    name: Issue を実装して PR を作る
+    # PR のコメントでは動かさない。Issue の実装だけを頼めるようにするため
+    if: contains(github.event.comment.body, '@claude') && !github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    environment: claude
+    # 実装 25 分、CI の待ち（1 回最大 25 分）と直し（15 分）の 3 回 × 2、レビュー 35 分を足した上限
+    timeout-minutes: 300
+    concurrency:
+      group: claude-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+      checks: read
+      statuses: read
+    env:
+      # 直しの step で bot に許すコマンド。issue-to-pr スキルの手順 9 で使うものだけにする。手順にコマンドを足したら、ここにも足す
+      FIX_TOOLS: "Skill,Read,Glob,Grep,Bash(gh issue view:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(git status:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git show:*),Bash(git log:*),Bash(bash .claude/skills/issue-to-pr/scripts/verify.sh),Bash(node plugins/aidd/scripts/body_length.js:*)"
+    steps:
+      # issue_comment では既定ブランチ（main）を取るため、develop を渡す。規約と deny を、作業の起点と同じ版で読ませるため
+      # 過去のコミットを読む Issue があるため、全履歴を取る
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      # CI を待つスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
+      - name: ワークフローのスクリプトを取り分ける
+        run: |
+          mkdir -p "$RUNNER_TEMP/trusted"
+          cp .github/scripts/wait-pr-checks.sh "$RUNNER_TEMP/trusted/"
+
+      # Actions の Claude App には、コミットと push を任せる（P1 の例外）。リポジトリの deny は手元の Claude 向けのため、
+      # ランナーの中だけで外す。--skip-worktree で、書き換えた settings.json がコミットに入らないようにする
+      - name: コミットと push の deny を外す
+        run: |
+          jq '.permissions.deny |= map(select(test("^(Bash|PowerShell)\\(git (-[cC] \\* )?(commit|push)") | not))' \
+            .claude/settings.json > "$RUNNER_TEMP/settings.json"
+          mv "$RUNNER_TEMP/settings.json" .claude/settings.json
+          git update-index --skip-worktree .claude/settings.json
+
+      # トークンが空・空白だけだと、Claude は理由を出さずに落ちるため、ここで分かるメッセージで止める
+      - name: トークンを確かめる
+        id: check
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          # 全角スペース（U+3000）も空白として除く
+          if [ -z "$(printf '%s' "$TOKEN" | LC_ALL=C sed 's/\xe3\x80\x80//g' | tr -d '[:space:]')" ]; then
+            error="トークンが空か空白だけです。environment「claude」の secret CLAUDE_CODE_OAUTH_TOKEN を登録し直してください"
+            echo "error=$error" >> "$GITHUB_OUTPUT"
+            echo "::error::$error"
+            exit 1
+          fi
+
+      # ===== 1. 実装
+      - name: Claude Code で実装する
+        id: claude
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 25
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          base_branch: develop
+          branch_prefix: issues/
+          branch_name_template: "{{prefix}}{{entityNumber}}-claude-{{timestamp}}"
+          # tag モードの既定では PR を作らずリンクを書くだけなので、gh pr create を許し、下書きの PR の作成まで指示する
+          claude_args: |
+            --model opus
+            --max-turns 100
+            --allowedTools "Skill,Bash(gh pr create:*),Bash(gh issue view:*),Bash(git show:*),Bash(git log:*),Bash(bash .claude/skills/issue-to-pr/scripts/verify.sh),Bash(node plugins/aidd/scripts/body_length.js:*)"
+            --append-system-prompt "issue-to-pr スキルの手順 1〜8 で、Issue を実装して下書きの PR を作る。"
+
+      - name: できた PR を探す
+        id: pr
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+        run: |
+          [ -n "$BRANCH" ] || exit 0
+          pr=$(gh pr list --head "$BRANCH" --state open --json number,changedFiles,additions,deletions,files --jq '.[0] // empty')
+          [ -n "$pr" ] || exit 0
+          # レビューの effort を、規模（ファイル数と変更行数の重いほう）で決め、影響の大きいファイルを触っていたら 1 段上げる（routing）
+          # 段階: 3 ファイル・100 行以下は low、10 ファイル・500 行以下は medium、それより多いと high
+          files=$(jq .changedFiles <<< "$pr")
+          lines=$(jq '.additions + .deletions' <<< "$pr")
+          level=0
+          if [ "$files" -gt 10 ] || [ "$lines" -gt 500 ]; then level=2
+          elif [ "$files" -gt 3 ] || [ "$lines" -gt 100 ]; then level=1
+          fi
+          if jq -r '.files[].path' <<< "$pr" | grep -qE '^\.github/|(^|/)\.claude/(settings\.json|hooks/)|(^|/)plugin\.json$|\.(sh|py|js|mjs|ts|tsx)$'; then
+            level=$(( level < 2 ? level + 1 : 2 ))
+          fi
+          case "$level" in
+            0) effort=low ;;
+            1) effort=medium ;;
+            *) effort=high ;;
+          esac
+          # 記録の置き場所。issue-to-pr スキルが計画と確かめたことを書く場所と同じ（.claude/rules/tmp-output.md）
+          dir="tmp/${BRANCH//\//-}/issue-to-pr"
+          mkdir -p "$dir"
+          { echo "number=$(jq .number <<< "$pr")"; echo "dir=$dir"; echo "effort=$effort"; } >> "$GITHUB_OUTPUT"
+
+      # ===== 2. CI の直し（最大 3 回）
+      # 「CI を待つ」は、作業ブランチの先頭に手元を合わせ、そのコミットのチェックを待ち、落ちたログを ci-<段>-<回>.log に書く
+      # 「CI の失敗を直す」は、待つ step が fail のときだけ動く。直しが失敗したら、次の待つ step は動かず、そこで止まる
+      - name: CI を待つ（1-0：実装の後）
+        id: w10
+        if: always() && steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: bash "$RUNNER_TEMP/trusted/wait-pr-checks.sh" "$PR" "$BRANCH" "$DIR/ci-1-0.log"
+
+      - name: CI の失敗を直す（1-1）
+        id: f11
+        if: always() && steps.w10.outputs.result == 'fail'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-0.log`）を直す。
+            作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
+          claude_args: |
+            --model opus
+            --max-turns 50
+            --permission-mode acceptEdits
+            --allowedTools "${{ env.FIX_TOOLS }}"
+
+      - name: CI を待つ（1-1）
+        id: w11
+        if: always() && steps.f11.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: bash "$RUNNER_TEMP/trusted/wait-pr-checks.sh" "$PR" "$BRANCH" "$DIR/ci-1-1.log"
+
+      - name: CI の失敗を直す（1-2）
+        id: f12
+        if: always() && steps.w11.outputs.result == 'fail'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-1.log`）を直す。
+            作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
+          claude_args: |
+            --model opus
+            --max-turns 50
+            --permission-mode acceptEdits
+            --allowedTools "${{ env.FIX_TOOLS }}"
+
+      - name: CI を待つ（1-2）
+        id: w12
+        if: always() && steps.f12.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: bash "$RUNNER_TEMP/trusted/wait-pr-checks.sh" "$PR" "$BRANCH" "$DIR/ci-1-2.log"
+
+      - name: CI の失敗を直す（1-3）
+        id: f13
+        if: always() && steps.w12.outputs.result == 'fail'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-2.log`）を直す。
+            作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
+          claude_args: |
+            --model opus
+            --max-turns 50
+            --permission-mode acceptEdits
+            --allowedTools "${{ env.FIX_TOOLS }}"
+
+      - name: CI を待つ（1-3）
+        id: w13
+        if: always() && steps.f13.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: bash "$RUNNER_TEMP/trusted/wait-pr-checks.sh" "$PR" "$BRANCH" "$DIR/ci-1-3.log"
+
+      # 最後に動いた待つ step の結果を、この段の結果にする
+      - name: CI の結果をまとめる（1 段目）
+        id: ci1
+        if: always() && steps.pr.outputs.number != ''
+        env:
+          R0: ${{ steps.w10.outputs.result }}
+          R1: ${{ steps.w11.outputs.result }}
+          R2: ${{ steps.w12.outputs.result }}
+          R3: ${{ steps.w13.outputs.result }}
+          F1: ${{ steps.f11.outcome }}
+          F2: ${{ steps.f12.outcome }}
+          F3: ${{ steps.f13.outcome }}
+        run: |
+          result=
+          for r in "$R0" "$R1" "$R2" "$R3"; do [ -n "$r" ] && result=$r; done
+          fixes=0
+          for f in "$F1" "$F2" "$F3"; do [ -n "$f" ] && [ "$f" != skipped ] && fixes=$((fixes + 1)); done
+          { echo "result=${result:-unknown}"; echo "fixes=$fixes"; } >> "$GITHUB_OUTPUT"
+
+      # ===== 3. レビュー（CI が通ったときだけ）
+      # 公式の code-review は下書きの PR を飛ばすため、先にレビュー待ちにする。最後の CI が通らなければ、記録の step で下書きに戻す
+      - name: レビュー待ちにする
+        id: ready
+        if: always() && steps.ci1.outputs.result == 'pass'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          gh pr ready "$PR"
+          # レビューの直しがあったかを、この後の先頭と比べて決めるため、今の先頭を残す
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # /security-review は origin/HEAD（このリポジトリでは main）と比べるため、ランナーの中だけで develop に向け直す
+      - name: セキュリティレビューの比べる先を develop にする
+        if: always() && steps.ready.outcome == 'success'
+        run: git remote set-head origin develop
+
+      # Claude Code 同梱のコマンド。確信の高い脆弱性だけを、# Vuln 1: ... の見出しで出す
+      - name: セキュリティレビュー
+        id: security
+        if: always() && steps.ready.outcome == 'success'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: /security-review
+          claude_args: |
+            --model opus
+            --effort ${{ steps.pr.outputs.effort }}
+            --max-turns 50
+            --allowedTools "Bash(git diff:*),Bash(git status:*),Bash(git log:*),Bash(git show:*),Read,Glob,Grep,LS,Task"
+
+      # 公式の code-review。--comment で、指摘を行ごとに PR へコメントする（指摘が無ければ 1 件のまとめのコメント）
+      # 行ごとのコメントのツールは、--allowedTools に名前があるときだけ action が用意する
+      - name: コードレビュー
+        id: codereview
+        if: always() && steps.ready.outcome == 'success'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 20
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: https://github.com/anthropics/claude-plugins-official.git
+          plugins: code-review@claude-plugins-official
+          prompt: /code-review:code-review --comment ${{ github.repository }}/pull/${{ steps.pr.outputs.number }}
+          claude_args: |
+            --effort ${{ steps.pr.outputs.effort }}
+            --max-turns 60
+            --allowedTools "mcp__github_inline_comment__create_inline_comment"
+
+      # 直すかは、2 つの決まった出力で決める。どちらも、確信の高い指摘だけを出す作りのため
+      # セキュリティ：脆弱性の見出し（# Vuln）があれば直す。コードレビュー：結果があり、「No issues found」が無ければ直す
+      - name: レビューの結果を集める
+        id: reviews
+        if: always() && steps.ready.outcome == 'success'
+        env:
+          DIR: ${{ steps.pr.outputs.dir }}
+          SEC_FILE: ${{ steps.security.outputs.execution_file }}
+          CR_FILE: ${{ steps.codereview.outputs.execution_file }}
+        run: |
+          result_of() { [ -n "$1" ] && jq -r '.[-1].result // empty' "$1" 2>/dev/null; }
+          sec=$(result_of "$SEC_FILE" || true)
+          cr=$(result_of "$CR_FILE" || true)
+          printf '%s\n' "${sec:-（結果なし）}" > "$DIR/security-review.md"
+          printf '%s\n' "${cr:-（結果なし）}" > "$DIR/code-review.md"
+          need=false
+          if grep -qiE '^#+[[:space:]]*Vuln' "$DIR/security-review.md"; then need=true; fi
+          if [ -n "$cr" ] && ! grep -qi 'No issues found' <<< "$cr"; then need=true; fi
+          {
+            echo "## セキュリティレビュー（/security-review）"
+            echo
+            cat "$DIR/security-review.md"
+            echo
+            echo "## コードレビュー（code-review。行ごとのコメントは PR にある）"
+            echo
+            cat "$DIR/code-review.md"
+          } > "$DIR/review-feedback.md"
+          echo "need=$need" >> "$GITHUB_OUTPUT"
+
+      # ===== 4. レビューの直し（1 回だけ）
+      - name: レビューの指摘を直す
+        id: rfix
+        if: always() && steps.reviews.outputs.need == 'true'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} へのレビューの指摘（`${{ steps.pr.outputs.dir }}/review-feedback.md`）を直す。
+            直すべき指摘が無ければ、何も変えずに終わる。
+            作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
+          claude_args: |
+            --model opus
+            --max-turns 50
+            --permission-mode acceptEdits
+            --allowedTools "${{ env.FIX_TOOLS }}"
+
+      - name: レビューの直しで変わったかを確かめる
+        id: rfixed
+        if: always() && steps.rfix.outcome == 'success'
+        env:
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          BEFORE: ${{ steps.ready.outputs.sha }}
+        run: |
+          if git fetch --quiet origin "$BRANCH" && [ "$(git rev-parse FETCH_HEAD)" != "$BEFORE" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ===== 5. CI の直し（最大 3 回）。レビューの直しで変わったときだけ
+      - name: CI を待つ（2-0：レビューの直しの後）
+        id: w20
+        if: always() && steps.rfixed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: bash "$RUNNER_TEMP/trusted/wait-pr-checks.sh" "$PR" "$BRANCH" "$DIR/ci-2-0.log"
+
+      - name: CI の失敗を直す（2-1）
+        id: f21
+        if: always() && steps.w20.outputs.result == 'fail'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-0.log`）を直す。
+            作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
+          claude_args: |
+            --model opus
+            --max-turns 50
+            --permission-mode acceptEdits
+            --allowedTools "${{ env.FIX_TOOLS }}"
+
+      - name: CI を待つ（2-1）
+        id: w21
+        if: always() && steps.f21.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: bash "$RUNNER_TEMP/trusted/wait-pr-checks.sh" "$PR" "$BRANCH" "$DIR/ci-2-1.log"
+
+      - name: CI の失敗を直す（2-2）
+        id: f22
+        if: always() && steps.w21.outputs.result == 'fail'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-1.log`）を直す。
+            作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
+          claude_args: |
+            --model opus
+            --max-turns 50
+            --permission-mode acceptEdits
+            --allowedTools "${{ env.FIX_TOOLS }}"
+
+      - name: CI を待つ（2-2）
+        id: w22
+        if: always() && steps.f22.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: bash "$RUNNER_TEMP/trusted/wait-pr-checks.sh" "$PR" "$BRANCH" "$DIR/ci-2-2.log"
+
+      - name: CI の失敗を直す（2-3）
+        id: f23
+        if: always() && steps.w22.outputs.result == 'fail'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-2.log`）を直す。
+            作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
+          claude_args: |
+            --model opus
+            --max-turns 50
+            --permission-mode acceptEdits
+            --allowedTools "${{ env.FIX_TOOLS }}"
+
+      - name: CI を待つ（2-3）
+        id: w23
+        if: always() && steps.f23.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: bash "$RUNNER_TEMP/trusted/wait-pr-checks.sh" "$PR" "$BRANCH" "$DIR/ci-2-3.log"
+
+      - name: CI の結果をまとめる（2 段目）
+        id: ci2
+        if: always() && steps.rfixed.outputs.changed == 'true'
+        env:
+          R0: ${{ steps.w20.outputs.result }}
+          R1: ${{ steps.w21.outputs.result }}
+          R2: ${{ steps.w22.outputs.result }}
+          R3: ${{ steps.w23.outputs.result }}
+          F1: ${{ steps.f21.outcome }}
+          F2: ${{ steps.f22.outcome }}
+          F3: ${{ steps.f23.outcome }}
+        run: |
+          result=
+          for r in "$R0" "$R1" "$R2" "$R3"; do [ -n "$r" ] && result=$r; done
+          fixes=0
+          for f in "$F1" "$F2" "$F3"; do [ -n "$f" ] && [ "$f" != skipped ] && fixes=$((fixes + 1)); done
+          { echo "result=${result:-unknown}"; echo "fixes=$fixes"; } >> "$GITHUB_OUTPUT"
+
+      # ===== 6. 記録。コメントには起動語を書かない。GITHUB_TOKEN のコメントではワークフローは動かないが、読み手が真似ないようにするため
+      - name: 結果を PR に書く
+        if: always() && steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          DIR: ${{ steps.pr.outputs.dir }}
+          CI1: ${{ steps.ci1.outputs.result }}
+          CI1_FIXES: ${{ steps.ci1.outputs.fixes }}
+          READY: ${{ steps.ready.outcome }}
+          SEC_OUTCOME: ${{ steps.security.outcome }}
+          CR_OUTCOME: ${{ steps.codereview.outcome }}
+          NEED: ${{ steps.reviews.outputs.need }}
+          RFIX_OUTCOME: ${{ steps.rfix.outcome }}
+          CHANGED: ${{ steps.rfixed.outputs.changed }}
+          CI2: ${{ steps.ci2.outputs.result }}
+          CI2_FIXES: ${{ steps.ci2.outputs.fixes }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          ci_label() { case "$1" in pass) echo "通った" ;; fail) echo "通らなかった" ;; unknown) echo "確かめられなかった（時間切れなど）" ;; *) echo "動かなかった" ;; esac; }
+          step_label() { case "$1" in success) echo "終わった" ;; failure) echo "失敗した" ;; *) echo "動かなかった" ;; esac; }
+          # 最後の CI で決める。レビューの直しで変わったなら 2 段目、変わっていなければ 1 段目
+          if [ "$CHANGED" = true ]; then final=$CI2; else final=$CI1; fi
+          if [ "$final" != pass ] && [ "$READY" = success ]; then
+            gh pr ready --undo "$PR"
+          fi
+          # 一番新しい CI の失敗のログ（ci-<段>-<回>.log）を載せる
+          last_log=$(ls -1 "$DIR"/ci-*.log 2>/dev/null | sort | tail -n 1 || true)
+          body="$DIR/record.md"
+          {
+            echo "Claude の作業記録（[実行ログ]($RUN_URL)）"
+            echo
+            if [ "$final" = pass ]; then
+              echo "最後の CI が通ったため、レビュー待ちにしています。マージは人が判断してください。"
+            else
+              echo "最後の CI が通らなかったため、下書きのまま残しています。"
+            fi
+            echo
+            # 実装した Claude の記録（## 計画・## 確かめたこと・## 直したこと）をそのまま載せる
+            if [ -s "$DIR/report.md" ]; then
+              cat "$DIR/report.md"
+            else
+              printf '## 計画と確かめたこと\n\n（記録なし）\n'
+            fi
+            echo
+            echo "## CI"
+            echo
+            echo "- 1 段目：$(ci_label "$CI1")（直し ${CI1_FIXES:-0} 回）"
+            if [ "$CHANGED" = true ]; then
+              echo "- 2 段目（レビューの直しの後）：$(ci_label "$CI2")（直し ${CI2_FIXES:-0} 回）"
+            fi
+            if [ "$final" != pass ] && [ -n "$last_log" ] && [ -s "$last_log" ]; then
+              printf '\n<details><summary>最後に落ちた CI のログ（%s）</summary>\n\n' "$(basename "$last_log")"
+              cat "$last_log"
+              printf '\n</details>\n'
+            fi
+            echo
+            echo "## レビュー"
+            echo
+            if [ "$READY" = success ]; then
+              echo "- セキュリティレビュー（/security-review）：$(step_label "$SEC_OUTCOME")"
+              echo "- コードレビュー（code-review）：$(step_label "$CR_OUTCOME")。指摘は PR の行ごとのコメントにある"
+              echo "- 指摘の直し：$( [ "$NEED" = true ] && step_label "$RFIX_OUTCOME" || echo "直す指摘は無かった" )$( [ "$CHANGED" = true ] && echo "（変更あり）" )"
+              if [ -s "$DIR/security-review.md" ]; then
+                printf '\n<details><summary>セキュリティレビューの結果</summary>\n\n'
+                cat "$DIR/security-review.md"
+                printf '\n</details>\n'
+              fi
+            else
+              echo "CI が通らなかったため、レビューはしていない。"
+            fi
+          } > "$body"
+          gh pr comment "$PR" --body-file "$body"
+
+      # PR が無いときだけ動く。Claude が動いた記録か、トークンの誤りがあるときに限る。
+      # @claude-bot のように語の続くものや、書き込み権限の無い人のコメントでは、action が何もせずに終わるため、書かない
+      - name: PR を作れなかった理由を Issue に書く
+        if: always() && steps.pr.outputs.number == '' && (steps.check.outputs.error != '' || steps.claude.outputs.execution_file != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
+          TOKEN_ERROR: ${{ steps.check.outputs.error }}
+        run: |
+          # トークンで止めたときはその理由を、それ以外は Claude の最後の返答を、PR を作れなかった理由として載せる
+          reason=${TOKEN_ERROR:-$(jq -r '.[-1].result // empty' "$EXEC_FILE" 2>/dev/null || true)}
+          gh issue comment "$ISSUE" --body "Claude の実装で PR を作れませんでした。
+          理由: ${reason:-（記録なし）}
+          実行: $RUN_URL"
