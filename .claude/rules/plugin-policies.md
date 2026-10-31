@@ -37,7 +37,7 @@
 | [P5](../../docs/policies/p05-standalone-plugin.md) | どのプラグインも、単独で入れて動くようにすること | ほかのプラグインのファイルを使いたいとき |
 | [P6](../../docs/policies/p06-common-template.md) | 土台には設計思想だけを入れ、技術に依るものは技術別のスキルで重ねること | テンプレートにファイルを足すとき、技術別のスキルが土台のファイルに足すとき、`init-repo` が配らないファイルを別のスキルで作るとき |
 | [P7](../../docs/policies/p07-readme-guide.md) | README には本文を書かず、どこに何があるかの案内にとどめること | README のひな形・規約を直すとき、README を作るスキルを足すとき |
-| [P8](../../docs/policies/p08-short-body.md) | Issue・PR の本文は、人が読み切れる長さにすること | Issue・PR の本文やコメントを書く手順・テンプレートを直すとき |
+| [P8](../../docs/policies/p08-short-body.md) | Issue・PR の本文は、人が読み切れる形にすること | Issue・PR の本文やコメントを書く手順・テンプレートを直すとき |
 | [P9](../../docs/policies/p09-readable-ai-docs.md) | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・参照ファイル・規約を書く・直すとき |
 | [P10](../../docs/policies/p10-template-lifecycle.md) | 雛形は、実物を作ったら削除を提案し、削除は人が行うこと | `init-repo` の `docs/` に雛形を足す・直すとき |
 | [P11](../../docs/policies/p11-options-and-supplements.md) | 動きはオプションで切り替え、自然な言葉の補足は承認の前に示すこと | スキルの引数（「想定している引数」・`argument-hint`）を足す・直すとき |

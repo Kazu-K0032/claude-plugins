@@ -88,7 +88,7 @@ aidd/
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
     ├── plain-language.md # 平易化の技法
-    ├── short-body.md    # Issue・PR の本文の長さ
+    ├── short-body.md    # Issue・PR の本文の書き方と長さ
     ├── tmp-ignore.md    # tmp/・tmp.md の除外の確かめ方
     ├── ai-research.md   # AI 出力を引用として扱わないための規約
     └── harness-principles.md # 設計思想の要約（harness-audit の物差し）
@@ -201,9 +201,9 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 - `workflows/` の `pr-review.js`
 - `project` の `init-repo` が配る `.claude/rules/branch.md`（このリポジトリの `.claude/rules/branch.md` と組）
 
-### Issue・PR の本文は 500 文字以内にする
+### Issue・PR の本文は、冒頭の概要を 300 文字以内にする
 
-`pr-create`・`issue-start`・`issue-pr-sync` は、本文を 500 文字以内、1 文・1 項目を 50 文字以内で書く。書いたら `scripts/body_length.js` で数える。長い本文は読まれないため（[P8](../../docs/policies/p08-short-body.md)）。上限と数え方は `references/short-body.md` にある。
+`pr-create`・`issue-start`・`issue-pr-sync` は、本文の冒頭の概要（最初の節）を 300 文字以内で書き、`scripts/body_length.js` で数える。概要より後の節は上限なしで、Issue は種類（バグ修正・新機能・文書や版の更新）で詳しく書く節を変える。長い本文の全体は読まれなくても、冒頭は読まれるため（[P8](../../docs/policies/p08-short-body.md)）。上限・数え方・書き分けは `references/short-body.md` にある。
 
 ### 点検レポートは同じ構成にする
 

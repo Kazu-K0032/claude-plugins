@@ -79,7 +79,7 @@ config/
     │   │   ├── gh-access.md        # gh の前提・権限と、書き込めないとき
     │   │   ├── issue-format.md     # Issue・コメントの本文の型と、公開前の点検項目
     │   │   ├── policy-check.md     # 方針と照らす
-    │   │   ├── short-body.md       # 本文の長さの上限と数え方（aidd と同じ写し）
+    │   │   ├── short-body.md       # 本文の書き方と概要の上限・数え方（aidd と同じ写し）
     │   │   └── triage.md           # 起票する件の切り分け
     │   └── scripts/
     │       └── body_length.js   # 本文の文字数を数える（aidd と同じ写し）
