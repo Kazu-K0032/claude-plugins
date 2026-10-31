@@ -39,14 +39,15 @@
 
 bot を使えるようにする準備（App・environment・secret）、確かめ方、トークンの更新、止め方は [docs/claude-bot.md](docs/claude-bot.md) にある。
 
-- Issue のコメントに `@claude` と書くと、GitHub Actions の Claude が Issue を実装し、`develop` 向けの PR を作る（[.github/workflows/claude-issue-to-pr.yml](.github/workflows/claude-issue-to-pr.yml)。手順は [.claude/skills/issue-to-pr/SKILL.md](.claude/skills/issue-to-pr/SKILL.md)）。頼めるのは、リポジトリに書き込める人だけ
+- Issue のコメントに `@claude` と書くと、GitHub Actions の Claude が Issue を実装し、`develop` 向けの PR を作る（[.github/workflows/claude-issue-to-pr.yml](.github/workflows/claude-issue-to-pr.yml)。手順は [.claude/skills/issue-to-pr/SKILL.md](.claude/skills/issue-to-pr/SKILL.md)）。頼めるのは、リポジトリの所有者・メンバー・共同作業者だけ（それ以外の人のコメントでは動かない）
 - bot は Issue の本文とコメントを読んで動く。決めたこと・変えるファイル・確かめ方を Issue に書いておくと、意図どおりに動きやすい
-- bot のブランチ名は `issues/<Issue番号>-claude-<日時>` になる
+- bot のブランチ名は `issues/<Issue番号>-claude-<日時>` になる。上の「ブランチを作る場合」の `<説明>`（英語 2〜4 語）の例外で、action が自動で付けるため。`issues/<Issue番号>-` で始まるので、Issue 番号はこの名前から取れる
 - bot は、まず下書きの PR を作る。CI が落ちたら、bot がログを読んで直す（最大 3 回）
 - CI が通ると PR はレビュー待ちになり、セキュリティレビュー（`/security-review`）とコードレビュー（公式の code-review）が動く。直すべき指摘があれば bot が 1 回だけ直し、もう一度 CI が通るまで直す（最大 3 回）
 - 最後の CI が通らなければ、PR は下書きに戻る。どちらの場合も、計画・CI・レビューの記録が PR にコメントされる
 - マージは、ほかの PR と同じく人が行う
-- `.github/workflows/`・`.github/scripts/`・`.claude/settings.json` の変更は、PR の本文に diff で届く。人が確かめて当てる
+- `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` は、bot に変えさせない。変更は、PR の本文に diff で届く。人が確かめて当てる。bot が変えて push しようとすると、push の前に止まる。それでも PR に入ったときは、下書きのまま残る
+- bot が push できるのは、自分の作業ブランチだけ。`develop` と `main` には、push できない
 - PR を作れなかったときは、理由が Issue にコメントされる
 - 動くのは `main` にあるワークフローのため、ワークフローを変えたら、リリースするまで反映されない
 - 手元の Claude は、`@claude` を含むコメントを書かない。deny とフック（`.claude/hooks/guard-claude-mention.sh`）で止めている

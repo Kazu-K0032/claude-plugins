@@ -41,4 +41,4 @@
 
 ## 既知の食い違い
 
-なし
+- `.claude/settings.json` にだけ、起動語 `@claude` を含むコメントを止める deny（`gh issue comment`・`gh pr comment`・`gh api` の 6 件）がある。`init-repo` の `settings.json` には無い。`check.py` の `deny-sync` が、この差を WARN で毎回出す。意図した差で、残す。起動語はリポジトリごとに違い、配る規約 `permissions.md` が「利用先で足す」と案内しているため。init-repo で bot の仕組みごと配るかは #214 で決める。配ることになれば、この項目を消す

@@ -8,7 +8,7 @@ description: Issue のとおりに実装し、作業ブランチに push して 
 GitHub Actions の Claude が、Issue のとおりに実装し、作業ブランチに push して、`develop` 向けの下書きの PR を作る。その後、ワークフローから CI の失敗やレビューの指摘を渡されたら、直して push する。コミット・push を Claude に任せるのは、P1 の例外（`docs/policies/p01-operation-boundary.md`）のため、手元の作業では使わない。
 
 - 外へ書き込むもの：作業ブランチへのコミットと push、`develop` 向けの下書きの PR。ほかに `tmp/<ブランチ名>/issue-to-pr/` の記録
-- 人がすること：PR のレビューとマージ。PR の本文に書いた diff（`.github/workflows/`・`.claude/settings.json`）を当てること
+- 人がすること：PR のレビューとマージ。PR の本文に書いた diff（`.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json`）を当てること
 
 ## 参照ファイル
 
@@ -48,7 +48,10 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 次のファイルは変えず、そのまま当てられる diff を、PR の本文の末尾に `<details>` で畳んで書く。
 
 - `.github/workflows/`・`.github/scripts/`：権限と secret に関わるため、人が確かめて当てる
+- `.claude/hooks/`：deny と並ぶ守りのため、人が確かめて当てる
 - `.claude/settings.json`：ワークフローがランナーの中で deny を外し、`--skip-worktree` を付けているため、変えてもコミットに入らない
+
+これらを commit して push しようとすると、ワークフローの pre-push フックが止める。PR に入っていれば、PR は下書きのまま残る。
 
 過去のコミットは、`git show <sha>`・`git log -n <件数> -- <パス>` で要る分だけ読む。全履歴の差分を一度に出すと、コンテキストを使い切るため。
 
@@ -75,7 +78,7 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 ワークフローが prompt で渡したファイルを読み、指摘を直す。ファイルは次のどちらか。
 
 - CI の失敗（`ci-<段>-<回>.log`）：落ちたジョブのログの末尾。原因を直す
-- レビューの指摘（`review-feedback.md`）：`/security-review` と code-review の結果。code-review の行ごとの指摘は `gh pr view <番号> --comments` でも読める。マージの前に直すべきものだけを直す。直すべきものが無ければ、何も変えずに終わる
+- レビューの指摘（`review-feedback.md`）：`/security-review` と code-review の結果。code-review の行ごとの指摘は、ワークフローが取って、同じファイルの「行ごとの指摘」に載せてある（`gh pr view --comments` では読めない）。マージの前に直すべきものだけを直す。直すべきものが無ければ、何も変えずに終わる
 
 直したら手順 5 の検査を流し、手順 6 のとおりコミットして、同じ作業ブランチに push する。直したことと検査の結果を、`report.md` の「## 直したこと」に、どのファイルを受けての直しかと一緒に足す。PR の本文を変えるときは、`gh pr edit <番号> --body-file <本文のファイル>` で直す。
 
@@ -86,11 +89,13 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 - `main` に向けた PR を作らない。`main` はリリース専用のため
 - PR をレビュー待ちにしない。マージしない。Issue を閉じない。これでよいかの判断は、ワークフローの検査と人が行うため（V3）
 - コメント・PR の本文に `@claude` を書かない。ワークフローの起動語のため
-- `.github/workflows/`・`.github/scripts/`・`.claude/settings.json` を変えない（手順 4）。`.github/scripts/` は、ワークフローが CI を待つのに使うため
+- `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` を変えない（手順 4）。`.github/scripts/` は、ワークフローが CI を待つのに使うため
+- 作業ブランチ以外に push しない。`--force` を付けない。直しの step で許されるのは、作業ブランチへの `git push origin <ブランチ>` だけのため
 
 ## 保守
 
-- このスキルは `.github/workflows/claude-issue-to-pr.yml` から呼ぶ（手順 1〜8 は `--append-system-prompt`、手順 9 は `prompt`）。使えるコマンドは、ワークフローの `--allowedTools`（手順 9 は `FIX_TOOLS`）で決まる。手順で新しいコマンドを使うときは、そちらにも足す
+- このスキルは `.github/workflows/claude-issue-to-pr.yml` から呼ぶ（手順 1〜8 は `--append-system-prompt`、手順 9 は `prompt`）。使えるコマンドは、ワークフローの `--allowedTools`（手順 9 は `FIX_TOOLS_BASE` に、作業ブランチへの push を足したもの）で決まる。手順で新しいコマンドを使うときは、そちらにも足す
+- 変えてはいけないパスの一覧は、`.github/scripts/guard-paths.sh` の `protected` が正典。変えるときは、手順 4・禁止事項・`CONTRIBUTING.md` も直す
 - 流れは Anthropic の「Building effective agents」の型にならう。実装 → CI の直し（最大 3 回）→ `/security-review` と code-review → 直し（1 回）→ CI の直し（最大 3 回）の順で、回数はワークフローが数える。検査を `verify.sh` の 1 本にまとめ、引数を取らないのは、bot が取り違えないようにするため（同じ記事の poka-yoke）
 - 公式の code-review は、下書きの PR と、Claude がコメント済みの PR を飛ばす。そのため、ワークフローはレビューの前にレビュー待ちにし、記録のコメントはレビューの後に書く
 - `aidd` の `commit`・`pr-create` は `disable-model-invocation: true` のため、bot からはスキルとして呼べない。そのため、決まりのファイルを直接読ませている。ファイルの場所が変わったら、手順 6・7 を直す

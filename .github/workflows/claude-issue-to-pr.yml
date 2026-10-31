@@ -8,6 +8,11 @@ name: Claude による Issue の実装
 #   4. レビューの直し：直すべき指摘があれば、1 回だけ直させる
 #   5. CI の直し：4 で直したら、もう一度 CI を待ち、落ちたら直させる。最大 3 回
 #   6. 記録：計画・CI・レビュー・直しを PR にコメントする。最後の CI が通らなければ、PR を下書きに戻す
+# 守りは次のとおり
+#   - 頼めるのは、所有者・メンバー・共同作業者のコメントだけ（ジョブの if）
+#   - 直しの step が push できるのは、作業ブランチだけ（「直しの許可を決める」の step。--force や develop への push は許可に当たらない）
+#   - .github/workflows/・.github/scripts/・.claude/settings.json・.claude/hooks/ の変更は、push の前（pre-push フック）と PR の差分で止める
+#     （guard-paths.sh。止まった PR は下書きのまま残す）
 # PR を作れなかったときは、Claude の最後の返答を理由として Issue にコメントする。マージは人が行う
 # Claude にコミット・push を任せるのは、P1 の例外（docs/policies/p01-operation-boundary.md）
 # PR の作成と push は、実装・直しの step の中で Claude App のトークンで行う。action は step の最後にこのトークンを取り消し、
@@ -26,7 +31,12 @@ jobs:
   claude:
     name: Issue を実装して PR を作る
     # PR のコメントでは動かさない。Issue の実装だけを頼めるようにするため
-    if: contains(github.event.comment.body, '@claude') && !github.event.issue.pull_request
+    # 頼めるのは、リポジトリの所有者・メンバー・共同作業者だけ。権限の無い人のコメントでは、ジョブを始めない
+    # （始めると、concurrency で、権限のある人の待ちの依頼が置き換わるため）
+    if: >-
+      contains(github.event.comment.body, '@claude')
+      && !github.event.issue.pull_request
+      && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     environment: claude
     # 実装 25 分、CI の待ち（1 回最大 25 分）と直し（15 分）の 3 回 × 2、レビュー 35 分を足した上限
@@ -44,7 +54,8 @@ jobs:
       statuses: read
     env:
       # 直しの step で bot に許すコマンド。issue-to-pr スキルの手順 9 で使うものだけにする。手順にコマンドを足したら、ここにも足す
-      FIX_TOOLS: "Skill,Read,Glob,Grep,Bash(gh issue view:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(git status:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git show:*),Bash(git log:*),Bash(bash .claude/skills/issue-to-pr/scripts/verify.sh),Bash(node plugins/aidd/scripts/body_length.js:*)"
+      # git push は、作業ブランチの名前が決まってから足す（「直しの許可を決める」の step）。送り先を絞らないと、--force や develop への push も通るため
+      FIX_TOOLS_BASE: "Skill,Read,Glob,Grep,Bash(gh issue view:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(git status:*),Bash(git add:*),Bash(git commit:*),Bash(git show:*),Bash(git log:*),Bash(bash .claude/skills/issue-to-pr/scripts/verify.sh),Bash(node plugins/aidd/scripts/body_length.js:*)"
     steps:
       # issue_comment では既定ブランチ（main）を取るため、develop を渡す。規約と deny を、作業の起点と同じ版で読ませるため
       # 過去のコミットを読む Issue があるため、全履歴を取る
@@ -53,11 +64,15 @@ jobs:
           ref: develop
           fetch-depth: 0
 
-      # CI を待つスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
+      # CI を待つスクリプトと、変えさせないファイルを止めるスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
+      # 止めるスクリプトは、git の pre-push フックとしても据える。bot が push する前に、.github/workflows/ などの変更を止めるため
       - name: ワークフローのスクリプトを取り分ける
         run: |
-          mkdir -p "$RUNNER_TEMP/trusted"
-          cp .github/scripts/wait-pr-checks.sh "$RUNNER_TEMP/trusted/"
+          mkdir -p "$RUNNER_TEMP/trusted/hooks"
+          cp .github/scripts/wait-pr-checks.sh .github/scripts/guard-paths.sh "$RUNNER_TEMP/trusted/"
+          printf '#!/usr/bin/env bash\nexec bash "%s/trusted/guard-paths.sh" --pre-push "$@"\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/trusted/hooks/pre-push"
+          chmod +x "$RUNNER_TEMP/trusted/hooks/pre-push"
+          git config core.hooksPath "$RUNNER_TEMP/trusted/hooks"
 
       # Actions の Claude App には、コミットと push を任せる（P1 の例外）。リポジトリの deny は手元の Claude 向けのため、
       # ランナーの中だけで外す。--skip-worktree で、書き換えた settings.json がコミットに入らないようにする
@@ -130,6 +145,31 @@ jobs:
           dir="tmp/${BRANCH//\//-}/issue-to-pr"
           mkdir -p "$dir"
           { echo "number=$(jq .number <<< "$pr")"; echo "dir=$dir"; echo "effort=$effort"; } >> "$GITHUB_OUTPUT"
+
+      # 直しの step の許可に、作業ブランチだけへの push を足す。完全一致で書くため、--force や別のブランチへの push は許可に当たらない
+      - name: 直しの許可を決める
+        if: always() && steps.pr.outputs.number != ''
+        env:
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+        run: echo "FIX_TOOLS=${FIX_TOOLS_BASE},Bash(git push origin ${BRANCH})" >> "$GITHUB_ENV"
+
+      # bot が変えてはいけないファイルが、PR に入っていないかを確かめる。入っていたら、レビュー待ちにしない
+      # push 前のフックを通らない経路（API でのコミット）の備えでもある。直しの後にも、記録の step でもう一度確かめる
+      - name: 変えてはいけないファイルを確かめる
+        id: guard
+        if: always() && steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: |
+          if gh pr view "$PR" --json files -q '.files[].path' | bash "$RUNNER_TEMP/trusted/guard-paths.sh" --files > "$DIR/guard.log" 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            cat "$DIR/guard.log"
+          fi
 
       # ===== 2. CI の直し（最大 3 回）
       # 「CI を待つ」は、作業ブランチの先頭に手元を合わせ、そのコミットのチェックを待ち、落ちたログを ci-<段>-<回>.log に書く
@@ -252,7 +292,7 @@ jobs:
       # 公式の code-review は下書きの PR を飛ばすため、先にレビュー待ちにする。最後の CI が通らなければ、記録の step で下書きに戻す
       - name: レビュー待ちにする
         id: ready
-        if: always() && steps.ci1.outputs.result == 'pass'
+        if: always() && steps.ci1.outputs.result == 'pass' && steps.guard.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -302,11 +342,15 @@ jobs:
             --allowedTools "mcp__github_inline_comment__create_inline_comment"
 
       # 直すかは、2 つの決まった出力で決める。どちらも、確信の高い指摘だけを出す作りのため
-      # セキュリティ：脆弱性の見出し（# Vuln）があれば直す。コードレビュー：結果があり、「No issues found」が無ければ直す
+      # セキュリティ：脆弱性の見出し（# Vuln）があれば直す。コードレビュー：結果があり、「No issues found」が無いか、行ごとの指摘があれば直す
+      # 行ごとの指摘は、gh pr view --comments では読めないため、ここで API から取って review-feedback.md に載せる
       - name: レビューの結果を集める
         id: reviews
         if: always() && steps.ready.outcome == 'success'
         env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
           DIR: ${{ steps.pr.outputs.dir }}
           SEC_FILE: ${{ steps.security.outputs.execution_file }}
           CR_FILE: ${{ steps.codereview.outputs.execution_file }}
@@ -314,19 +358,28 @@ jobs:
           result_of() { [ -n "$1" ] && jq -r '.[-1].result // empty' "$1" 2>/dev/null; }
           sec=$(result_of "$SEC_FILE" || true)
           cr=$(result_of "$CR_FILE" || true)
+          # 行ごとの指摘。本文の改行は空白に直し、1 件 1 行にする
+          inline=$(gh api "repos/$GH_REPO/pulls/$PR/comments" --paginate \
+            --jq '.[] | "- `\(.path):\(.line // .original_line // "?")` \(.body | gsub("[\r\n]+"; " "))"' 2>/dev/null || true)
           printf '%s\n' "${sec:-（結果なし）}" > "$DIR/security-review.md"
           printf '%s\n' "${cr:-（結果なし）}" > "$DIR/code-review.md"
+          printf '%s\n' "${inline:-（行ごとの指摘なし）}" > "$DIR/code-review-inline.md"
           need=false
           if grep -qiE '^#+[[:space:]]*Vuln' "$DIR/security-review.md"; then need=true; fi
           if [ -n "$cr" ] && ! grep -qi 'No issues found' <<< "$cr"; then need=true; fi
+          if [ -n "$inline" ]; then need=true; fi
           {
             echo "## セキュリティレビュー（/security-review）"
             echo
             cat "$DIR/security-review.md"
             echo
-            echo "## コードレビュー（code-review。行ごとのコメントは PR にある）"
+            echo "## コードレビュー（code-review）"
             echo
             cat "$DIR/code-review.md"
+            echo
+            echo "### 行ごとの指摘"
+            echo
+            cat "$DIR/code-review-inline.md"
           } > "$DIR/review-feedback.md"
           echo "need=$need" >> "$GITHUB_OUTPUT"
 
@@ -500,7 +553,13 @@ jobs:
           step_label() { case "$1" in success) echo "終わった" ;; failure) echo "失敗した" ;; *) echo "動かなかった" ;; esac; }
           # 最後の CI で決める。レビューの直しで変わったなら 2 段目、変わっていなければ 1 段目
           if [ "$CHANGED" = true ]; then final=$CI2; else final=$CI1; fi
-          if [ "$final" != pass ] && [ "$READY" = success ]; then
+          # bot が変えてはいけないファイルが、直しの後も含めて PR に入っていないかを、もう一度確かめる
+          if gh pr view "$PR" --json files -q '.files[].path' | bash "$RUNNER_TEMP/trusted/guard-paths.sh" --files > "$DIR/guard.log" 2>&1; then
+            blocked=false
+          else
+            blocked=true
+          fi
+          if { [ "$final" != pass ] || [ "$blocked" = true ]; } && [ "$READY" = success ]; then
             gh pr ready --undo "$PR"
           fi
           # 一番新しい CI の失敗のログ（ci-<段>-<回>.log）を載せる
@@ -509,7 +568,12 @@ jobs:
           {
             echo "Claude の作業記録（[実行ログ]($RUN_URL)）"
             echo
-            if [ "$final" = pass ]; then
+            if [ "$blocked" = true ]; then
+              echo "bot が変えてはいけないファイルの変更が入っているため、下書きのまま残しています。変更を確かめてから、人が判断してください。"
+              printf '\n```text\n'
+              cat "$DIR/guard.log"
+              printf '```\n'
+            elif [ "$final" = pass ]; then
               echo "最後の CI が通ったため、レビュー待ちにしています。マージは人が判断してください。"
             else
               echo "最後の CI が通らなかったため、下書きのまま残しています。"

@@ -27,7 +27,7 @@
 
 `config:plugin-feedback` が書き込みを止められたときは、書かずに `off` として続ける。
 
-GitHub Actions の Claude App は、作業ブランチへのコミットと push をする（[P1](p01-operation-boundary.md) の例外）。このリポジトリの `.github/workflows/claude-issue-to-pr.yml` は、Claude を動かす前に、ランナーの中だけで `git commit`・`git push` の deny を外し、`git update-index --skip-worktree` で書き換えた `settings.json` をコミットから外す。利用先で同じワークフローを作るときも、この手順を入れる。
+GitHub Actions の Claude App は、作業ブランチへのコミットと push をする（[P1](p01-operation-boundary.md) の例外）。このリポジトリの `.github/workflows/claude-issue-to-pr.yml` は、Claude を動かす前に、ランナーの中だけで `git commit`・`git push` の deny を外し、`git update-index --skip-worktree` で書き換えた `settings.json` をコミットから外す。利用先で同じワークフローを作るときも、この手順を入れる。外す代わりに、直しの step で許す `git push` は作業ブランチへの完全一致 1 件だけにし、`.github/workflows/` などの変更は pre-push フック（`.github/scripts/guard-paths.sh`）で止める。
 
 このリポジトリは、ワークフローの起動語 `@claude` を含むコメントを、deny（コマンドに書いた本文）とフック（`.claude/hooks/guard-claude-mention.sh`。`--body-file` などで渡すファイルの中身）で止める。`init-repo` には配らない。起動語はリポジトリごとに違うため、利用先で足す（[P1](p01-operation-boundary.md)）。
 
