@@ -32,6 +32,7 @@
 | `.github/PULL_REQUEST_TEMPLATE.md` | PR 本文の形式 | GitHub で PR を使う | `.github/pull_request_template.md`・`docs/pull_request_template.md`・ルートの `PULL_REQUEST_TEMPLATE.md` |
 | `.github/dependabot.yml` | GitHub Actions の依存更新 | `.github/workflows/` がある、または入れる | `.github/dependabot.yml`・`renovate.json`・`.github/renovate.json` |
 | `.github/labels.yml` + `.github/workflows/sync-labels.yml` | ラベルのコード管理 | ラベルを運用する（Issue テンプレートを入れる場合は必須） | 既存のラベル同期ワークフロー |
+| `.github/workflows/label-pr-by-title.yml` | PR のタイトルの分類から、分類のラベルを付け直す | GitHub で PR を使い、ラベルを運用する | PR にラベルを付ける既存のワークフロー（`actions/labeler` など） |
 | `.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン・リポジトリ全体のスペルチェック | GitHub で PR を使う | gitleaks・trufflehog・cspell 等を使う既存ワークフロー・pre-commit フック |
 | `.vscode/extensions.json` / `.vscode/settings.json` | エディタの推奨拡張機能・保存時の整形 | VS Code を使う（`.vscode/` がある・チームで VS Code を使う） | `.vscode/` |
 | `cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有する） | `pr-checks.yml` か `.vscode/` を入れる | cspell の別名の設定ファイル（`.cspell.json`・`cspell.jsonc`・`cspell.yaml`・`cspell.config.*`・`.config/cspell.*`・`.vscode/cspell.json`）・`package.json` の `cspell` キー |
@@ -66,6 +67,7 @@
 - `.claude/settings.json` は `guard-destructive.sh`・`post-edit-lint.sh` を呼ぶ。フックを外す場合は、`settings.json` の該当の `hooks` 定義も外す必要があるため、計画で明示する
 - `.claude/hooks/post-edit-lint.sh` は `lefthook.yml` の `claude-edit` を動かす。`lefthook.yml` が無いと、何もしない
 - `.github/workflows/sync-labels.yml` は `.github/labels.yml` を読む
+- `.github/workflows/label-pr-by-title.yml` は、`labels.yml` の分類のラベル（`bug`・`feature` など）を前提にする。無いラベルは付けずにサマリーに書くだけで、失敗はしない
 - `.claude/rules/tmp-output.md` は、`.gitignore` の `tmp/` を前提にする。`tmp/` が除外されていないと、作業ファイルがコミットに混ざる
 - `CLAUDE.md` の `@docs/adr/README.md` と `.claude/rules/adr.md` は、`docs/adr/README.md` を読む。入れないときは、取り込みの行と `adr.md` も外す。ADR を別の場所（`doc/adr/`・`docs/decisions/` など）に置いているときは、取り込みの行と `adr.md` のパスをその場所に直す
 - `docs/README.md` の表は、`docs/specs/`・`docs/architecture/` の `README.md` へリンクする。`CLAUDE.md` は、SSOT 一覧・ディレクトリの図・参照ドキュメント（`@` の行）で、2 つのフォルダの実物を指す。フォルダごと入れないときは、これらの行も外す。残すと、リンクが切れ、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる

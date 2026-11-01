@@ -1,0 +1,90 @@
+name: PR のタイトルからラベルを付け直す
+
+# PR のタイトルの [分類]（[Bug] など）から、分類のラベルを付け直す。タイトルを唯一の正にし、人が気をつけなくてもラベルがそろうようにするため
+# リリースノートを PR のラベルで見出しに分けるとき、付け忘れや食い違いがあると、違う見出しに入るのを防ぐ
+# pull_request_target で動かすのは、fork からの PR でもラベルを付けるため。pull_request では、fork の PR のトークンが読み取り専用になる
+# pull_request_target は書き込みの権限で動くため、PR のコードは checkout せず、タイトルは run に埋め込まず env で渡す
+# edited は本文やマージ先だけの変更でも動く。結果はタイトルだけで決まるため、何度動いても同じになる
+on:
+  pull_request_target:
+    types: [opened, edited, reopened]
+
+permissions: {}
+
+# 続けて編集されたときは、最後のタイトルで付け直せばよいため、前の実行を止める
+concurrency:
+  group: label-pr-by-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: ラベルを付け直す
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: タイトルの分類に合うラベルを付け、ほかの分類のラベルを外す
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # タイトルは外から来る入力のため、run に埋め込まず env で渡す
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "# PR #${PR_NUMBER} のラベル" >> "$GITHUB_STEP_SUMMARY"
+
+          # 分類のラベル。ここに無いラベル（duplicate など）は触らない
+          # [Release] と release ラベルは、リリースの仕組みが付けるため扱わない
+          managed="bug feature enhancement docs documentation refactor research other"
+          # 分類ごとに、付けるラベルの候補。前にあるものから、リポジトリにあるものを使う
+          case "$PR_TITLE" in
+            "[Bug]"*)      candidates="bug" ;;
+            "[Feature]"*)  candidates="feature enhancement" ;;
+            "[Docs]"*)     candidates="docs documentation" ;;
+            "[Refactor]"*) candidates="refactor" ;;
+            "[Research]"*) candidates="research" ;;
+            "[Other]"*)    candidates="other" ;;
+            *)
+              # dependabot など、ツールが作る PR のタイトルは分類で始まらない。タイトルの決まりが違うリポジトリでも、何もしない
+              echo "タイトルが分類で始まらないため、ラベルを変えません" | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+              ;;
+          esac
+
+          repo_labels=$(gh api "repos/${GH_REPO}/labels" --paginate --jq '.[].name')
+          current=$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --paginate --jq '.[].name')
+
+          target=""
+          for c in $candidates; do
+            if grep -qxF "$c" <<< "$repo_labels"; then
+              target=$c
+              break
+            fi
+          done
+
+          changed=0
+          if [ -z "$target" ]; then
+            # ラベルの作成はリポジトリの設定の変更のため、人が行う
+            echo "::warning::分類に合うラベル（${candidates}）がリポジトリに無いため、付けませんでした"
+            echo "- 分類に合うラベル（${candidates}）がリポジトリに無いため、付けませんでした。作るかは人が決めます" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          for l in $managed; do
+            [ "$l" = "$target" ] && continue
+            if grep -qxF "$l" <<< "$current"; then
+              gh api -X DELETE "repos/${GH_REPO}/issues/${PR_NUMBER}/labels/${l}" > /dev/null
+              echo "- 外した: \`${l}\`" >> "$GITHUB_STEP_SUMMARY"
+              changed=1
+            fi
+          done
+
+          if [ -n "$target" ] && ! grep -qxF "$target" <<< "$current"; then
+            gh api -X POST "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=${target}" > /dev/null
+            echo "- 足した: \`${target}\`" >> "$GITHUB_STEP_SUMMARY"
+            changed=1
+          fi
+
+          if [ "$changed" -eq 0 ]; then
+            echo "- 変えたラベルはありません" >> "$GITHUB_STEP_SUMMARY"
+          fi
