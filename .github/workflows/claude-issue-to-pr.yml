@@ -102,7 +102,9 @@ jobs:
         with:
           ref: develop
           fetch-depth: 0
-          # 作業ブランチの fetch と、Claude による push が、取得した認証情報に頼っていないかを確かめられていないため、今の動き（残す）を明示する
+          # ワークフローの step の git fetch（wait-pr-checks.sh・「レビューの直しで変わったかを確かめる」）は、ここで残す GITHUB_TOKEN を使う。
+          # action は step の最後に App のトークンを取り消し、remote URL には取り消したトークンが残るため
+          # push する Claude の step では、この GITHUB_TOKEN を env の GIT_CONFIG_* で消す（「Claude Code で実装する」の説明を参照）
           persist-credentials: true
 
       # CI を待つスクリプト、変えさせないファイルを止めるスクリプト、雛形の編集を許可するスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
@@ -146,10 +148,18 @@ jobs:
           fi
 
       # ===== 1. 実装
+      # push する Claude の step（実装と、すべての直し）では、env の GIT_CONFIG_* で、checkout が残した GITHUB_TOKEN のヘッダーを空にする。
+      # checkout v6 以降はヘッダーを includeIf の別ファイルに置き、action（v1.0.264）は include.path しか探さず消せないため。
+      # ヘッダーが残ると、git は App のトークンの入った remote URL より先にそれを使い、push が github-actions[bot] の名義になり、
+      # その push の CI が承認待ち（action_required）のまま動かない。空の値は、それまでに読んだヘッダーの一覧を空にする（git config の http.extraHeader）
       - name: Claude Code で実装する
         id: claude
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         timeout-minutes: 25
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0: ""
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           base_branch: develop
@@ -243,6 +253,10 @@ jobs:
         continue-on-error: true
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         timeout-minutes: 15
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0: ""
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -271,6 +285,10 @@ jobs:
         continue-on-error: true
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         timeout-minutes: 15
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0: ""
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -299,6 +317,10 @@ jobs:
         continue-on-error: true
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         timeout-minutes: 15
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0: ""
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -375,6 +397,29 @@ jobs:
             --max-turns 50
             --allowedTools "Bash(git diff:*),Bash(git status:*),Bash(git log:*),Bash(git show:*),Read,Glob,Grep,LS,Task"
 
+      # action は、どの step でも同じパス（$RUNNER_TEMP/claude-execution-output.json）に実行の記録を書く。後の Claude の step に
+      # 上書きされる前に、step ごとの名前に写す。写さないと、「レビューの結果を集める」が、最後に動いた docs-sync の記録を読むため
+      # 何と答えたか・何を拒否されたかを後から確かめられるよう、最後の返答と拒否された操作を、実行ログにも出す
+      # 返答の中の「::」で始まる行がワークフローのコマンドとして扱われないよう、出す間は stop-commands で止める
+      - name: セキュリティレビューの記録を写す
+        id: secfile
+        if: always() && steps.security.outputs.execution_file != ''
+        env:
+          SRC: ${{ steps.security.outputs.execution_file }}
+        run: |
+          dest="$RUNNER_TEMP/review-security.json"
+          [ -f "$SRC" ] || exit 0
+          cp "$SRC" "$dest"
+          echo "file=$dest" >> "$GITHUB_OUTPUT"
+          stop=$(openssl rand -hex 16)
+          echo "::group::最後の返答と拒否された操作"
+          echo "::stop-commands::$stop"
+          jq -r '.[-1].result // "（返答なし）"' "$dest" || true
+          echo "--- 拒否された操作"
+          jq -r '.[-1].permission_denials // [] | if length == 0 then "なし" else .[] | "\(.tool_name) \(.tool_input | tojson)" end' "$dest" || true
+          echo "::$stop::"
+          echo "::endgroup::"
+
       # 公式の code-review。--comment で、指摘を行ごとに PR へコメントする（指摘が無ければ 1 件のまとめのコメント）
       # 行ごとのコメントのツールは、--allowedTools に名前があるときだけ action が用意する
       - name: コードレビュー
@@ -393,6 +438,26 @@ jobs:
             --effort ${{ steps.pr.outputs.effort }}
             --max-turns 60
             --allowedTools "mcp__github_inline_comment__create_inline_comment"
+
+      # 写し方と、ログに出す理由は「セキュリティレビューの記録を写す」と同じ
+      - name: コードレビューの記録を写す
+        id: crfile
+        if: always() && steps.codereview.outputs.execution_file != ''
+        env:
+          SRC: ${{ steps.codereview.outputs.execution_file }}
+        run: |
+          dest="$RUNNER_TEMP/review-codereview.json"
+          [ -f "$SRC" ] || exit 0
+          cp "$SRC" "$dest"
+          echo "file=$dest" >> "$GITHUB_OUTPUT"
+          stop=$(openssl rand -hex 16)
+          echo "::group::最後の返答と拒否された操作"
+          echo "::stop-commands::$stop"
+          jq -r '.[-1].result // "（返答なし）"' "$dest" || true
+          echo "--- 拒否された操作"
+          jq -r '.[-1].permission_denials // [] | if length == 0 then "なし" else .[] | "\(.tool_name) \(.tool_input | tojson)" end' "$dest" || true
+          echo "::$stop::"
+          echo "::endgroup::"
 
       # docs-sync の機械チェック（手順 2）は、bot が動く前に取り分けた写しで、ワークフローが流す。Claude には結果だけを渡す
       # トークンを渡さない。終了コードは 0（PASS）・1（FAIL あり）なら次の段へ進み、2（ERROR）・3（STOP）なら点検しない
@@ -439,8 +504,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR: ${{ steps.pr.outputs.number }}
           DIR: ${{ steps.pr.outputs.dir }}
-          SEC_FILE: ${{ steps.security.outputs.execution_file }}
-          CR_FILE: ${{ steps.codereview.outputs.execution_file }}
+          # 各レビューの step の直後に写した記録を読む。execution_file は、後の step（docs-sync）に上書きされているため
+          SEC_FILE: ${{ steps.secfile.outputs.file }}
+          CR_FILE: ${{ steps.crfile.outputs.file }}
           DS_CODE: ${{ steps.dscheck.outputs.code }}
         run: |
           result_of() { [ -n "$1" ] && jq -r '.[-1].result // empty' "$1" 2>/dev/null; }
@@ -491,6 +557,10 @@ jobs:
         continue-on-error: true
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         timeout-minutes: 15
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0: ""
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -534,6 +604,10 @@ jobs:
         continue-on-error: true
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         timeout-minutes: 15
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0: ""
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -562,6 +636,10 @@ jobs:
         continue-on-error: true
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         timeout-minutes: 15
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0: ""
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -590,6 +668,10 @@ jobs:
         continue-on-error: true
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6 # v1.0.264
         timeout-minutes: 15
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0: ""
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -722,7 +804,7 @@ jobs:
           CI2_FIXES: ${{ steps.ci2.outputs.fixes }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          ci_label() { case "$1" in pass) echo "通った" ;; fail) echo "通らなかった" ;; unknown) echo "確かめられなかった（時間切れなど）" ;; *) echo "動かなかった" ;; esac; }
+          ci_label() { case "$1" in pass) echo "通った" ;; fail) echo "通らなかった" ;; unknown) echo "確かめられなかった（時間切れなど）" ;; approval) echo "Actions の承認待ちで動かなかった" ;; *) echo "動かなかった" ;; esac; }
           step_label() { case "$1" in success) echo "終わった" ;; failure) echo "失敗した" ;; *) echo "動かなかった" ;; esac; }
           # 最後の CI で決める。レビューの直しで変わったなら 2 段目、変わっていなければ 1 段目
           if [ "$CHANGED" = true ]; then final=$CI2; else final=$CI1; fi
@@ -731,7 +813,7 @@ jobs:
           if { [ "$final" != pass ] || [ "$blocked" = true ]; } && [ "$READY" = success ]; then
             gh pr ready --undo "$PR"
           fi
-          # 一番新しい CI の失敗のログ（ci-<段>-<回>.log）を載せる
+          # 一番新しい CI の失敗のログ（ci-<段>-<回>.log）を載せる。承認待ちのときは、承認が要る実行のリンクが書かれている
           last_log=$(ls -1 "$DIR"/ci-*.log 2>/dev/null | sort | tail -n 1 || true)
           body="$DIR/record.md"
           {
@@ -761,7 +843,10 @@ jobs:
             if [ "$CHANGED" = true ]; then
               echo "- 2 段目（レビューの直しの後）：$(ci_label "$CI2")（直し ${CI2_FIXES:-0} 回）"
             fi
-            if [ "$final" != pass ] && [ -n "$last_log" ] && [ -s "$last_log" ]; then
+            if [ "$final" = approval ] && [ -n "$last_log" ] && [ -s "$last_log" ]; then
+              printf '\nActions で承認を待っている実行があり、CI が動いていない。次の実行のページで承認すると動く。\n\n'
+              cat "$last_log"
+            elif [ "$final" != pass ] && [ -n "$last_log" ] && [ -s "$last_log" ]; then
               printf '\n<details><summary>最後に落ちた CI のログ（%s）</summary>\n\n' "$(basename "$last_log")"
               cat "$last_log"
               printf '\n</details>\n'
@@ -805,6 +890,7 @@ jobs:
           gh pr comment "$PR" --body-file "$body"
 
       # PR が無いときだけ動く。Claude が動いた記録か、トークンの誤りがあるときに限る。
+      # 実装の step の execution_file は、写さずにそのまま読む。PR が無いと、後の Claude の step はどれも動かず、上書きされないため
       # @claude-bot のように語の続くものや、書き込み権限の無い人のコメントでは、action が何もせずに終わるため、書かない
       - name: PR を作れなかった理由を Issue に書く
         if: always() && steps.pr.outputs.number == '' && (steps.check.outputs.error != '' || steps.claude.outputs.execution_file != '')
