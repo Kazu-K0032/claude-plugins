@@ -27,7 +27,9 @@ name: Claude による Issue の実装
 # 使えるようにする準備（App・environment・secret）、確かめ方、トークンの更新、止め方は docs/claude-bot.md にある
 # 準備は、リポジトリの設定と secret の変更のため、人が行う。Claude は行わない
 on:
-  issue_comment:
+  # zizmor の dangerous-triggers は、頼める人を gate ジョブの if で絞り、コメントの本文を run に埋め込まない作りにしたうえで、
+  # コメントで bot を起動するために意図して使うため、この行だけ無視する
+  issue_comment: # zizmor: ignore[dangerous-triggers]
     types: [created]
 
 permissions: {}
@@ -100,6 +102,8 @@ jobs:
         with:
           ref: develop
           fetch-depth: 0
+          # 作業ブランチの fetch と、Claude による push が、取得した認証情報に頼っていないかを確かめられていないため、今の動き（残す）を明示する
+          persist-credentials: true
 
       # CI を待つスクリプト、変えさせないファイルを止めるスクリプト、雛形の編集を許可するスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
       # 止めるスクリプトは、git の pre-push フックとしても据える。bot が push する前に、.github/workflows/ などの変更を止めるため

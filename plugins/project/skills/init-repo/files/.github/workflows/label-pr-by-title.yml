@@ -9,7 +9,8 @@ name: PR のタイトルからラベルを付け直す
 # 公開リポジトリでは、2026-12-02 から GitHub が pull_request_target を既定で止める。Actions のイベントポリシーで許可しないと、このワークフローは動かない
 # Ref: https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target
 on:
-  pull_request_target:
+  # zizmor の dangerous-triggers は、上のとおり PR のコードを動かさない作りにしたうえで、意図して使うため、この行だけ無視する
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     types: [opened, edited, reopened]
 
 permissions: {}

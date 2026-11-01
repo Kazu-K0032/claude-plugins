@@ -33,7 +33,7 @@
 | `.github/dependabot.yml` | GitHub Actions の依存更新 | `.github/workflows/` がある、または入れる | `.github/dependabot.yml`・`renovate.json`・`.github/renovate.json` |
 | `.github/labels.yml` + `.github/workflows/sync-labels.yml` | ラベルのコード管理 | ラベルを運用する（Issue テンプレートを入れる場合は必須） | 既存のラベル同期ワークフロー |
 | `.github/workflows/label-pr-by-title.yml` | PR のタイトルの分類から、分類のラベルを付け直す | GitHub で PR を使い、ラベルを運用する | PR にラベルを付ける既存のワークフロー（`actions/labeler` など） |
-| `.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン・リポジトリ全体のスペルチェック | GitHub で PR を使う | gitleaks・trufflehog・cspell 等を使う既存ワークフロー・pre-commit フック |
+| `.github/workflows/pr-checks.yml` + `.github/scripts/check-workflows.sh` | PR 差分のシークレットスキャン・リポジトリ全体のスペルチェック・ワークフローの検査（`github-actions.md` の【必須】） | GitHub で PR を使う | gitleaks・trufflehog・cspell・zizmor・actionlint 等を使う既存ワークフロー・pre-commit フック |
 | `.vscode/extensions.json` / `.vscode/settings.json` | エディタの推奨拡張機能・保存時の整形 | VS Code を使う（`.vscode/` がある・チームで VS Code を使う） | `.vscode/` |
 | `cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と CI が共有する） | `pr-checks.yml` か `.vscode/` を入れる | cspell の別名の設定ファイル（`.cspell.json`・`cspell.jsonc`・`cspell.yaml`・`cspell.config.*`・`.config/cspell.*`・`.vscode/cspell.json`）・`package.json` の `cspell` キー |
 | `.gitignore` | 作業ファイル・秘匿ファイルの除外 | git リポジトリ（常に該当） | `.gitignore`（据え置き時も不足行の追記は提案する） |
@@ -73,6 +73,7 @@
 - `docs/README.md` の表は、`docs/specs/`・`docs/architecture/` の `README.md` へリンクする。`CLAUDE.md` は、SSOT 一覧・ディレクトリの図・参照ドキュメント（`@` の行）で、2 つのフォルダの実物を指す。フォルダごと入れないときは、これらの行も外す。残すと、リンクが切れ、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
 - 雛形のあるフォルダの `README.md` の一覧は、雛形（`*.template.*`）へリンクする。雛形だけを入れないときは、一覧の雛形の行も外す（壊れたリンクになるため）
 - `CLAUDE.md` の「SSOT 一覧」は、`docs/strategies/` の 3 つの文書（`ai-driven-development.md`・`development.md`・`test-strategy.md`）を指す。入れないときは、一覧のその行も外す。残すと、一覧が実在しない文書を指し、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
+- `.github/workflows/pr-checks.yml` のワークフローの検査は `.github/scripts/check-workflows.sh` を呼ぶ。片方だけ入れると、検査が落ちるか、【必須】の 2 つが確かめられないまま残る
 - `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`ssot` 等）も誤字として出て、PR のチェックが落ちる
 - Issue テンプレートの `labels:` は `labels.yml` のラベルを前提にしている
 
