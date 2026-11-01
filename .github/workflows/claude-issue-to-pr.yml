@@ -13,6 +13,8 @@ name: Claude による Issue の実装
 #   - 直しの step が push できるのは、作業ブランチだけ（「直しの許可を決める」の step。--force や develop への push は許可に当たらない）
 #   - .github/workflows/・.github/scripts/・.claude/settings.json・.claude/hooks/ の変更は、push の前（pre-push フック）と PR の差分で止める
 #     （guard-paths.sh。止まった PR は下書きのまま残す）
+#   - Claude Code の protected paths（.claude/・.vscode/・lefthook.yml など）の編集は、スキルの雛形（plugins/project/skills/<スキル>/files/）の中だけ、
+#     PermissionRequest フックで許可する（allow-template-edits.sh。files/.claude/settings.json・files/.claude/hooks/ は除く）
 # PR を作れなかったときは、Claude の最後の返答を理由として Issue にコメントする。マージは人が行う
 # Claude にコミット・push を任せるのは、P1 の例外（docs/policies/p01-operation-boundary.md）
 # PR の作成と push は、実装・直しの step の中で Claude App のトークンで行う。action は step の最後にこのトークンを取り消し、
@@ -64,22 +66,25 @@ jobs:
           ref: develop
           fetch-depth: 0
 
-      # CI を待つスクリプトと、変えさせないファイルを止めるスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
+      # CI を待つスクリプト、変えさせないファイルを止めるスクリプト、雛形の編集を許可するスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
       # 止めるスクリプトは、git の pre-push フックとしても据える。bot が push する前に、.github/workflows/ などの変更を止めるため
       - name: ワークフローのスクリプトを取り分ける
         run: |
           mkdir -p "$RUNNER_TEMP/trusted/hooks"
-          cp .github/scripts/wait-pr-checks.sh .github/scripts/guard-paths.sh "$RUNNER_TEMP/trusted/"
+          cp .github/scripts/wait-pr-checks.sh .github/scripts/guard-paths.sh .github/scripts/allow-template-edits.sh "$RUNNER_TEMP/trusted/"
           printf '#!/usr/bin/env bash\nexec bash "%s/trusted/guard-paths.sh" --pre-push "$@"\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/trusted/hooks/pre-push"
           chmod +x "$RUNNER_TEMP/trusted/hooks/pre-push"
           git config core.hooksPath "$RUNNER_TEMP/trusted/hooks"
 
       # Actions の Claude App には、コミットと push を任せる（P1 の例外）。リポジトリの deny は手元の Claude 向けのため、
       # ランナーの中だけで外す。--skip-worktree で、書き換えた settings.json がコミットに入らないようにする
+      # 雛形の protected paths の編集を許可するフックも、ここで足す。protected paths は permissions.allow では許可できないため
       - name: コミットと push の deny を外す
         run: |
-          jq '.permissions.deny |= map(select(test("^(Bash|PowerShell)\\(git (-[cC] \\* )?(commit|push)") | not))' \
-            .claude/settings.json > "$RUNNER_TEMP/settings.json"
+          jq --arg cmd "bash $RUNNER_TEMP/trusted/allow-template-edits.sh" '
+            .permissions.deny |= map(select(test("^(Bash|PowerShell)\\(git (-[cC] \\* )?(commit|push)") | not))
+            | .hooks.PermissionRequest += [{matcher: "Edit|Write|MultiEdit", hooks: [{type: "command", command: $cmd}]}]
+          ' .claude/settings.json > "$RUNNER_TEMP/settings.json"
           mv "$RUNNER_TEMP/settings.json" .claude/settings.json
           git update-index --skip-worktree .claude/settings.json
 
