@@ -81,7 +81,7 @@ hotfix で、手で Release を作るときの手順。通常のリリースで�
 コマンドなら `gh release create v1.1.0 --target main --title v1.1.0 --generate-notes` でも同じになる。
 
 - タグ名は `v<version>`（例：`v1.1.0`）
-- 変更点は Release の説明だけに書き、CHANGELOG は持たない。説明は、前のタグから入った PR のタイトルの一覧になる
+- 変更点は Release の説明だけに書き、CHANGELOG は持たない。説明は、前のタグから入った PR のタイトルの一覧で、PR のラベルごとに「機能」「不具合の修正」などの見出しに分かれる。見出しとラベルの対応は `.github/release.yml` にある
 - リリースの PR（`release` ラベル）は、`.github/release.yml` で説明の一覧から外す。中身の PR と重なるため
 
 ## 準備（一度だけ）

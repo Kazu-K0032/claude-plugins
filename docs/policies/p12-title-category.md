@@ -32,7 +32,7 @@
 
 ## 変えたいとき
 
-- 分類を足す・変えるときは、この方針の表、`title-and-sidebar.md` の表、`init-repo` の Issue フォームと `labels.yml`、`plugin-feedback` の `issue-format.md` をすべて直す
+- 分類を足す・変えるときは、この方針の表、`title-and-sidebar.md` の表、`init-repo` の Issue フォームと `labels.yml`、`plugin-feedback` の `issue-format.md`、このリポジトリのリリースノートの見出し（`.github/release.yml`）をすべて直す
 - 利用先で別の書式を使うときは、`CONTRIBUTING.md`・`.claude/rules/` などにタイトルの決まりを書くか、Issue フォームの `title` を書き換える。スキルは、決まりがあればそちらに従い、この方針の書式を当てない
 
 ## Q&A
