@@ -2,7 +2,7 @@
 name: commit
 description: ステージング済みの差分を分析し、リポジトリのコミット規約（無ければ Conventional Commits 形式の同梱の規約）に沿ったコミットメッセージを提案する。コミットメッセージの作成やステージング済み変更のレビューを求められた時に使用する
 disable-model-invocation: true
-allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Bash(gh pr checks:*), Read, Glob, Grep, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
+allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Bash(gh pr checks:*), Read, Glob, Grep, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/**)
 argument-hint: "[補足指示（任意。省略時はステージ済みの差分と会話の経緯から提案する。例: Issue#5 を参照に付ける / 1 コミットにまとめる）]"
 ---
 
@@ -10,7 +10,7 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 
 ステージ済みの差分と会話の経緯から、リポジトリのコミット規約に従ってコミットメッセージを提案し、`tmp.md` に書く。規約が無ければ、同梱の `commit-rule.md` に従う。
 
-- 外へ書き込むもの：プロジェクトルートの `tmp.md`。ファイルの中の変更を分けるときは、`tmp/<ブランチ名>/commit/` のパッチ
+- 外へ書き込むもの：プロジェクトルートの `tmp.md`。ファイルの中の変更を分けるときは、`tmp/<ブランチ名>/commit/` のパッチと、確かめに使う HEAD の中身の写し
 - 人がすること：`tmp.md` の手順でステージを整え、コミットする
 
 ## 参照ファイル
@@ -32,6 +32,7 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 
 - コミットメッセージ：プロジェクトルート直下の `tmp.md`
 - パッチ：`tmp/<ブランチ名>/commit/<ts>_<N>.patch`。ファイルの中の変更を分けるときだけ書く。`<ブランチ名>` は `git branch --show-current` で取り、`/` は `-` に置き換える（例：`issues/5-sample` → `issues-5-sample`。規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。`<ts>` は `date +%Y%m%d_%H%M%S` で取る
+- 写し：`tmp/<ブランチ名>/commit/<ts>_base/<ファイルのパス>`。パッチが順に当たるかを確かめるため、分けるファイルの HEAD の中身を置く。`<ts>` はパッチと同じ
 
 手順 1 の前に、`tmp-ignore.md` で `tmp/`・`tmp.md` の除外を確かめる。
 
@@ -100,11 +101,11 @@ sh "${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/check-symlinks.sh"
 
 - ❌ コミットを実行すること（メッセージは `tmp.md` に書くだけにする）
 - ❌ `git reset` と、`--check` の無い `git apply` を実行すること。パッチは書くだけにする。ステージを動かすのは、`tmp.md` の手順を実行する人のため
-- ❌ 書いたパッチを消すこと。削除は禁止のため、`tmp/` を片付けるときに人がまとめて消す
+- ❌ 書いたパッチと写しを消すこと。削除は禁止のため、`tmp/` を片付けるときに人がまとめて消す
 
 ## 保守
 
 - `allowed-tools` に `check-symlinks.sh` の `Bash` パターンを含めていない。プラグインの実体パスは `${CLAUDE_PLUGIN_ROOT}` で解決するが、この変数が `allowed-tools` の frontmatter で展開されるかは公式に記載がないため、当てにせず通常の許可プロンプトを通す
-- `git apply` は `allowed-tools` に載せていない。`--check` を付けても、後ろに `--apply` を付けるとパッチを当て、ステージを書き換えるため、前方一致では許可できない。パッチの確かめ（`git apply --check`）は、許可プロンプトを通す
+- `git apply` は `allowed-tools` に載せていない。`--check` を付けても、後ろに `--apply` を付けるとパッチを当て、ステージを書き換えるため、前方一致では許可できない。パッチの確かめ（`git apply --check`）は、許可プロンプトを通す。写しを取る `git show` も、`--output` で書き込めるため、同じく載せていない
 
 $ARGUMENTS
