@@ -169,7 +169,7 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/post-edit-lint.sh",
-            "timeout": 15,
+            "timeout": 60,
             "statusMessage": "Lint チェック中..."
           }
         ]

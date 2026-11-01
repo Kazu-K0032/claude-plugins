@@ -35,6 +35,7 @@
 
 - 整形のツールはファイルを書き換える形にし、`priority: 1` にする。Lint のツールは、警告でも 0 以外で終える形（例：oxlint の `--deny-warnings`）にし、`priority: 2` にする。失敗した結果だけが Claude に返る
 - ツールが入っていないときは黙って飛ばす。`npm` で入れたツールは PATH に無いため、`node_modules/.bin/` の下を指す
+- `node_modules` を作れないときは、`npx --yes <パッケージ>@<版>` で版を固定して流し、`npx` が無ければ黙って飛ばす。版を固定しないと毎回最新版を取りに行き、手元の Node と合わなくなることがあるため。`--yes` は、取得の確認で止まらないために付ける
 - `run` に二重引用符を書かない。Windows では、二重引用符を含むコマンドが崩れる。全体を単一引用符で囲む
 - ツールの置き場所がルートでないときは、`root` にそのディレクトリを書く。`{staged_files}` は `root` からの相対パスになる。`glob` は `root` に関係なく、リポジトリのルートから数える
 
@@ -51,6 +52,30 @@ claude-edit:
       glob: "*.{js,jsx,ts,tsx}"
       run: '[ -x node_modules/.bin/oxlint ] || exit 0; node_modules/.bin/oxlint --deny-warnings {staged_files}'
 ```
+
+`npx` で流すときの例（Prettier と ESLint）。`<版>` は、公式の文書で確かめてから書く。ESLint などの設定そのものは、プロジェクトが持つものを使う。
+
+```yaml
+claude-edit:
+  piped: true
+  commands:
+    format:
+      priority: 1
+      glob: "*.{js,jsx,ts,tsx}"
+      run: 'command -v npx >/dev/null || exit 0; npx --yes prettier@<版> --write {staged_files}'
+    lint:
+      priority: 2
+      glob: "*.{js,jsx,ts,tsx}"
+      run: 'command -v npx >/dev/null || exit 0; npx --yes eslint@<版> --max-warnings 0 {staged_files}'
+```
+
+### 時間切れの目安（timeout）
+
+`settings.json` の PostToolUse の `timeout` は、既定で 60 秒にしてある。時間切れで打ち切られると、Lint の結果は Claude に返らず、Claude も利用者もその場で気づけないため、`claude-edit` が 1 回の編集で終わる時間より十分に長くする。
+
+- `npx` の形は、初回にパッケージの取得が走って遅い。時間は、2 回目以降で比べる
+- 重いツール（型検査・cspell など）を足したら、「動くかを確かめる」で時間を測る。`timeout` に近ければ、延ばすことを提案する
+- Claude Code の既定（600 秒）ほどは延ばさない。編集のたびに、長く待たされるため
 
 ### 整形のツールが LF を求めるとき（.gitattributes）
 
@@ -96,7 +121,8 @@ lefthook と、上の節で決めたツールは、手順 2 で選んでもら�
 <lefthook> run claude-edit --no-auto-install --file <ファイル>
 ```
 
-- ツールの実行ファイル（`node_modules/.bin/<ツール>` など）があるかも確かめる。`run` は、ツールが無いと黙って飛ばすため
+- ツールの実行ファイル（`node_modules/.bin/<ツール>` など）があるかも確かめる。`npx` の形なら、`command -v npx` で `npx` があるかを確かめる。`run` は、ツールが無いと黙って飛ばすため
+- 上のコマンドを 2 回動かし、2 回目にかかった時間を、「時間切れの目安」に照らす。打ち切られると、フックの結果が Claude に返らないため
 - 整形のツールがファイルを書き換えたら、`git diff <ファイル>` を示す。戻すかは人が決める
 - winget で入れたときは、Claude Code を再起動するまで PATH が効かず、lefthook が見つからない。再起動してから確かめるよう、手順 6 で伝える
 
