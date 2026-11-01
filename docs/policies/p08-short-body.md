@@ -6,7 +6,7 @@
 | 例外 | 検証コメント（`pr-verify`）は、上限を持たない。項目の数が差分で決まるため |
 | 価値 | [V2](../values/v02-understand-before-accept.md)・[V4](../values/v04-record-reasons.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
-冒頭の概要（最初の節）を 300 文字以内にし、概要より後の節には上限を置かない。Issue は、タスクの種類で詳しく書く節を変える。どの種類でも、書かないものを決めておく。スキルが読む写しは [references/short-body.md](../../plugins/aidd/references/short-body.md)（`config:plugin-feedback` にも同じもの）。
+リポジトリに本文の長さ・書き方の決まりが無ければ、冒頭の概要（最初の節）を 300 文字以内にし、概要より後の節には上限を置かない。Issue は、タスクの種類で詳しく書く節を変える。どの種類でも、書かないものを決めておく。スキルが読む写しは [references/short-body.md](../../plugins/aidd/references/short-body.md)（`config:plugin-feedback` にも同じもの）。
 
 - 概要は、最初の節。先頭の見出しから、同じ大きさ以上の次の見出しの前まで。Issue フォームの本文では、最初の欄になる。見出しが無ければ本文全体
 - 概要は、人が見える文を数える。見出し・記号も数え、HTML コメント・リンクの URL・定型の節（見出しに「チェックリスト」か「関連 Issue」を含む節）は数えない
@@ -41,13 +41,17 @@
 
 直すときに、概要を縮める。見出しは残し、中身を言い換える。概要より後の節は縮めない。既存の記述を消す変更のため、反映前に承認を取り、縮める前の本文を `tmp/` に残す。
 
+### Q. 利用先に、本文の長さや書き方の決まりがある
+
+利用先の決まりに従い、この方針の上限と書き分けは当てない。決まりに無い項目（書かないものなど）だけを、この方針で補う（[P6](p06-common-template.md) の「同梱の決まりの扱い」）。上限が違うため、スクリプトでは数えない。どれに従ったかを、承認の画面か結果に書く。`config:plugin-feedback` は、書き込む先がこのリポジトリに決まっているため、探さない。
+
 ### Q. テンプレートのチェックリストだけで長い
 
 数えない。チェックリストと関連 Issue は、PR ごとに中身が変わらないため。テンプレートの文は変えない。
 
 ### Q. Issue の種類が分からない
 
-タイトルと中身から一番近い種類を選び、計画や承認の画面で、どれに合わせたかを示す。リファクタリングや調査も、一番近い種類に合わせる。
+タイトルの分類（`[Bug]` など）と中身から一番近い種類を選び、計画や承認の画面で、どれに合わせたかを示す。リファクタリングや調査も、一番近い種類に合わせる。
 
 ### Q. PR も種類で書き分けたい
 
@@ -61,6 +65,6 @@
 - `aidd`：`pr-create` の `pr-body-guide.md`、`issue-start` の `issue-update.md`・`requirements-tree.md`・`comment-template.md`、`issue-pr-sync` の `SKILL.md`・`approval-rules.md`・`body-policy.md`・`errors.md`、`README.md`、`references/harness-principles.md`（監査の物差し）
 - `config:plugin-feedback`：`references/issue-format.md`
 - mod：`hooks/register.tsx` の `DOC_CONCISE_TEXT` と、`tests/emphasis.test.tsx`
-- テンプレート：`init-repo` の PR テンプレートと Issue フォーム 5 つ、このリポジトリの `.github/PULL_REQUEST_TEMPLATE.md`。`init-repo` の `README.md`（収録物の表の説明）
+- テンプレート：`init-repo` の PR テンプレートと Issue フォーム 8 つ、このリポジトリの `.github/PULL_REQUEST_TEMPLATE.md`。`init-repo` の `README.md`（収録物の表の説明）
 - このリポジトリの `.claude/skills/issue-to-pr/SKILL.md`（bot が PR 本文を数える手順）
 - この方針のファイル

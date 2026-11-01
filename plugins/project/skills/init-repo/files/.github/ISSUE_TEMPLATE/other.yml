@@ -1,0 +1,34 @@
+name: "その他"
+description: "ほかのフォームに当たらない作業（版を上げる・依存を更新するなど）"
+title: "[Other] "
+labels: ["other"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        最初の「概要」は 300 文字以内で書いてください。ほかのフォームに当たるときは、そちらを使ってください。経緯や推測は書かないでください。
+
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      placeholder: 何をするかを一文で説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: タスク
+      description: 終わったとみなす条件が分かるように挙げてください
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足
+      description: 参考リンク・関連 Issue 等があれば記述してください

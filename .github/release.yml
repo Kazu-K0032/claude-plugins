@@ -4,5 +4,28 @@
 changelog:
   exclude:
     labels:
-      # リリースの PR（v<version> をリリース）は、中身の PR と重なるため一覧から外す
+      # リリースの PR（[Release] v<version> をリリース）は、中身の PR と重なるため一覧から外す
       - release
+  # 見出しは PR のラベルで決まる。分類とラベルの対応は docs/policies/p12-title-category.md
+  # 見出しは読む人が多い順。どの見出しにも当たらない PR（other ラベルなど）は「その他」に入る（"*"）
+  categories:
+    - title: 機能
+      labels:
+        - feature
+        - enhancement
+    - title: 不具合の修正
+      labels:
+        - bug
+    - title: 文書
+      labels:
+        - docs
+        - documentation
+    - title: リファクタ
+      labels:
+        - refactor
+    - title: 調査
+      labels:
+        - research
+    - title: その他
+      labels:
+        - "*"

@@ -71,6 +71,7 @@ WARN を 1 件ずつ直す。直し方と、残してよい場合は、`ng-warn.
 - テンプレート（`files/`）に、導入先で書き換える箇所として `TODO:` が残っているか（プロジェクト固有の値を埋め込んでいないか）
 - 入力ヒントに書いた「省略時は〜」が、本文の実際の動きと合っているか（機械チェックは書き方だけを見る）
 - プラグインを追加・改名した場合、起票の対象として名前を挙げている箇所（`plugins/config/hooks/plugin-feedback.md` と、`plugins/config/skills/plugin-feedback/SKILL.md` の `description`）も直したか
+- スキルが同梱の決まり（`references/` の書式・本文の長さ・文書の規約、雛形、タイトルの書式など）を当てる手順を足した・変えた場合、先にリポジトリの決まりを探し、あればそちらに従って同梱の決まりを混ぜない形になっているか（P6 の「同梱の決まりの扱い」。探し方は `plugins/aidd/references/repo-rules.md`）
 - 変更が `docs/policies/` の方針に反していないか。新しく決めた方針・認めた例外を、方針のファイルと一覧（`docs/policies/README.md`・`.claude/rules/plugin-policies.md`）に書いたか
 - スキル・フックが利用先で触れるもの（`tmp/` 以外への書き込み・設定ファイル・`gh` / `git` の書き込み系・環境変数）か、`init-repo` の権限・フック・`.gitignore` を変えた場合、`docs/policies/permissions.md` を直し、ほかのプラグインの操作を止めていないかを確かめたか（機械チェックは `allowed-tools` と本文のコマンドだけを見る）
   - deny・フックの線引きを変えた場合は、配る規約 `plugins/project/skills/init-repo/files/.claude/rules/permissions.md` と、監査の物差し `plugins/aidd/references/harness-principles.md`（「土台の仕組み」）も直したか（機械チェックの `deny-sync` は、物差しの例に当たる deny がテンプレートに残っているかだけを見る）
@@ -113,6 +114,7 @@ claude plugin test plugins/config/skills/mod-output-customize/files/mod-output-c
 - 手順 2 の機械チェックと手順 6 のコマンドは、PR でも `.github/workflows/plugin-checks.yml` が動かす。CI は、`main` へ向けた PR と、リリースの Issue（`release.yml` から呼ぶとき）で `--base` を付ける
 - mod を増やしたら、手順 6 と `plugin-checks.yml` の両方に足す
 - `check.py` に NG・WARN のカテゴリを足したら、`ng-warn.md` にも直し方・判断のしかたを足す
+- 手順 5 の点検表は、`@claude` の bot（`.claude/skills/issue-to-pr/SKILL.md` の手順 5）も読む。bot はこのスキルを呼べないため、項目はこのファイルだけで分かる書き方にする
 - `git diff` は `--output` で書き込めるため、`allowed-tools` に入れていない（P1 の「確認なしで任せる操作」）
 
 $ARGUMENTS

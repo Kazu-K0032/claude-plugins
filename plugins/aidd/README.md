@@ -9,7 +9,7 @@ AIDD（AI-Driven Development）と DocDD（Doc Driven Development）の定型作
 | スキル | 用途 |
 | --- | --- |
 | `/aidd:adr` | ADR（判断の記録）の作成・ステータス更新。戻しにくく、見送った案があり、理由をコードのコメントに書けない判断を対象にし、重さ（極小・簡易・詳細）を選んで書き、一覧に 1 行足す。判断が決まると Claude から作るかを聞く |
-| `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。実装の後は `docs-sync` の手順で文書の追従を点検して直し、Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う） |
+| `/aidd:issue-start` | Issue の記述を確かめて作業用のブランチを作り、計画モードで要件を詰めてから実装する。実装の後は `docs-sync` の手順で文書の追従を点検して直し、Issue の更新・コミットメッセージ・PR の下書きまで行う（コミット・push は人が行う）。`--issue-only` を付けると、ブランチと実装は行わず、要件を詰めて Issue の本文の更新だけを行う |
 | `/aidd:pr-create` | PR 本文とレビュワー向け検証コメントの下書きを生成 |
 | `/aidd:issue-pr-sync` | Issue / PR の本文（PR 本文が空なら新規作成）・タイトル・サイドバーを、現在の差分とレビュー対応に合わせて更新 |
 | `/aidd:commit` | ステージ済み差分と会話の経緯から、リポジトリのコミット規約（無ければ同梱の Conventional Commits 形式の規約）に沿ったメッセージを提案（CI の失敗を直すコミットには失敗した実行の URL を、Discussion で決めたことのコミットには決めた場の Discussion を添える） |
@@ -84,6 +84,7 @@ aidd/
     ├── ai-check-lines.md # PR 本文の「AI を使った確認」の欄
     ├── base-branch.md   # マージ先（比べるブランチ）の決め方
     ├── pr-template.md   # PR テンプレートの探し方（pr-create・issue-pr-sync）
+    ├── repo-rules.md    # リポジトリの決まりの探し方（同梱の規約より優先する）
     ├── report-format.md # 点検レポート（docs-sync・pr-review・harness-audit）の構成
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
@@ -114,6 +115,8 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `references/*.md` | Skill 実行時に `SKILL.md` の指示で**明示的に** | その Skill の判断基準 |
 
 自動適用の機能は移せないため、`references/` は「Skill が使う判断基準」に限定している。
+
+`references/` の書式・本文の長さ・文書の規約と、スキルが同梱する雛形は、作業中のリポジトリに同じ話題の決まりが無いときの既定にとどめる。リポジトリに決まりがあればそちらに従い、同梱の規約は混ぜない。リポジトリの書き方は、そのリポジトリの人が決めるため（[P6](../../docs/policies/p06-common-template.md)）。探し方は `references/repo-rules.md` にある。
 
 常時適用したい規約（`.claude/rules/*.md`）は、[project](../project/README.md) プラグインの `/project:init-repo` などが導入先リポジトリへコピーする形で配る。コピーされて初めて自動適用の対象になる。
 
@@ -162,7 +165,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 | スキル | 外部への書き込み |
 | --- | --- |
 | `issue-pr-sync` | Issue / PR の本文・タイトル・サイドバーを、実態に合わせて更新する |
-| `issue-start` | Issue に紐づく作業用のブランチを作り、自分を担当者に足す。決めた仕様に合わせて Issue の本文とタスクを書き換える。着手を見送ったときは、ユーザーが選べば理由をコメントする |
+| `issue-start` | Issue に紐づく作業用のブランチを作り、自分を担当者に足す。決めた仕様に合わせて Issue の本文とタスクを書き換える。着手を見送ったときは、ユーザーが選べば理由をコメントする。`--issue-only` のときは、ブランチと担当者に触れず、本文の更新だけを行う |
 
 `issue-start` が Issue の本文を書き換えるのは、計画モードで決めた仕様を、実装中・PR のレビュー中・後から Issue を読む人に届けるため。セッション内の報告や `tmp/`（コミットしない）では、その人たちに届かない。
 
@@ -203,7 +206,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### Issue・PR の本文は、冒頭の概要を 300 文字以内にする
 
-`pr-create`・`issue-start`・`issue-pr-sync` は、本文の冒頭の概要（最初の節）を 300 文字以内で書き、`scripts/body_length.js` で数える。概要より後の節は上限なしで、Issue は種類（バグ修正・新機能・文書や版の更新）で詳しく書く節を変える。長い本文の全体は読まれなくても、冒頭は読まれるため（[P8](../../docs/policies/p08-short-body.md)）。上限・数え方・書き分けは `references/short-body.md` にある。
+`pr-create`・`issue-start`・`issue-pr-sync` は、リポジトリに本文の決まりが無ければ、本文の冒頭の概要（最初の節）を 300 文字以内で書き、`scripts/body_length.js` で数える。概要より後の節は上限なしで、Issue は種類（バグ修正・新機能・文書や版の更新）で詳しく書く節を変える。長い本文の全体は読まれなくても、冒頭は読まれるため（[P8](../../docs/policies/p08-short-body.md)）。上限・数え方・書き分けは `references/short-body.md` にある。
 
 ### 点検レポートは同じ構成にする
 

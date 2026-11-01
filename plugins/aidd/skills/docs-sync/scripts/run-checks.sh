@@ -255,23 +255,68 @@ if [[ ${#DOC_MD_LINK[@]} -gt 0 ]]; then check_links "$TMP/links.txt" "${DOC_MD_L
 if [[ -s "$TMP/links.txt" ]]; then cat "$TMP/links.txt"; else echo "PASS"; fi
 
 # 2. markdown 規約（散文 md のみ・コードブロック内除外）
+# リポジトリに markdownlint の設定があれば、そこで切った（false の）規則は検査しない。
+# 同梱の規約は、リポジトリに決まりが無いときの既定のため（P6）。最初に見つかった設定だけを読む。
+# 読むのは JSON・YAML の形だけ。.cjs・.mjs は中身を実行しないと分からないため、見つけたら注記して今どおり検査する。
+MDL_CONFIG=""
+for c in .markdownlint-cli2.jsonc .markdownlint-cli2.yaml .markdownlint-cli2.cjs .markdownlint-cli2.mjs \
+         .markdownlint.jsonc .markdownlint.json .markdownlint.yaml .markdownlint.yml .markdownlint.cjs .markdownlint.mjs .markdownlintrc; do
+  if [[ -f "$c" ]]; then MDL_CONFIG="$c"; break; fi
+done
+MDL_OFF=""
+MDL_NOTE="markdownlint の設定: なし（同梱の規約で検査する）"
+if [[ -n "$MDL_CONFIG" ]]; then
+  case "$MDL_CONFIG" in
+    *.cjs|*.mjs)
+      MDL_NOTE="markdownlint の設定: $MDL_CONFIG（JavaScript の設定は読めないため、同梱の規約で検査する）"
+      ;;
+    *)
+      # 行頭の // と # のコメントを外し、「規則: true/false」を拾う。規則の名前（fenced-code-language など）も ID に直す。
+      # 規則に {…} を渡したものは有効の扱いで、default（既定 true）に従う。
+      MDL_OFF="$(perl -0777 -ne '
+        s{^\s*(//|#)[^\n]*}{}mg;
+        my %alias = ("single-h1" => "MD025", "single-title" => "MD025", "no-multiple-blanks" => "MD012",
+                     "fenced-code-language" => "MD040", "single-trailing-newline" => "MD047");
+        my %v;
+        while (/["\x27]?([A-Za-z0-9-]+)["\x27]?\s*:\s*(true|false)\b/g) {
+          my ($k, $b) = ($1, $2);
+          $k = uc($k) if $k =~ /^md\d+$/i;
+          $k = $alias{$k} if exists $alias{$k};
+          $v{$k} = $b;
+        }
+        my $def = exists $v{"default"} ? $v{"default"} : "true";
+        my @off;
+        for my $r (qw(MD012 MD025 MD040 MD047)) {
+          my $s = exists $v{$r} ? $v{$r} : $def;
+          push @off, $r if $s eq "false";
+        }
+        print join(" ", @off);
+      ' "$MDL_CONFIG")"
+      MDL_NOTE="markdownlint の設定: $MDL_CONFIG（検査しない規則: ${MDL_OFF:-なし}）"
+      ;;
+  esac
+fi
 echo
 echo "## markdown 規約"
+echo "$MDL_NOTE"
 for f in "${DOC_MD[@]}"; do
   [[ -e "$f" ]] || continue
-  awk -v file="$f" '
+  awk -v file="$f" -v off=" $MDL_OFF " '
+    function on(rule) { return index(off, " " rule " ") == 0 }
     /^```/ {
       if (in_block) { in_block = 0 }
-      else { in_block = 1; if ($0 == "```") print file":"NR" MD040 コードフェンス言語未指定" }
+      else { in_block = 1; if ($0 == "```" && on("MD040")) print file":"NR" MD040 コードフェンス言語未指定" }
       blank = 0; next
     }
     in_block { next }
     /^# [^#]/ { h1++; if (h1_first == 0) h1_first = NR }
-    $0 == "" { blank++; if (blank == 2) print file":"NR" MD012 連続空行" }
+    $0 == "" { blank++; if (blank == 2 && on("MD012")) print file":"NR" MD012 連続空行" }
     $0 != "" { blank = 0 }
-    END { if (h1 > 1) print file":"h1_first" MD025 H1 が "h1" 個 (最初は L"h1_first")" }
+    END { if (h1 > 1 && on("MD025")) print file":"h1_first" MD025 H1 が "h1" 個 (最初は L"h1_first")" }
   ' "$f" >> "$TMP/md.txt"
-  if [[ -s "$f" ]] && [[ -n "$(tail -c1 "$f")" ]]; then echo "$f MD047 末尾改行なし" >> "$TMP/md.txt"; fi
+  if [[ " $MDL_OFF " != *" MD047 "* ]] && [[ -s "$f" ]] && [[ -n "$(tail -c1 "$f")" ]]; then
+    echo "$f MD047 末尾改行なし" >> "$TMP/md.txt"
+  fi
 done
 if [[ -s "$TMP/md.txt" ]]; then cat "$TMP/md.txt"; else echo "PASS"; fi
 

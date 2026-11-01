@@ -19,7 +19,7 @@
 gh repo view Kazu-K0032/claude-plugins --json viewerPermission
 ```
 
-- `ADMIN`・`MAINTAIN`・`WRITE` なら、付けるラベルが実在することを `gh label list --repo Kazu-K0032/claude-plugins` で確かめる
+- `ADMIN`・`MAINTAIN`・`WRITE` なら、付けるラベルが実在することを `gh label list --repo Kazu-K0032/claude-plugins` で確かめる。無ければ付けずに作者に任せる。無いラベルを `--label` に渡すと、起票が失敗するため
 - それ以外（`TRIAGE`・`READ` 等）なら、ラベルは付けずに作者に任せる。書き込み権限が無いと、指定したラベルはエラーにならずに捨てられるため
 
 ## `gh` が失敗した場合
