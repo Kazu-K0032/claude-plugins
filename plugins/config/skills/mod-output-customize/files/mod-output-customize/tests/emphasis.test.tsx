@@ -196,6 +196,8 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
   expect(drawn.text).toBe('質問')
   expect(drawn.context?.some(block => block.includes('# 応答の色分け'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('### 簡潔版') && block.includes('## 次アクション'))).toBe(true)
+  // 次アクションの Claude の項目は、入力欄の候補にそのまま入るため、かぎ括弧で囲ませない
+  expect(drawn.context?.some(block => block.includes('かぎ括弧（「」・『』）や引用符で囲まずに書く'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('なぜなら') && block.includes('つまり'))).toBe(true)
   expect(
     drawn.context?.some(
