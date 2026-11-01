@@ -3,7 +3,7 @@
 | 区分 | 内容 |
 | --- | --- |
 | 対象 | すべてのプラグイン |
-| 例外 | GitHub Actions で動く Claude App（このリポジトリでは `.github/workflows/claude-issue-to-pr.yml`）には、作業ブランチへのコミット・push と PR の作成を任せる。Issue を書いた人がコメントで頼んで動き、結果を PR で人が確かめる仕組みのため。PR のマージ・承認と、リリースは人が行う。deny は、ワークフローがランナーの中だけで外し、リポジトリの設定は変えない |
+| 例外 | GitHub Actions で動く Claude App（このリポジトリでは `.github/workflows/claude-issue-to-pr.yml`）には、作業ブランチへのコミット・push と PR の作成を任せる。Issue を書いた人がコメントで頼んで動き、結果を PR で人が確かめる仕組みのため。あわせて、`issue-pr-sync` の決まりで承認の要らない Issue・PR の更新（本文への追記・チェック・番号の直しなど）も任せる。承認が要る変更（既存の記述を消すなど）は反映せず、案を PR の記録に書いて人に残す。PR のマージ・承認と、リリースは人が行う。deny は、ワークフローがランナーの中だけで外し、リポジトリの設定は変えない |
 | 価値 | [V3](../values/v03-human-judgment.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
 Claude が実行してよい操作と、人が行う操作の線引きを決める。新しい操作が出てきたら、下の「判断の順番」に当てて決める。
@@ -83,7 +83,7 @@ Claude が実行してよい操作と、人が行う操作の線引きを決め�
 
 ### Q. スキルの最後に、コミットまで済ませたい
 
-しない。メッセージは `tmp.md` に書き、コミットは人が行う。GitHub Actions の Claude App が使うスキル（このリポジトリの `issue-to-pr`）だけは、冒頭の表の例外として、コミット・push まで行う。
+しない。メッセージは `tmp.md` に書き、コミットは人が行う。GitHub Actions の Claude App が使うスキル（このリポジトリの `issue-to-pr`）だけは、冒頭の表の例外として、コミット・push と、承認の要らない Issue・PR の更新まで行う。
 
 ### Q. 作業で作ったファイルを消したい
 
