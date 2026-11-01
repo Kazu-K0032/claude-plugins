@@ -33,6 +33,9 @@ commit-msg:
 #       # 整形で直したファイルをステージに置き直す。部分的にステージした変更の退避と戻しは、版を追って直されてきたため
 #       # （Ref: https://github.com/evilmartians/lefthook/blob/master/CHANGELOG.md の 2.1.16・2.2.2 など）、
 #       # 使うときはファイルの先頭に min_version を書き、古い版で動かさない
+#       # CI・手元で全ファイルを検査するときは、lefthook run pre-commit --all-files --no-stage-fixed のように流す。
+#       # stage_fixed は手で流したときも効き、整形したファイルをステージに置くため、後の git diff --exit-code が整形漏れを見逃す。
+#       # git diff --exit-code の代わりに --fail-on-changes を付けてもよい。ステージに置く前に、ジョブの前後の変更を比べて失敗にするため
 #       stage_fixed: true
 # pre-push:
 #   commands:
