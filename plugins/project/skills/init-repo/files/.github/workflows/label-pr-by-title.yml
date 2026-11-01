@@ -5,8 +5,12 @@ name: PR のタイトルからラベルを付け直す
 # pull_request_target で動かすのは、fork からの PR でもラベルを付けるため。pull_request では、fork の PR のトークンが読み取り専用になる
 # pull_request_target は書き込みの権限で動くため、PR のコードは checkout せず、タイトルは run に埋め込まず env で渡す
 # edited は本文やマージ先だけの変更でも動く。結果はタイトルだけで決まるため、何度動いても同じになる
+# pull_request_target は、PR のマージ先に関係なく、既定のブランチにある版で動く。このファイルの変更は、既定のブランチに入ってから効く
+# 公開リポジトリでは、2026-12-02 から GitHub が pull_request_target を既定で止める。Actions のイベントポリシーで許可しないと、このワークフローは動かない
+# Ref: https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target
 on:
-  pull_request_target:
+  # zizmor の dangerous-triggers は、上のとおり PR のコードを動かさない作りにしたうえで、意図して使うため、この行だけ無視する
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     types: [opened, edited, reopened]
 
 permissions: {}

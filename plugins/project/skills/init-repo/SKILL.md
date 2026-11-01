@@ -10,7 +10,7 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 
 同梱テンプレート（`${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/`）を実行中のリポジトリのルートへコピーし、エディタ設定・Lint と整形のツール・スペルチェックの除外語をプロジェクトに合わせる。**既存ファイルは承認なしに上書きしない**。
 
-- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.gitattributes`・`.vscode/`・`cspell.json`・`lefthook.yml` など）。Claude が入れると選ばれたときは、ツールの導入（`package.json`・`node_modules`、または OS のパッケージ管理）
+- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.gitattributes`・`.vscode/`・`cspell.json`・`lefthook.yml` など）。承認を得て前の版の残り物を外す書き込み（`.claude/settings.json`・`docs/README.md`・`CLAUDE.md`。ファイルの削除は人）。Claude が入れると選ばれたときは、ツールの導入（`package.json`・`node_modules`、または OS のパッケージ管理）
 - 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、ツールを自分で入れるかの選択、コミット、導入後の作業（手順 6）。フックは `jq` を使い、無いとガードは止める側に倒れる（`README.md` の「前提と制約」）。編集後の Lint・整形は lefthook で動かし（最低の版は `README.md` の「前提と制約」）、無いとフックは何もしない
 
 ## 参照ファイル
@@ -19,7 +19,7 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/references/install-flow.md` | 手順 1〜4 で、状態の確認・計画の提示・コピー・衝突の片付けをするとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/template-inventory.md` | 引数で範囲を絞るとき・同じ役割の既存物を探すとき・手順 2 で入れないものを決めるとき（ほかの commitlint の設定や lefthook の別名の設定が既にあるかを、この一覧で確かめる） |
-| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/merge-policy.md` | 手順 4 で `DIFF` のファイルがあるとき（選択肢を示す前から）・既存の `CLAUDE.md` があるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/merge-policy.md` | 手順 1 で前の版の残り物と突き合わせるとき・手順 4 で `DIFF` のファイルがあるとき（選択肢を示す前から）・既存の `CLAUDE.md` があるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/tooling.md` | 手順 2 でツールの入れ方を示すとき・手順 5 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/after-install.md` | 手順 6 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/README.md` | 収録物・除外したもの・導入後の調整を確かめるとき。手順 6 で、lefthook の最低の版を伝えるとき |
@@ -43,7 +43,7 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 
 ### 1. 現状を確かめる
 
-`install-flow.md` の「状態を確かめる」に従い、`--skill init-repo --check` で各ファイルの状態を見る。範囲を絞る引数があれば、結果から対象ファイルの相対パスを確定する。
+`install-flow.md` の「状態を確かめる」に従い、`--skill init-repo --check` で各ファイルの状態を見る。範囲を絞る引数があれば、結果から対象ファイルの相対パスを確定する。続けて、`merge-policy.md` の「前の版で配り、今は配らないもの」の一覧と、`Read`・`Glob` で突き合わせる。`--check` は今のテンプレートにあるファイルしか見ないため。
 
 ### 2. 導入計画を示して承認を得る（必須）
 
@@ -52,6 +52,7 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 - 範囲を絞った場合（必要性の判定・要件からの逆算・同じ役割の既存物による除外）は、全テンプレートについて「入れる / 入れない」と**その理由**を表で示す。要件からの逆算では、要件とファイルの対応表と「テンプレートに無い」要件も示す
 - `CLAUDE.md` / `README.md` が既にあれば、ほぼ確実に `DIFF` になる。**テンプレートで上書きすると既存の記述が失われる**ことを明示してから承認を求める
 - `NEW` でも入れないもの（ほかの commitlint の設定・lefthook の別名の設定があるとき）を、`template-inventory.md` の「NEW でも入れないもの」で決める
+- 手順 1 で見つけた前の版の残り物を、外す案と一緒に示す。`--keep-existing` や範囲の指定があっても示す
 - lefthook と入れ方（`tooling.md` の「ツールを入れる」）を示し、「自分で入れる / Claude が入れる」を選んでもらう。手順 5 で決めるツールにも、同じ選択を当てる
 
 ### 3. コピーする
@@ -60,7 +61,7 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 
 ### 4. 衝突したファイルを片付ける
 
-`install-flow.md` の「衝突したファイルを片付ける」に従い、`DIFF` の扱いを 1 件ずつ選んでもらう。マージは `merge-policy.md` の方針で行う。`--keep-existing` でこの手順を飛ばすときも、`.gitignore` の不足行の追記と、`CLAUDE.md` の `docs-type` の節を外すことは提案する。
+`install-flow.md` の「衝突したファイルを片付ける」に従い、`DIFF` の扱いを 1 件ずつ選んでもらう。マージは `merge-policy.md` の方針で行う。`--keep-existing` でこの手順を飛ばすときも、`.gitignore` の不足行の追記と、手順 2 で示した前の版の残り物を外すことは提案する（`merge-policy.md` の「前の版で配り、今は配らないもの」）。
 
 ### 5. エディタ設定・Lint と整形のツール・スペルチェックの除外語を調整する
 

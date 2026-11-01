@@ -20,13 +20,13 @@
 /project:init-repo
 ```
 
-衝突状況の確認 → 計画の提示（Lint と整形のツールを自分で入れるか Claude が入れるかも聞く） → 承認 → コピー → エディタ設定・Lint と整形のツール・スペルチェックの除外語の調整（Claude が入れると選んだら、ツールを入れて動くかを確かめる） → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
+衝突状況と前の版の残り物の確認 → 計画の提示（Lint と整形のツールを自分で入れるか Claude が入れるかも聞く） → 承認 → コピー → エディタ設定・Lint と整形のツール・スペルチェックの除外語の調整（Claude が入れると選んだら、ツールを入れて動くかを確かめる） → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
 
 | 引数の例 | 動き |
 | --- | --- |
 | `.github だけ` / `.claude/hooks を除く` | 指定したパスで絞る |
 | `--needed-only`（「必要なものだけ」なども同じ） | プロジェクトの構成から、要るテンプレートだけを選ぶ |
-| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルに触らず、パスが違っても同じ役割のものがあればそのテンプレートは入れない |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルを置き換えず、パスが違っても同じ役割のものがあればそのテンプレートは入れない。`.gitignore` の不足行の追記と、前の版の残り物を外す案は示す |
 | `docs/spec.md の要件を満たす最小限` / `<URL> の要求を満たすものは最低限` | 参照先の要件を読み、満たすのに要るテンプレートだけを入れる |
 
 判定の基準（各テンプレートの役割・入れる条件・依存関係）は [template-inventory.md](template-inventory.md) にある。既存ファイルは承認なしに上書きされない。手順の詳細は [SKILL.md](SKILL.md) を参照。
@@ -57,10 +57,11 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/rules/ai-docs.md` | `SKILL.md`・規約・`CLAUDE.md` など AI が読む文書を、人も読み切れる形で書く規約（`SKILL.md`・規約の骨組み・本筋と細部を分ける・本文 5,000 文字以内） | そのまま使える |
 | `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / 文書 / リファクタ / リリース / 調査 / その他 / AIDD 振り返り）。タイトルは `[Bug]` などの分類で始まり、分類に合うラベルが付く。先頭に、概要の上限（300 文字）と詳しく書く欄を示す | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[after-install.md](after-install.md)） |
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト）。概要の上限（300 文字）をコメントで示す | ローカル確認 URL・チェック項目 |
-| `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
+| `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる・公開から 7 日たった版だけ） | そのまま使える |
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
 | `files/.github/workflows/label-pr-by-title.yml` | PR のタイトルの `[Bug]` などの分類から、分類のラベルを付け直す（fork の PR でも動くよう `pull_request_target` で動かし、PR のコードは checkout しない。分類で始まらないタイトルでは何もせず、無いラベルは作らない） | 分類やラベルの名前を変えたら、`case` と `managed` を合わせる |
-| `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks）とリポジトリ全体のスペルチェック（cspell） | `branches`（既定は `main`）を保護ブランチに合わせる |
+| `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks）、リポジトリ全体のスペルチェック（cspell）、ワークフローの検査（zizmor と `check-workflows.sh`。`github-actions.md` の【必須】を確かめる） | `branches`（既定は `main`）を保護ブランチに合わせる |
+| `files/.github/scripts/check-workflows.sh` | ワークフローのトップレベルの `permissions: {}` と、全ジョブの `timeout-minutes` を確かめる（zizmor が見ない【必須】。`pr-checks.yml` が呼ぶ） | そのまま使える |
 | `files/.github/workflows/sync-labels.yml` | `labels.yml` を GitHub のラベルへ同期（`labels.yml` に無いラベルは消さない） | 消したいときは、`labels.yml` をそろえてから `skip-delete` を `false` にする |
 | `files/.vscode/extensions.json` | VS Code の推奨拡張機能（markdownlint・スペルチェック・GitHub Actions・YAML） | 技術スタックに合わせて追加する（Skill が提案する） |
 | `files/.vscode/settings.json` | 保存時の整形（末尾改行・行末空白の削除・LF） | そのまま使える |
@@ -98,6 +99,8 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `.gitignore`・`.vscode/`・`cspell.json`・`.claude/settings.json`・`lefthook.yml` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
 - `pr-checks.yml` のスペルチェックは、`npx` で版を固定した cspell を取得して動かす。版は `files/.github/workflows/pr-checks.yml` と、Skill の候補の洗い出しのコマンド（[tooling.md](tooling.md) の「スペルチェックの除外語」）の 2 か所に書いてある。版を上げるときは両方をそろえる
+- `pr-checks.yml` のワークフローの検査は、`pipx` で版を固定した zizmor を取得して動かす。版は `files/.github/workflows/pr-checks.yml` に書いてあり、Dependabot は上げない。zizmor は、リポジトリ直下の `.github/dependabot.yml` も検査する。`check-workflows.sh` は、ランナーに入っている `yq` と `jq` を使う
+- `label-pr-by-title.yml` は `pull_request_target` で動き、既定のブランチにある版を使う。そのため、既定のブランチに入るまでは動かない。公開リポジトリでは、GitHub が 2026-12-02 から `pull_request_target` を既定で止めるため、Actions のイベントポリシーで許可が要る（[after-install.md](after-install.md) の残作業）
 - `commitlint.config.mjs` は設定だけ。ESM の形式（`.mjs`）のため、`package.json` の `type` に関係なく読み込める。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`lefthook install` による Git のフックの配線（`lefthook.yml` の `commit-msg` が呼ぶ）が要る。Node のプロジェクトが前提だが、コミット規約の検証は土台の考え方のため配る（[P6](../../../../docs/policies/p06-common-template.md) の例外）
 
 ## 除外したもの

@@ -16,6 +16,10 @@ paths:
   - "plugins/project/skills/init-repo/files/.gitattributes"
   - ".claude/hooks/guard-destructive.sh"
   - "plugins/project/skills/init-repo/files/.claude/hooks/guard-destructive.sh"
+  - ".github/workflows/label-pr-by-title.yml"
+  - "plugins/project/skills/init-repo/files/.github/workflows/label-pr-by-title.yml"
+  - ".github/workflows/plugin-checks.yml"
+  - "plugins/project/skills/init-repo/files/.github/workflows/pr-checks.yml"
 ---
 
 # 重複ファイルの同期ルール
@@ -34,6 +38,13 @@ paths:
 | `.claude/rules/ai-docs.md` | `plugins/project/skills/init-repo/files/.claude/rules/ai-docs.md` | AI が読む文書の書き方の規約（[P9](../../docs/policies/p09-readable-ai-docs.md)） | なし |
 | `.gitattributes` | `plugins/project/skills/init-repo/files/.gitattributes` | `*.sh` を LF に固定する指定 | なし |
 | `.claude/hooks/guard-destructive.sh` | `plugins/project/skills/init-repo/files/.claude/hooks/guard-destructive.sh` | 破壊的なコマンドを承認に回すフック | なし |
+| `.github/workflows/label-pr-by-title.yml` | `plugins/project/skills/init-repo/files/.github/workflows/label-pr-by-title.yml` | PR のタイトルの分類からラベルを付け直すワークフロー | なし |
+
+## 同じ値を書く箇所
+
+ファイルの全体は違うが、同じ値を書いている箇所。片方だけ上げると、利用先とこのリポジトリで検査の結果がずれるため、そろえる。`check.py` は見ない。
+
+- zizmor の版（`pipx run zizmor==<版>`）：`plugins/project/skills/init-repo/files/.github/workflows/pr-checks.yml` と `.github/workflows/plugin-checks.yml`。Dependabot は `run:` の版を上げないため、手で上げる
 
 ## 組の片方を編集したとき
 

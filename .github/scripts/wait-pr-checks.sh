@@ -4,10 +4,11 @@
 #
 # 使い方: wait-pr-checks.sh <PR 番号> <作業ブランチ> <失敗のログを書くファイル>
 #   作業ブランチを取り直して手元をその先頭に合わせ、その先頭のコミットのチェックを待つ
-# 結果:   result=pass / fail / unknown を、標準出力と $GITHUB_OUTPUT（あれば）に書く
-#   pass    = すべてのチェックが通った（skipping を含む）
-#   fail    = 落ちた・取り消されたチェックがある。落ちた実行のログの末尾を、3 つ目の引数のファイルに書く
-#   unknown = ブランチを取れない、PR の先頭が合わない、チェックが出てこない、時間内に終わらない
+# 結果:   result=pass / fail / approval / unknown を、標準出力と $GITHUB_OUTPUT（あれば）に書く
+#   pass     = すべてのチェックが通った（skipping を含む）
+#   fail     = 落ちた・取り消されたチェックがある。落ちた実行のログの末尾を、3 つ目の引数のファイルに書く
+#   approval = 待つコミットの Actions の実行が、承認待ち（action_required）でジョブが動いていない。実行のリンクを、3 つ目の引数のファイルに書く
+#   unknown  = ブランチを取れない、PR の先頭が合わない、チェックが出てこない、時間内に終わらない
 # 環境変数: GH_TOKEN・GH_REPO（gh が使う）。APPEAR_LIMIT・FINISH_LIMIT（秒。待つ上限）。
 #   EXPECT_SHA を渡すと、ブランチを取り直さずに、そのコミットを待つ（試すとき用）
 
@@ -42,6 +43,21 @@ fi
 start=$(date +%s)
 elapsed() { echo $(( $(date +%s) - start )); }
 
+# 待つコミットの実行のうち、承認待ち（action_required）のものがあれば、リンクをログに書いて approval で終える
+# 承認待ちの実行はジョブを作らず、gh pr checks に出てこないため、Actions の実行の一覧から探す
+# チェックが 1 つも出ていないときだけ呼ぶ。同じコミットで後から動いた実行（PR の編集など）があれば、そのチェックで決めるため
+check_approval() {
+  local runs
+  runs=$(gh api "repos/$GH_REPO/actions/runs?head_sha=$sha" \
+    --jq '.workflow_runs[] | select(.status == "action_required" or .conclusion == "action_required") | "- \(.name)（\(.html_url)）"' 2>/dev/null || true)
+  if [ -n "$runs" ]; then
+    printf '%s\n' "$runs" > "$log"
+    echo "承認待ちの実行がある"
+    printf '%s\n' "$runs"
+    finish approval
+  fi
+}
+
 # push の直後は、PR の先頭がまだ古いコミットのことがある。待つコミットになるまで待つ
 while [ "$(gh pr view "$pr" --json headRefOid -q .headRefOid 2>/dev/null)" != "$sha" ]; do
   if [ "$(elapsed)" -ge "$appear_limit" ]; then
@@ -57,6 +73,9 @@ while :; do
   [ -n "$checks" ] || checks='[]'
   total=$(jq 'length' <<< "$checks")
   pending=$(jq '[.[] | select(.bucket == "pending")] | length' <<< "$checks")
+  if [ "$total" -eq 0 ]; then
+    check_approval
+  fi
   if [ "$total" -eq 0 ] && [ "$(elapsed)" -ge "$appear_limit" ]; then
     echo "チェックが出てこなかった"
     finish unknown

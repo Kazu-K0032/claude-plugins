@@ -36,7 +36,7 @@
 - 1 つの目的の変更を終え、検査が通ったら、その変更で直したファイルだけを `git add` でステージに置き、`plugins/aidd/skills/commit/SKILL.md` の手順でコミットメッセージを `tmp.md` に書く。コミット・push は利用者が行う
 - 利用者に、push する前に `/marketplace-update` を実行するよう勧める。このスキルは `disable-model-invocation: true` のため、Claude からは呼べない
 - PR のマージ先は `develop` にし、`plugin.json` の版は上げない。版は、リリースの前に版を上げるための PR で上げる（`docs/release.md`）
-- PR では `.github/workflows/plugin-checks.yml` が、`check.py`（版の検査を含む）・マニフェストの検証・mod のテストを動かす。`/marketplace-update` の手順 5（機械チェックが見ない箇所を確かめて直す）は CI では動かないため、CI があっても省かない。`@claude` の bot は、`issue-to-pr` の手順 5 で手順 2〜6 を流し、最後の段（`finish-checks.md`）でもう一度確かめる
+- PR では `.github/workflows/plugin-checks.yml` が、`check.py`（版の検査を含む）・マニフェストの検証・mod のテスト・ワークフローの検査（zizmor と `check-workflows.sh`。このリポジトリと `init-repo` の雛形の両方）を動かす。`/marketplace-update` の手順 5（機械チェックが見ない箇所を確かめて直す）は CI では動かないため、CI があっても省かない。`@claude` の bot は、`issue-to-pr` の手順 5 で手順 2〜6（`claude plugin test` は CI に任せる）を流し、最後の段（`finish-checks.md`）でもう一度確かめる
 - `check.py` だけなら、Claude が `python .claude/skills/marketplace-update/scripts/check.py` で実行して、NG・WARN を確かめてよい
 
 ## 既知の食い違い

@@ -19,6 +19,8 @@ jobs:
         with:
           # デフォルト値(depth:1）は差分コミットの情報しか持たずPR全体の差分が必要なスキャンが失敗するため、depth:0を指定して完全な履歴を取得する
           fetch-depth: 0
+          # 取得の後に git で push などをしないため、トークンを .git/config に残さない
+          persist-credentials: false
 
       - name: gitleaks をインストール
         run: |
@@ -59,6 +61,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -69,3 +73,28 @@ jobs:
         # 除外語を変えたときに既存ファイルへの影響も分かるよう、PR の差分ではなく全体を検査する。
         # cspell は版を固定する。固定しないと npx が毎回最新版を取りに行き、新しい版の要件（Node の版など）や検出の変化で CI が急に落ちるため
         run: npx --yes cspell@9.8.0 --no-progress "**"
+
+  workflow-check:
+    name: ワークフローの検査
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: ワークフローの書き方を zizmor で検査
+        # .claude/rules/github-actions.md の【必須】のうち、SHA の固定（unpinned-uses）と、値の渡し方などの危うい書き方を見る。
+        # 版を固定する。固定しないと pipx が毎回最新版を取りに行き、新しい版で増えた検査で CI が急に落ちるため。
+        # v1.20.0 以降は、actions/* も含む全アクションに SHA の固定を求める
+        # Ref: https://docs.zizmor.sh/audits/#unpinned-uses
+        # トークンを渡すと、偽の SHA（impostor-commit）や既知の脆弱な版も、GitHub に問い合わせて確かめる
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pipx run zizmor==1.31.1 --format=github .
+
+      - name: permissions と timeout-minutes を検査
+        # zizmor が確かめない残りの【必須】（トップレベルの permissions: {}・全ジョブの timeout-minutes）を見る
+        run: bash .github/scripts/check-workflows.sh .github/workflows

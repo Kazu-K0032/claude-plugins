@@ -88,6 +88,6 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比
 
 ## 保守
 
-- リポジトリの規約への適合と、横断的な重複記述・値の矛盾を網羅して監査するのは `/aidd:harness-audit`（範囲は全体・差分・ディレクトリから選べる）。差分に絞っても見るのは変えたファイルの規約適合で、変更に追従していない md は見つけない。このスキルは「このブランチの変更にドキュメントが追従しているか」に特化する
+- リポジトリの規約への適合と、横断的な重複記述・値の矛盾を網羅して監査するのは `/aidd:harness-audit`（範囲は全体・差分・パスから選べる）。差分に絞っても見るのは変えたファイルの規約適合で、変更に追従していない md は見つけない。このスキルは「このブランチの変更にドキュメントが追従しているか」に特化する
 - `issue-start` は、このスキルを呼ばずに手順 2〜4 を使う（`issue-start` の `docs-check.md`）。手順の番号・出力先・スクリプトの場所を変えるときは、そちらも直す。マーケットプレイスのリポジトリの `@claude` の bot（`.github/workflows/claude-issue-to-pr.yml` の docs-sync の段と、`.claude/skills/issue-to-pr/finish-checks.md`）も、このファイルを直接読んで手順 2〜4 を使うため、同じく直す
 - `allowed-tools` に `run-checks.sh` の `Bash` パターンを含めていない。プラグインの実体パスは `${CLAUDE_PLUGIN_ROOT}` で解決するが、この変数が `allowed-tools` の frontmatter で展開されるかは公式に記載がないため、当てにせず通常の許可プロンプトを通す
