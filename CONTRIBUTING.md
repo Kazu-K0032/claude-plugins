@@ -44,7 +44,8 @@ bot を使えるようにする準備（App・environment・secret）、確か�
 - bot は Issue の本文とコメントを読んで動く。決めたこと・変えるファイル・確かめ方を Issue に書いておくと、意図どおりに動きやすい
 - bot のブランチ名は `issues/<Issue番号>-claude-<日時>` になる。上の「ブランチを作る場合」の `<説明>`（英語 2〜4 語）の例外で、action が自動で付けるため。`issues/<Issue番号>-` で始まるので、Issue 番号はこの名前から取れる
 - bot は、まず下書きの PR を作る。CI が落ちたら、bot がログを読んで直す（最大 3 回）
-- CI が通ると PR はレビュー待ちになり、セキュリティレビュー（`/security-review`）とコードレビュー（公式の code-review）が動く。直すべき指摘があれば bot が 1 回だけ直し、もう一度 CI が通るまで直す（最大 3 回）
+- CI が通ると PR はレビュー待ちになり、セキュリティレビュー（`/security-review`）・コードレビュー（公式の code-review）・文書の追従の点検（docs-sync）が動く。直すべき指摘があれば bot が 1 回だけ直し、もう一度 CI が通るまで直す（最大 3 回）
+- 最後の CI が通ると、bot が PR 本文の「AI を使った確認」のうち docs-sync・marketplace-update・issue-pr-sync の 3 行を点検し、条件を満たす行にチェックを入れる。承認の要らない Issue・PR の更新も反映する。`/aidd:pr-review` の行は人が実行する。流れの図は [docs/claude-bot.md](docs/claude-bot.md) にある
 - 最後の CI が通らなければ、PR は下書きに戻る。どちらの場合も、計画・CI・レビューの記録が PR にコメントされる
 - マージは、ほかの PR と同じく人が行う
 - `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` は、bot に変えさせない。変更は、PR の本文に diff で届く。人が確かめて当てる。bot が変えて push しようとすると、push の前に止まる。それでも PR に入ったときは、下書きのまま残る

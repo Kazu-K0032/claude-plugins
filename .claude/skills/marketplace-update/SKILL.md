@@ -114,7 +114,7 @@ claude plugin test plugins/config/skills/mod-output-customize/files/mod-output-c
 - 手順 2 の機械チェックと手順 6 のコマンドは、PR でも `.github/workflows/plugin-checks.yml` が動かす。CI は、`main` へ向けた PR と、リリースの Issue（`release.yml` から呼ぶとき）で `--base` を付ける
 - mod を増やしたら、手順 6 と `plugin-checks.yml` の両方に足す
 - `check.py` に NG・WARN のカテゴリを足したら、`ng-warn.md` にも直し方・判断のしかたを足す
-- 手順 5 の点検表は、`@claude` の bot（`.claude/skills/issue-to-pr/SKILL.md` の手順 5）も読む。bot はこのスキルを呼べないため、項目はこのファイルだけで分かる書き方にする
+- 手順 2〜6 は、`@claude` の bot（`issue-to-pr` の手順 5・10）も読む。bot はこのスキルを呼べないため、このファイルだけで分かる書き方にする
 - `git diff` は `--output` で書き込めるため、`allowed-tools` に入れていない（P1 の「確認なしで任せる操作」）
 
 $ARGUMENTS

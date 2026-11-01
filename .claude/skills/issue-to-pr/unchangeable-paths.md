@@ -17,3 +17,7 @@
 Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）は、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の中だけ編集できる。ワークフローが、この範囲だけを `PermissionRequest` フック（`.github/scripts/allow-template-edits.sh`）で許可しているため。範囲の外は `which is a sensitive file` で拒否されるため、同じく diff を PR の本文に書く。
 
 雛形の中でも、`files/.claude/settings.json` と `files/.claude/hooks/` は許可しない。利用先に配る deny とフックで、人が確かめて直すため。
+
+## 保守
+
+- bot が編集できる protected paths の範囲は、`.github/scripts/allow-template-edits.sh` が正典。変えるときは、この節と `docs/claude-bot.md` も直す
