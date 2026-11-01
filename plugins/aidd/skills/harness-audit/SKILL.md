@@ -1,14 +1,14 @@
 ---
 name: harness-audit
-description: リポジトリが、本マーケットプレイスの設計思想（AIDD × DocDD）とそのリポジトリの規約に合うかを、全体・差分（今のブランチの変更）・ディレクトリから範囲を選んで監査する。規約違反・価値に反する箇所・規約のずれ・土台の仕組みの欠けと、ファイル間の値の矛盾・重複記述・参照方向違反を見る。実行前にトークンを多く使うことと、対象の件数・総量・エージェント数の見込みを示して続けるかを聞き、Workflow（harness-audit-run）で各指摘を敵対的に検証して tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md に出力する。init-repo から作り直した後や、統合ブランチ（develop・stg・main）へのマージ前の最終チェック（全体）と、PR の前の確認（差分）に使用する
+description: リポジトリが、本マーケットプレイスの設計思想（AIDD × DocDD）とそのリポジトリの規約に合うかを、全体・差分（今のブランチの変更）・パス（ディレクトリかファイル）から範囲を選んで監査する。規約違反・価値に反する箇所・規約のずれ・土台の仕組みの欠けと、ファイル間の値の矛盾・重複記述・参照方向違反を見る。実行前にトークンを多く使うことと、対象の件数・総量・エージェント数の見込みを示して続けるかを聞き、Workflow（harness-audit-run）で各指摘を敵対的に検証して tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md に出力する。init-repo から作り直した後や、統合ブランチ（develop・stg・main）へのマージ前の最終チェック（全体）と、PR の前の確認（差分）に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git branch --show-current), Bash(git check-ignore:*), Bash(gh pr view:*)
-argument-hint: "[範囲（任意。省略時は全体・差分・ディレクトリから質問する。例: --diff、plugins/aidd docs）]"
+argument-hint: "[範囲（任意。省略時は全体・差分・パスから質問する。例: --diff、plugins/aidd docs）]"
 ---
 
 # ハーネス監査（harness-audit）
 
-リポジトリが、本マーケットプレイスの設計思想（AIDD × DocDD）と、そのリポジトリの規約に合っているかを監査する。範囲は全体・差分・ディレクトリから選べる。全体は、`/project:init-repo` からハーネスやツールを作り直した後と、統合ブランチ（develop・stg・main など）へマージする前の最終チェックに使う。差分は、PR の前に、ブランチで変えたファイルだけを安く見るために使う。
+リポジトリが、本マーケットプレイスの設計思想（AIDD × DocDD）と、そのリポジトリの規約に合っているかを監査する。範囲は全体・差分・パスから選べる。全体は、`/project:init-repo` からハーネスやツールを作り直した後と、統合ブランチ（develop・stg・main など）へマージする前の最終チェックに使う。差分は、PR の前に、ブランチで変えたファイルだけを安く見るために使う。
 
 - 外へ書き込むもの：`tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md` のレポート（Workflow が書く）。検出とレポートだけを行い、ファイルは直さない
 - 人がすること：見込みを見て、続けるかを選ぶ。レポートの指摘を読み、直すかを決める
@@ -23,11 +23,11 @@ argument-hint: "[範囲（任意。省略時は全体・差分・ディレクト
 | `${CLAUDE_PLUGIN_ROOT}/skills/harness-audit/viewpoints.md` | 監査で何を見るか（観点・物差し・範囲を絞ったときに見るもの・扱わないもの）を確かめる・説明するとき |
 | `${CLAUDE_PLUGIN_ROOT}/workflows/harness-audit-run.js` | 手順 4・5 で見込みを出すとき。監査の本体。段ごとのモデルと effort は `MODELS`、束ね方は `BATCH`、横断の突合の分け方は `DETECT_GROUP`、体数の上限は `planned` の式と `AGENT_PLAN_LIMIT` が正典 |
 | `${CLAUDE_PLUGIN_ROOT}/references/harness-principles.md` | 手順 6 で Workflow を呼ぶとき。監査の物差しになる、設計思想の要約。本文を Workflow に渡す |
-| `${CLAUDE_PLUGIN_ROOT}/skills/harness-audit/errors.md` | 手順 1・6 で Workflow が使えないとき、手順 3 で差分が使えないとき、手順 7 で Workflow の戻り値に `stopped` があったとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/harness-audit/errors.md` | 手順 1・6 で Workflow が使えないとき、手順 3 で差分が使えないとき、手順 7 で Workflow の戻り値に `stopped` があったとき・途中で止まった段があったとき |
 
 ## 想定している引数
 
-`$ARGUMENTS` は、監査の範囲。`--diff` なら差分、パス（空白区切り）ならディレクトリ、空なら質問で選ぶ。`--diff` とパスが混ざっていたら、選び直してもらう（`scope.md`）。無いパスと、`--diff`・パス以外の指定は使わず、使える指定を示して聞く。
+`$ARGUMENTS` は、監査の範囲。`--diff` なら差分、パス（空白区切り。ディレクトリかファイル）ならパス、空なら質問で選ぶ。`--diff` とパスが混ざっていたら、選び直してもらう（`scope.md`）。無いパスと、`--diff`・パス以外の指定は使わず、使える指定を示して聞く。
 
 ## 出力先
 
@@ -43,7 +43,7 @@ Workflow が `tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md` にレ�
 
 ### 2. 範囲を決める
 
-`scope.md` の「範囲の種類」で、全体・差分・ディレクトリのどれかに決める。
+`scope.md` の「範囲の種類」で、全体・差分・パスのどれかに決める。
 
 ### 3. 対象を列挙する
 
@@ -53,7 +53,7 @@ Workflow が `tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md` にレ�
 
 先に、トークンを多く使うことを伝える。多数のエージェントを動かすため、通常の会話より多く使い、プランの利用上限に数えられる。続けて、手順 3 の一覧から、件数・総量・エージェント数を数える。トークン数は事前に分からないため。
 
-- 範囲：全体・差分（比べた先）・ディレクトリ（パス）のどれか。差分とディレクトリは、全体の件数も添える
+- 範囲：全体・差分（比べた先）・パスのどれか。差分とパスは、全体の件数も添える
 - 件数：全部と、markdown（`.md`）だけの 2 通り
 - 総量：行数と KB
 - 束の数：`BATCH` の決め方で数える（小さいファイルを束ね、大きいファイルは 1 件で 1 束）
@@ -71,7 +71,7 @@ Workflow が `tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md` にレ�
 | --- | --- |
 | 全部（N 件） | 手順 3 の一覧のまま手順 6 へ |
 | markdown だけ（M 件） | 一覧を `.md` だけにして手順 6 へ |
-| 範囲を選び直す | 手順 2 からやり直す。ディレクトリを選ぶときは、上位のディレクトリごとの件数を示す |
+| 範囲を選び直す | 手順 2 からやり直す。パスを選ぶときは、上位のディレクトリごとの件数を示す |
 | 中止 | 何もせずに終わる |
 
 - 「範囲を選び直す」には、範囲を分けて実行すると、範囲をまたぐ矛盾・重複は見つからないことを説明に添える
@@ -92,7 +92,7 @@ Workflow が `tmp/<ブランチ名>/harness-audit_<yyyymmdd_hhmmss>.md` にレ�
 }
 ```
 
-- `scope.kind` は `all`・`diff`・`dir`。差分なら `base` に比べた先、ディレクトリなら `paths` にパスの配列を入れる。`total` は全体の件数。手順 5 で「markdown だけ」を選んだときは `markdownOnly` を `true` にする
+- `scope.kind` は `all`・`diff`・`dir`。差分なら `base` に比べた先、パスなら `paths` にパスの配列を入れる。`total` は全体の件数。手順 5 で「markdown だけ」を選んだときは `markdownOnly` を `true` にする
 - 名前で呼べなければ、`scriptPath` に `${CLAUDE_PLUGIN_ROOT}/workflows/harness-audit-run.js` を渡して呼ぶ
 - どちらでも呼べなければ、`errors.md` の「Workflow が使えないとき」に従う
 
@@ -106,7 +106,7 @@ Workflow の戻り値から、次を伝えて終わる。戻り値に `stopped` 
 - 監査したファイル数・確定した指摘の数・指摘の候補の数
 - 仕組みの欠けを見たか（`presence`。`checked` は見た、`not-installed` は印が無く見ていない、`no-principles` は要約が無く見ていない、`failed` は判定の段が止まった。`failed` なら再実行を勧める）
 - 当てはまる規約が無かったファイルの数と、検証していない候補の数（0 でなければ）
-- 途中で止まった段の件数（`failed`・`notInspected`・`detectFailed`）と、反証できなかった仕組みの欠けの数（`uncheckedMissing`）。0 でなければ伝え、再実行を勧める。その分は見ていないため
+- 途中で止まった段（`failed`・`notInspected`・`detectFailed`・`uncheckedMissing`）が 0 でなければ、`errors.md` の「途中で止まった段があったとき」に従う
 - `file` が `null` なら、レポートを書けなかったことを伝え、上の件数を戻り値から伝える
 
 ## 禁止事項

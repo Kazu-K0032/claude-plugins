@@ -1,17 +1,17 @@
 export const meta = {
   // リポジトリが、本マーケットプレイスの設計思想（AIDD × DocDD）と、そのリポジトリの規約に合うかを、
   // fan-out で網羅監査する workflow。init-repo からの作り直しの後や、統合ブランチへのマージ前の最終チェック（全体）と、
-  // PR の前の確認（差分・ディレクトリ）に使う。
+  // PR の前の確認（差分・パス）に使う。
   // 機械チェック（リンク切れ・markdown 規約）は Lint の担当として重複させない。
   //
   // 対象の一覧と設計思想の要約（aidd の references/harness-principles.md の本文）と範囲は、/aidd:harness-audit スキルが args で渡す。
-  // 範囲の絞り込み（差分・ディレクトリ）はスキル側で済ませてあり、ここでは files をそのまま対象にする。
+  // 範囲の絞り込み（差分・パス）はスキル側で済ませてあり、ここでは files をそのまま対象にする。
   // scope は、レポートの注記に「範囲」と「見ていないもの」を書くためだけに使う。
   // 実行前に件数と体数の見込みを示して利用者の確認を取るのはスキル側（workflow からは利用者に質問できない）。
   // 出力は tmp/<branch>/harness-audit_<timestamp>.md のみ。修正は行わない。
   name: 'harness-audit-run',
   description:
-    'リポジトリがマーケットプレイスの設計思想と規約に合うか（規約違反・価値に反する・規約のずれ・仕組みの欠け）と、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。範囲は全体・差分・ディレクトリ。費用が大きいため直接は呼ばず、見込みを示して確認を取る /aidd:harness-audit から呼ぶ（args で { files, principles, scope, confirmed: true } を渡す）',
+    'リポジトリがマーケットプレイスの設計思想と規約に合うか（規約違反・価値に反する・規約のずれ・仕組みの欠け）と、ファイル間の値の矛盾・重複記述・参照方向違反を fan-out で監査し、各指摘を敵対的に検証して tmp/<branch>/harness-audit_<timestamp>.md に追記する。範囲は全体・差分・パス（ディレクトリかファイル）。費用が大きいため直接は呼ばず、見込みを示して確認を取る /aidd:harness-audit から呼ぶ（args で { files, principles, scope, confirmed: true } を渡す）',
   // phases の model は進み具合の表示に使う。下の MODELS とそろえる（meta は純粋なリテラルのため、定数を参照できない）
   phases: [
     { title: 'Rubric', detail: '設計思想の要約とリポジトリの規約から、当てるファイル付きのチェックリストと規約のずれの候補を作る', model: 'opus' },
@@ -410,8 +410,11 @@ function makeGroups(paths) {
   return merged
 }
 
+// 重複を除いた配列にする（順は最初に出た順）
+const uniq = (list) => [...new Set(list)]
+
 // --- 範囲の説明 ---
-// 呼び出し元が絞り込んだ範囲（全体・差分・ディレクトリ）を、レポートの注記に書く文にする。
+// 呼び出し元が絞り込んだ範囲（全体・差分・パス）を、レポートの注記に書く文にする。
 // 範囲の外のファイルは、規約違反を見ず、範囲の外との矛盾・重複も見つからないため、見ていないものとして書く。
 // 規約のずれと仕組みの欠けは files に依らず、リポジトリの規約から見るため、範囲に関わらず全体を対象にする。
 function parseScope(raw) {
@@ -435,7 +438,7 @@ function describeScope(scope, count) {
   if (scope.kind === 'diff') {
     label = `差分（${scope.base ? `${scope.base} との差` : '今のブランチの変更'}${md}。${of}）`
   } else if (scope.kind === 'dir') {
-    label = `ディレクトリ（${scope.paths.join('・') || 'パス不明'}${md}。${of}）`
+    label = `パス（${scope.paths.join('・') || 'パス不明'}${md}。${of}）`
   } else {
     label = scope.markdownOnly ? `全体のうち markdown だけ（${of}）` : `全体（${count} 件）`
   }
@@ -685,7 +688,7 @@ const perBatch = await pipeline(
     }
     const results = [...byFile.values()]
     const candidates = results.flatMap((r) => (r.violations || []).map((v) => ({ file: r.file, ...v })))
-    if (candidates.length === 0) return { results, verdicts: [], failed: 0 }
+    if (candidates.length === 0) return { results, verdicts: [], failed: 0, failedFiles: [] }
     const items = [...new Set(candidates.map((c) => c.ruleId))].map((id) => itemsById.get(id)).filter(Boolean)
     const checked = await agent(
       [
@@ -718,8 +721,9 @@ const perBatch = await pipeline(
       ].join('\n'),
       { label: `verify:rules:${batch[0]}${batch.length > 1 ? ` +${batch.length - 1}` : ''}`, phase: 'Verify', schema: BATCH_VERDICT_SCHEMA, ...MODELS.verify }
     )
-    // 検証の段が止まったときは、候補を黙って落とさず、検証できなかった件数として数える
-    if (!checked) return { results, verdicts: [], failed: candidates.length }
+    // 検証の段が止まったときは、候補を黙って落とさず、検証できなかった件数として数える。
+    // 再実行の範囲にできるよう、候補のファイルのパスも返す
+    if (!checked) return { results, verdicts: [], failed: candidates.length, failedFiles: uniq(candidates.map((c) => c.file)) }
     // 返事を候補と突き合わせる。ファイルと項目の組ごとに、返事が候補より少なければ、足りない分を検証できなかった件数に数える。
     // location は書き写すときに揺れやすいため、組の単位で数える。候補に無い組の返事は捨てる
     const pairKey = (x) => `${x.file}\u0000${x.ruleId}`
@@ -740,8 +744,13 @@ const perBatch = await pipeline(
         }
       })
     let failed = 0
-    for (const [k, n] of asked) failed += Math.max(0, n - (answeredCount.get(k) || 0))
-    return { results, verdicts, failed }
+    const failedFiles = []
+    for (const [k, n] of asked) {
+      const missing = Math.max(0, n - (answeredCount.get(k) || 0))
+      failed += missing
+      if (missing > 0) failedFiles.push(k.split('\u0000')[0])
+    }
+    return { results, verdicts, failed, failedFiles: uniq(failedFiles) }
   }
 )
 
@@ -749,10 +758,13 @@ const done = perBatch.filter(Boolean)
 const inspections = done.flatMap((b) => b.results)
 const ruleVerdicts = done.flatMap((b) => b.verdicts)
 const ruleFailed = done.reduce((n, b) => n + b.failed, 0)
-const notInspected = files.length - inspections.length
+// 検査できなかったファイルは、件数だけでなくパスも出す。そのパスだけを範囲にして再実行できるようにするため
+const inspectedFiles = new Set(inspections.map((x) => x.file))
+const notInspectedFiles = files.filter((f) => !inspectedFiles.has(f))
+const notInspected = notInspectedFiles.length
 const ruleCandidates = inspections.reduce((n, x) => n + (x.violations || []).length, 0)
 if (notInspected > 0) {
-  log(`検査できなかったファイル: ${notInspected} 件（エージェントの失敗・スキップ・結果の欠け）`)
+  log(`検査できなかったファイル: ${notInspected} 件（エージェントの失敗・スキップ・結果の欠け）: ${notInspectedFiles.join(', ')}`)
 }
 log(`規約・思想への違反の候補: ${ruleCandidates} 件 / 確定 ${ruleVerdicts.filter((v) => v.isReal).length} 件`)
 
@@ -913,19 +925,20 @@ const buildCrossPrompt = (c) =>
         'severity は影響度（high=実害/誤誘導, medium=保守性低下, low=軽微）で付けること。',
         'reason には、どのファイルのどの記述が何と食い違うかを具体的に書くこと。',
       ].join('\n')
-const crossVerdicts = (
-  await parallel(
-    toVerify.map((c) => () =>
-      agent(buildCrossPrompt(c), {
-        label: `verify:${c.kind}:${c.topic}`,
-        phase: 'Verify',
-        schema: VERDICT_SCHEMA,
-        ...MODELS.verify,
-      }).then((v) => (v ? { ...c, ...v } : null))
-    )
+const crossResults = await parallel(
+  toVerify.map((c) => () =>
+    agent(buildCrossPrompt(c), {
+      label: `verify:${c.kind}:${c.topic}`,
+      phase: 'Verify',
+      schema: VERDICT_SCHEMA,
+      ...MODELS.verify,
+    }).then((v) => (v ? { ...c, ...v } : null))
   )
-).filter(Boolean)
+)
+const crossVerdicts = crossResults.filter(Boolean)
 const crossFailed = toVerify.length - crossVerdicts.length
+// 返事が無かった候補の関与ファイルを、検証できなかった候補のファイルに入れる
+const crossFailedFiles = toVerify.flatMap((c, i) => (crossResults[i] ? [] : c.files || []))
 
 const presence = await presencePromise
 // 仕組みの欠けを見たかを 1 語で返す。判定の段が止まったときを「土台が無い」と取り違えないため
@@ -952,8 +965,9 @@ if (uncheckedMissing.length > 0) {
 
 // 途中のエージェントが止まって検証できなかった候補を数える。黙って落とすと、全件見たように読めるため
 const failedCount = ruleFailed + crossFailed
+const failedFiles = uniq([...done.flatMap((b) => b.failedFiles), ...crossFailedFiles])
 if (failedCount > 0) {
-  log(`検証の段が止まり、検証できなかった候補: ${failedCount} 件（レポートに件数を書く）`)
+  log(`検証の段が止まり、検証できなかった候補: ${failedCount} 件（レポートに件数とファイルを書く）: ${failedFiles.join(', ')}`)
 }
 
 const confirmed = [...presence.verdicts, ...ruleVerdicts, ...crossVerdicts].filter((v) => v.isReal)
@@ -998,6 +1012,8 @@ const report = await agent(
     `- 検証していない候補数（エージェント数の上限のため）: ${unverified.length}`,
     `- 検証できなかった候補数（検証の段が止まったため）: ${failedCount}`,
     `- 検査できなかったファイル数（検査の段が止まったため）: ${notInspected}`,
+    `- 検査できなかったファイル: ${notInspectedFiles.length ? notInspectedFiles.join('、') : 'なし'}`,
+    `- 検証できなかった候補のファイル: ${failedFiles.length ? failedFiles.join('、') : 'なし'}`,
     `- 止まった横断の突合の段: ${detectFailed}`,
     `- 反証できなかった仕組みの欠け: ${uncheckedMissing.length ? uncheckedMissing.join('、') : 'なし'}`,
     `- 指摘候補数: ${candidateCount}`,
@@ -1019,6 +1035,7 @@ const report = await agent(
     '  - 「規約を当てなかったファイル：…件」（上の件数が 0 なら、この行は書かない）',
     '  - 「検証していない候補：…件。対象を分けて再実行する」（上の件数が 0 なら、この行は書かない）',
     '  - 「途中で止まった段：検証できなかった候補 …件・検査できなかったファイル …件・横断の突合 …体。再実行する」（3 つとも 0 なら、この行は書かない。0 の項目は省く）',
+    '  - 「検査できなかったファイル：…」「検証できなかった候補のファイル：…」（上の同じ名前の項目のパスを、省かずにすべてコードスパンで並べる。「なし」なら、その行は書かない）',
     '  - 「反証できなかった仕組みの欠け：…。欠けているかを人が確かめる」（「なし」なら、この行は書かない）',
     '  - 「スキップした観点：…」（参照方向の観点が有効なら、この行は書かない）',
     '  - 「範囲：リンク切れ・markdown 規約などの機械チェックは Lint の担当。この監査は設計思想・規約への適合と横断的な意味の整合を扱う」',
@@ -1055,7 +1072,9 @@ return {
   candidates: candidateCount,
   unverified: unverified.length,
   failed: failedCount,
+  failedFiles,
   notInspected,
+  notInspectedFiles,
   detectFailed,
   uncheckedMissing: uncheckedMissing.length,
   confirmed: confirmed.length,
