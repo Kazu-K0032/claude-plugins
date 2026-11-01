@@ -11,7 +11,8 @@ name: Claude による Issue の実装
 #   7. 記録：計画・CI・レビュー・直し・仕上げを PR にコメントする。最後の CI が通らなければ、PR を下書きに戻す
 # 流れの図は docs/claude-bot.md にある
 # 守りは次のとおり
-#   - 頼めるのは、所有者・メンバー・共同作業者のコメントだけ（ジョブの if）
+#   - 頼めるのは、所有者・メンバー・共同作業者のコメントだけ（gate ジョブの if）
+#   - 本文に、行頭が「> この Issue は bot に頼まず、人が対応する。」の行がある Issue では、gate ジョブが理由をコメントして止め、Claude を動かさない
 #   - 直しの step が push できるのは、作業ブランチだけ（「直しの許可を決める」の step。--force や develop への push は許可に当たらない）
 #   - .github/workflows/・.github/scripts/・.claude/settings.json・.claude/hooks/ の変更は、push の前（pre-push フック）と PR の差分で止める
 #     （guard-paths.sh。止まった PR は下書きのまま残す）
@@ -32,8 +33,9 @@ on:
 permissions: {}
 
 jobs:
-  claude:
-    name: Issue を実装して PR を作る
+  # Claude を動かす前に、人が対応すると書かれた Issue かを確かめる。止めるときはトークンを使わないため、別のジョブにする
+  gate:
+    name: bot に頼める Issue かを確かめる
     # PR のコメントでは動かさない。Issue の実装だけを頼めるようにするため
     # 頼めるのは、リポジトリの所有者・メンバー・共同作業者だけ。権限の無い人のコメントでは、ジョブを始めない
     # （始めると、concurrency で、権限のある人の待ちの依頼が置き換わるため）
@@ -41,6 +43,37 @@ jobs:
       contains(github.event.comment.body, '@claude')
       && !github.event.issue.pull_request
       && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    outputs:
+      run: ${{ steps.notice.outputs.run }}
+    steps:
+      # 注記の形は CONTRIBUTING.md の bot の節にある（/aidd:issue-start --issue-only が書く）
+      # 行頭の文言だけを見る。本文で文言を説明しただけの行では止めないため。CRLF の本文でも当たるよう、行末は見ない
+      - name: 人が対応する Issue かを確かめる
+        id: notice
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          if printf '%s\n' "$BODY" | grep -q '^> この Issue は bot に頼まず、人が対応する。'; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            gh issue comment "$ISSUE" --body "人が対応する Issue のため、bot は実装しません。
+          本文の冒頭に「この Issue は bot に頼まず、人が対応する。」と書かれています。手元で対応してください（/aidd:issue-start --implement-only など）。
+          bot に頼む場合は、本文から注記を外してから頼み直してください。"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  claude:
+    name: Issue を実装して PR を作る
+    # 起動の条件は gate ジョブにある。gate が止めたとき・動かなかったときは、始めない
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     environment: claude
     # 実装 25 分、CI の待ち（1 回最大 25 分）と直し（15 分）の 3 回 × 2、レビュー 50 分（docs-sync の 15 分を含む）、仕上げ 20 分を足した上限

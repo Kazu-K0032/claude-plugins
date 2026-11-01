@@ -51,6 +51,7 @@ bot を使えるようにする準備（App・environment・secret）、確か�
 - `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` は、bot に変えさせない。変更は、PR の本文に diff で届く。人が確かめて当てる。bot が変えて push しようとすると、push の前に止まる。それでも PR に入ったときは、下書きのまま残る
 - bot は、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の外にある Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）を直せない。編集は `which is a sensitive file` で拒否される。雛形の中は、ワークフローのフックが許可する（`files/.claude/settings.json`・`files/.claude/hooks/` を除く）。直せないファイルの変更は、PR の本文に diff で届く
 - bot が push できるのは、自分の作業ブランチだけ。`develop` と `main` には、push できない
+- 上の bot に変えさせないファイル・直せないファイルの変更が主な Issue は、bot に頼まない。本文の冒頭に `> [!IMPORTANT]` の注記を置き、次の行を `> この Issue は bot に頼まず、人が対応する。` で始める（`/aidd:issue-start --issue-only` が書く）。この行のある Issue では、bot は動かずに、理由を Issue にコメントする。人が手元で対応する（`/aidd:issue-start --implement-only` など）
 - PR を作れなかったときは、理由が Issue にコメントされる
 - 動くのは `main` にあるワークフローのため、ワークフローを変えたら、リリースするまで反映されない
 - 手元の Claude は、`@claude` を含むコメントを書かない。deny とフック（`.claude/hooks/guard-claude-mention.sh`）で止めている

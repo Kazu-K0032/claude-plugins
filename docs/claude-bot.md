@@ -10,7 +10,9 @@ bot に任せるのは、作業ブランチへのコミット・push と PR の�
 
 ```mermaid
 flowchart TD
-  start([人：Issue に起動語でコメントする]) --> impl[実装して下書きの PR を作る<br/>issue-to-pr の手順 1〜8<br/>marketplace-update の手順 2〜6 を含む]
+  start([人：Issue に起動語でコメントする]) --> gate{本文に人が対応する注記}
+  gate -- ある --> stop[理由を Issue にコメントして止める<br/>Claude は動かない]
+  gate -- 無い --> impl[実装して下書きの PR を作る<br/>issue-to-pr の手順 1〜8<br/>marketplace-update の手順 2〜6 を含む]
   impl --> ci1{CI}
   ci1 -- 失敗 --> fix1[CI を直す<br/>最大 3 回] --> ci1
   ci1 -- 通過 --> ready[レビュー待ちにする]
@@ -38,6 +40,7 @@ flowchart TD
 - 手順のスキル（`.claude/skills/issue-to-pr/`）と、CI を待つスクリプト（`.github/scripts/wait-pr-checks.sh`）が `develop` にある。ワークフローは `develop` を checkout して使う
 - 下の「準備（一度だけ）」が済んでいる
 - 頼む人が、リポジトリの所有者・メンバー・共同作業者である。それ以外の人のコメントでは、ジョブを始めない（権限の無い人のコメントで、権限のある人の待ちの依頼が置き換わるのを防ぐため）
+- Issue の本文に、行頭が `> この Issue は bot に頼まず、人が対応する。` の行が無い。この行があれば、前段のジョブが理由を Issue にコメントして止め、Claude は動かない（[CONTRIBUTING.md](../CONTRIBUTING.md) の bot の節）
 
 ## 準備（一度だけ）
 
@@ -84,6 +87,7 @@ flowchart TD
 | bot の push が「変えてはいけないファイル」で止まる | `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` を変えようとした。意図した変更なら、bot ではなく人が当てる。PR の本文に diff があれば、それを使う |
 | PR に「変えてはいけないファイルの変更が入っている」と書かれ、下書きのまま残る | 上と同じファイルが PR に入っている。差分を確かめ、不要ならコミットを外す。必要なら、人が確かめてから、PR を手でレビュー待ちにする |
 | ログに `which is a sensitive file` と出て、編集が拒否される | Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）を、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の外で直そうとした。雛形の中は、ワークフローのフック（`.github/scripts/allow-template-edits.sh`）が許可する。ただし `files/.claude/settings.json`・`files/.claude/hooks/` は許可しない。範囲の外の変更は、PR の本文の diff を人が当てる |
+| Issue に「人が対応する Issue のため、bot は実装しません」とコメントされる | Issue の本文に、行頭が `> この Issue は bot に頼まず、人が対応する。` の行がある。bot に変えさせないファイルが主な Issue のため、人が手元で対応する（`/aidd:issue-start --implement-only` など）。bot に頼みたいなら、本文から注記を外してから頼み直す |
 | Issue に「トークンが空か空白だけです」とコメントされる | secret が登録されていないか、名前が違う。準備の 6 |
 | 実行が environment の保護ルールで失敗する | environment の **Deployment branches** に `main` が無い。準備の 4 |
 | Issue に「PR を作れませんでした」とコメントされる | コメントの「理由」と実行のログを見る。認証のエラーなら、トークンの期限切れ（下の「トークンを更新する」）か、App が入っていない（準備の 2） |

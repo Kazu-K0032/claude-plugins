@@ -1,7 +1,7 @@
 ---
 name: issue-start
-description: 指定した Issue に着手し、実装と PR の下書きまで進める。Issue の記述を今のコード・引用元と突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする。関係する ADR を読み、計画モードで決めることを選択肢の質問で詰めて計画を作り、承認後に実装し、docs-sync の手順で文書の追従を点検して直す。決めた仕様で Issue を更新し、決めたことを ADR にするかを聞き、実装したファイルをステージに置き、コミットメッセージを tmp.md に、PR 本文と検証コメントを tmp/ に書いて終わる。コミット・push はしない。`--issue-only` を付けると、ブランチと実装は行わず、確認と要件の詰めのあと Issue の本文の更新だけを行う。Issue に取りかかる時に使用する
-argument-hint: "<Issue番号|URL> [--issue-only（任意。省略時は着手の手順を全部行う。付けると Issue の本文の更新だけ行う）]"
+description: 指定した Issue に着手し、実装と PR の下書きまで進める。Issue の記述を今のコード・引用元と突き合わせて確かめ、Issue に紐づく作業用のブランチを作って移動し、自分を担当者にする。関係する ADR を読み、計画モードで決めることを選択肢の質問で詰めて計画を作り、承認後に実装し、docs-sync の手順で文書の追従を点検して直す。決めた仕様で Issue を更新し、決めたことを ADR にするかを聞き、実装したファイルをステージに置き、コミットメッセージを tmp.md に、PR 本文と検証コメントを tmp/ に書いて終わる。コミット・push はしない。`--issue-only` を付けると、ブランチと実装は行わず、確認と要件の詰めのあと Issue の本文の更新だけを行う。`--implement-only` を付けると、Issue の記述の確認・計画モード・本文の書き換えを省き、変えるファイルの一覧の承認だけを取って実装から PR の下書きまで進める。Issue に取りかかる時に使用する
+argument-hint: "<Issue番号|URL> [--issue-only（任意。省略時は着手の手順を全部行う。付けると Issue の本文の更新だけ行う）] [--implement-only（任意。省略時は着手の手順を全部行う。付けると Issue の確認と本文の更新を省いて実装する）]"
 disable-model-invocation: true
 allowed-tools: Bash(gh issue view:*), Bash(gh repo view:*), Bash(gh pr list:*), Bash(git status:*), Bash(git branch --show-current), Bash(git branch --list *), Bash(git check-ignore:*), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp.md), Edit(tmp/*/issue-start/*.md), Edit(tmp/*/pr-create_*.md), Edit(tmp/*/pr-verify_*.md), Edit(tmp/*/docs-sync_*.md)
 ---
@@ -24,8 +24,9 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 5 で、ブランチの規約と起点のブランチを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/requirements-tree.md` | 手順 7・8 で、計画モードに入れなかったときと、要件を詰めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-only.md` | `--issue-only` のとき、手順の通し方を決めるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/implement-only.md` | `--implement-only` のとき、手順の通し方と承認の取り方を決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-update.md` | 手順 9・14 で、Issue の本文を書き換えるとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/implementation.md` | 手順 10〜12・15・16 で、実装・検査・ステージに置くとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/implementation.md` | 手順 10〜13・15・16 で、実装・検査・ADR を聞く・ステージに置くとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/docs-check.md`・`${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/` | 手順 12 で、文書の追従を点検するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md`・`${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | Issue の本文・コメントを書いて数えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/adr/SKILL.md` | 手順 2 で ADR の一覧を探すとき（「出力先」）、手順 13 で ADR にするかを聞く前と作るとき |
@@ -40,6 +41,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 | 指定 | 動き |
 | --- | --- |
 | `--issue-only`（「本文だけ」なども同じ） | 手順 1〜3・7〜9・17 だけ行う |
+| `--implement-only`（「実装だけ」なども同じ） | 手順 1・4〜6・10〜17 だけ行う。`--issue-only` と両方なら聞く |
 
 ## 出力先
 
@@ -66,7 +68,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 
 ### 4. 作業ツリーを確かめる
 
-`tmp-ignore.md` で除外を確かめる。`git status --porcelain` に `tmp/`・`tmp.md` 以外の出力があれば、ブランチを作る前に止め、`branch-setup.md` に従って扱いを聞く。
+`branch-setup.md` の「作業ツリーを確かめる」に従う。
 
 ### 5. ブランチを用意する
 
@@ -102,7 +104,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 
 ### 13. ADR にするかを聞く
 
-手順 8 で決めたことに ADR にできるものがあれば、`adr` の `SKILL.md` の手順 1 のとおり、`AskUserQuestion` で「作らない・極小・簡易・詳細」から選んでもらう。選ばれたものは、`adr` スキルを Skill ツールで呼んで作る（`disable-model-invocation: false` のため呼べる）。無ければ聞かずに手順 14 へ進む。
+`implementation.md` の「ADR にするかを聞く」に従う。
 
 ### 14. Issue のタスクを更新する
 
@@ -134,7 +136,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 - ❌ ブランチ名・起点のブランチを、このスキルの例やリポジトリの慣習から決め打ちすること
 - ❌ 引用元で確かめていない引用を「確認済み」と書くこと
 - ❌ 決めることを聞かずに、推奨案で実装すること
-- ❌ 計画の承認の前に、計画ファイル以外を編集すること
+- ❌ 計画（`--implement-only` では変えるファイルの一覧）の承認の前に、計画ファイル以外を編集すること
 - ❌ コミット・push すること
 - ❌ ファイルを消すこと
 - ❌ 実装と関係ないファイルをステージに置くこと
