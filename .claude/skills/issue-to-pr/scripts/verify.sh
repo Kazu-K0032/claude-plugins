@@ -4,9 +4,13 @@
 # 見るもの：check.py（NG があれば失敗）、develop から変えた JSON が読めるか、変えたシェルスクリプトの構文。
 # コミット前の変更と、新しく作ったファイルも見る。bot はコミットの前に流すため。
 # 終了コード：0 = 通った、1 = 直すものがある
+# check.py は、このスクリプトと同じフォルダにあればそれを、無ければ作業ツリーの版を流す。
+#   bot のワークフローは、bot が動く前にこのスクリプトと check.py を同じフォルダに写し、写しを流させる。
+#   作業ツリーの check.py は bot が書き換えられ、書き換えた版をトークンを持つ段で動かさないため
 
 set -uo pipefail
 
+script_dir=$(cd "$(dirname "$0")" && pwd)
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
 base=origin/develop
@@ -25,8 +29,10 @@ if [ -z "$python" ]; then
   exit 1
 fi
 
-echo "## check.py"
-if ! "$python" -B .claude/skills/marketplace-update/scripts/check.py; then
+check_py=.claude/skills/marketplace-update/scripts/check.py
+[ -f "$script_dir/check.py" ] && check_py=$script_dir/check.py
+echo "## check.py（$check_py）"
+if ! "$python" -B "$check_py"; then
   status=1
 fi
 

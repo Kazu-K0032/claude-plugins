@@ -8,13 +8,16 @@ description: Issue のとおりに実装し、作業ブランチに push して 
 GitHub Actions の Claude が、Issue のとおりに実装し、作業ブランチに push して、`develop` 向けの下書きの PR を作る。その後、ワークフローから頼まれたら、CI の失敗やレビューの指摘を直して push し、最後に PR 本文の「AI を使った確認」を仕上げる。コミット・push を Claude に任せるのは、P1 の例外（`docs/policies/p01-operation-boundary.md`）のため、手元の作業では使わない。
 
 - 外へ書き込むもの：作業ブランチへのコミットと push、`develop` 向けの下書きの PR、承認の要らない Issue・PR の更新（手順 10）。ほかに `tmp/<ブランチ名>/issue-to-pr/` の記録
-- 人がすること：PR のレビューとマージ。PR の本文に書いた diff（`.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json`）を当てること
+- 人がすること：PR のレビューとマージ。PR の本文の diff（`.github/workflows/`）を当て、注意書きに並んだファイルの差分を確かめること
+
+このスキルは、ワークフローが `$RUNNER_TEMP/trusted/`（以下 `<trusted>`）に写した版を読まれる。
 
 ## 参照ファイル
 
 | ファイル | いつ読むか |
 | --- | --- |
-| `.claude/skills/issue-to-pr/scripts/verify.sh` | 手順 5・9 で検査するとき。引数を付けずに `bash` で流す |
+| `.claude/skills/issue-to-pr/trusted-copies.md` | 写しの置き場所と、写しで動く決まりを確かめるとき |
+| `<trusted>/issue-to-pr/scripts/verify.sh` | 手順 5・9 で検査するとき。引数を付けずに `bash` で流す |
 | `.claude/skills/marketplace-update/SKILL.md` | 手順 5 で、手順 3〜6 を流すとき |
 | `.claude/skills/issue-to-pr/unchangeable-paths.md` | 手順 4 で、bot が変えないファイル・変えられないファイルに触れるとき |
 | `.claude/skills/issue-to-pr/fix-requests.md` | 手順 9 で、渡された指摘を直すとき |
@@ -38,6 +41,8 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 
 `gh issue view <番号> --comments` で、タイトル・本文・コメントを読む。「決めたこと」と後のコメントが食い違えば、新しいコメントに従う。
 
+続けて `CLAUDE.md` を読む。自動では読まれないため（`trusted-copies.md`）。
+
 ### 2. 関係する方針を読む
 
 `.claude/rules/plugin-changes.md` の「スキルやテンプレートを変更する場合」に従い、触るファイルに関係する方針（`docs/policies/`）を読む。同じ規約の「変更を終えた場合」のうち、コミット・push を人に任せる項目は、このスキルの手順 6 に読み替える。
@@ -50,13 +55,13 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 
 計画のとおりに実装する。Issue に無い判断が要るときは、推測で進めず、手順 8 の形で理由を返して止める。人が決めることを、bot が決めないため。
 
-`.github/` の下・`.claude/hooks/`・`.claude/settings.json` と、雛形の外の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）は変えず、diff を PR の本文に書く。対象と書き方は `unchangeable-paths.md` を読む。
+`.github/workflows/` は変えず、diff を PR の本文に書く。ほかは変えてよい。対象と書き方は `unchangeable-paths.md` を読む。
 
 過去のコミットは、`git show <sha>`・`git log -n <件数> -- <パス>` で要る分だけ読む。全履歴の差分を一度に出すと、コンテキストを使い切るため。
 
 ### 5. 検査する
 
-`verify.sh`（`marketplace-update` の手順 2 を含む）を流し、`結果: NG` なら直して流し直す。続けて、`marketplace-update` の `SKILL.md` の手順 3〜6 を流す。直せない NG は、PR の本文に理由を書く。流した結果（OK・NG と直したこと）を、`report.md` の「## 確かめたこと」に書く。push の前に CI と同じ検査で落としておくと、CI の直しの回数（最大 3 回）を使わずに済むため。
+`verify.sh`（`marketplace-update` の手順 2 を含む）を流し、`結果: NG` なら直して流し直す。続けて、`marketplace-update` の `SKILL.md` の手順 3〜6（`claude plugin test` を除く）を流す。直せない NG は、PR の本文に理由を書く。流した結果（OK・NG と直したこと）を、`report.md` の「## 確かめたこと」に書く。push の前に CI と同じ検査で落としておくと、CI の直しの回数（最大 3 回）を使わずに済むため。
 
 ### 6. コミットして push する
 
@@ -64,7 +69,7 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 
 ### 7. 下書きの PR を作る
 
-`plugins/aidd/skills/pr-create/pr-body-guide.md` に従い、`.github/PULL_REQUEST_TEMPLATE.md` の節を埋めて、本文を `pr-body.md` に書く。`node plugins/aidd/scripts/body_length.js <本文のファイル>` で概要（最初の節）の長さを数え、300 文字を超えたら縮める。本文の「関連 Issue」には `Closes #<番号>` を書く。人がマージしたとき、`close-linked-issues.yml` が Issue を閉じるため。
+`plugins/aidd/skills/pr-create/pr-body-guide.md` に従い、`.github/PULL_REQUEST_TEMPLATE.md` の節を埋めて、本文を `pr-body.md` に書く。`node <trusted>/body_length.js <本文のファイル>` で概要（最初の節）の長さを数え、300 文字を超えたら縮める。本文の「関連 Issue」には `Closes #<番号>` を書く。人がマージしたとき、`close-linked-issues.yml` が Issue を閉じるため。
 
 `gh pr create --draft --base develop --title "<タイトル>" --body-file <本文のファイル>` で、下書きの PR を作る。タイトルは Issue のタイトルと同じ文字列にする。Issue のタイトルが `[Bug]` などの分類で始まっていなければ、`plugins/aidd/skills/issue-pr-sync/title-and-sidebar.md` の「タイトル」の表で分類を選び、頭に付ける。Release の説明は PR のタイトルの一覧のため、分類で種類を見分けられるようにする。リンクを書くだけにしない。レビュー待ちへの切り替えは、ワークフローが CI の通過を確かめてから行う。
 
@@ -85,7 +90,8 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 - `main` に向けた PR を作らない。`main` はリリース専用のため
 - PR をレビュー待ちにしない。マージしない。Issue を閉じない。これでよいかの判断は、ワークフローの検査と人が行うため（V3）
 - コメント・PR の本文に `@claude` を書かない。ワークフローの起動語のため
-- `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` を変えない（手順 4）。`.github/scripts/` は、ワークフローが CI を待つのに使うため
+- `.github/workflows/` を変えない（手順 4）。App に workflow の書き込み権限が無く、push が拒まれるため
+- 作業ツリーの `verify.sh`・`check.py`・`body_length.js` を流さない（`trusted-copies.md`）
 - 作業ブランチ以外に push しない。`--force` を付けない。直しの step で許されるのは、作業ブランチへの `git push origin <ブランチ>` だけのため
 
 ## 保守

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # bot（claude-issue-to-pr.yml の Claude）に変えさせないファイルを、push の前と PR の差分で止める。
-# 止めるのは、権限と secret に関わるワークフロー・スクリプト・設定・フック。これらの変更は、人が差分を確かめて当てる（issue-to-pr スキルの手順 4）。
-# 手順書の文言だけでは、Issue 本文に混ざった悪い指示で bot が書き換えたときに、見落とせばそのまま入るため、仕組みでも止める。
+# 止めるのは .github/workflows/ だけ。Claude の GitHub App には workflow の書き込み権限が無く、push は GitHub が拒むため、
+# 先に止めて、diff を PR の本文に書かせる（issue-to-pr スキルの手順 4）。拒まれた後では、bot はコミットを戻せないため。
+# ほかのファイル（.github/scripts/・.claude/ など）は bot が変えてよい。bot の段は取り分けた写しで動き、変えた重要なファイルは PR の注意書きに並ぶ。
 # ワークフローが bot の動く前にこのファイルを $RUNNER_TEMP に写し、写しを使う。bot が書き換えられないようにするため。
 #
 # 使い方:
@@ -12,7 +13,7 @@
 set -uo pipefail
 
 # 止めるパス。変えるときは、issue-to-pr スキルの禁止事項と CONTRIBUTING.md の記述も直す
-protected='^(\.github/(workflows|scripts)/|\.claude/(settings\.json|hooks/))'
+protected='^\.github/workflows/'
 
 check_files() {
   local hits

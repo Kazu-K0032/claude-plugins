@@ -12,7 +12,7 @@ bot に任せるのは、作業ブランチへのコミット・push と PR の�
 flowchart TD
   start([人：Issue に起動語でコメントする]) --> gate{本文に人が対応する注記}
   gate -- ある --> stop[理由を Issue にコメントして止める<br/>Claude は動かない]
-  gate -- 無い --> impl[実装して下書きの PR を作る<br/>issue-to-pr の手順 1〜8<br/>marketplace-update の手順 2〜6 を含む]
+  gate -- 無い --> impl[実装して下書きの PR を作る<br/>issue-to-pr の手順 1〜8<br/>marketplace-update の手順 2〜6 を含む<br/>claude plugin test は CI に任せる]
   impl --> ci1{CI}
   ci1 -- 失敗 --> fix1[CI を直す<br/>最大 3 回] --> ci1
   ci1 -- 通過 --> ready[レビュー待ちにする]
@@ -25,14 +25,17 @@ flowchart TD
   ci2 -- 失敗 --> fix2[CI を直す<br/>最大 3 回] --> ci2
   col -- 指摘なし --> fin
   ci2 -- 通過 --> fin[AI を使った確認を仕上げる<br/>sonnet]:::check
-  fin --> rec[記録を PR にコメントする]
-  ci2 -- 3 回で通らない --> draft[PR を下書きに戻す] --> rec
+  fin --> cau[重要なファイルがあれば<br/>PR 本文の先頭に注意書きを置く]
+  cau --> rec[記録を PR にコメントする]
+  ci2 -- 3 回で通らない --> draft[PR を下書きに戻す] --> cau
   rec --> human([人：レビューしてマージする])
 
   classDef check fill:#ffe0b2,stroke:#e65100,color:#000
 ```
 
 「AI を使った確認を仕上げる」段は、PR 本文の「AI を使った確認」のうち、docs-sync・marketplace-update・issue-pr-sync の 3 行を点検する。条件を満たす行にチェックを入れ、行ごとの根拠を記録に書く。`issue-pr-sync` の決まりで承認が要る変更は反映せず、案を記録に残す。`/aidd:pr-review` の行は、bot は流さないため、人が実行する。
+
+Claude の段は、どれも `--setting-sources user` と、`develop` から取り分けた設定・フック・手順の写しで動く。作業ツリーの `settings.json`・フック・スキル・`CLAUDE.md` は読み込まない。bot が書き換えた設定やフックを、同じ実行の中のトークンを持つ段で動かさないため。権限・実行・bot の振る舞いに関わるファイルが PR に入ったら、最後に PR 本文の先頭へ注意書き（`> [!CAUTION]`）を置く（`.github/scripts/pr-caution.sh`）。
 
 ## 動く条件
 
@@ -84,10 +87,11 @@ flowchart TD
 | 見え方 | 原因と直し方 |
 | --- | --- |
 | **Actions** に実行が出ない | ワークフローが `main` に無い。コメントに `@claude` が無い（`@claude-bot` のように語が続くものは別の名前として扱われる）。PR へのコメントで頼んだ（Issue のコメントでだけ動く）。コメントした人が、所有者・メンバー・共同作業者ではない（読み取りだけの人のコメントでは、ジョブを始めない） |
-| bot の push が「変えてはいけないファイル」で止まる | `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` を変えようとした。意図した変更なら、bot ではなく人が当てる。PR の本文に diff があれば、それを使う |
+| bot の push が「変えてはいけないファイル」で止まる | `.github/workflows/` を変えようとした。Claude App には workflow の書き込み権限が無い。意図した変更なら、bot ではなく人が当てる。PR の本文に diff があれば、それを使う |
 | PR に「変えてはいけないファイルの変更が入っている」と書かれ、下書きのまま残る | 上と同じファイルが PR に入っている。差分を確かめ、不要ならコミットを外す。必要なら、人が確かめてから、PR を手でレビュー待ちにする |
-| ログに `which is a sensitive file` と出て、編集が拒否される | Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）を、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の外で直そうとした。雛形の中は、ワークフローのフック（`.github/scripts/allow-template-edits.sh`）が許可する。ただし `files/.claude/settings.json`・`files/.claude/hooks/` は許可しない。範囲の外の変更は、PR の本文の diff を人が当てる |
-| Issue に「人が対応する Issue のため、bot は実装しません」とコメントされる | Issue の本文に、行頭が `> この Issue は bot に頼まず、人が対応する。` の行がある。bot に変えさせないファイルが主な Issue のため、人が手元で対応する（`/aidd:issue-start --implement-only` など）。bot に頼みたいなら、本文から注記を外してから頼み直す |
+| ログに `which is a sensitive file` と出て、編集が拒否される | Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）のうち、ワークフローのフック（`.github/scripts/allow-template-edits.sh`）が許可しないもの（`.git/`・リポジトリの外・相対パス）を直そうとした。範囲の外の変更は、PR の本文の diff を人が当てる |
+| PR 本文の先頭に「bot が、権限・実行・bot の振る舞いに関わるファイルを変えた」と出る | bot が `.github/`・`.claude/`・`CLAUDE.md` などを変えた。失敗ではない。マージの前に、並んだファイルの差分を人が確かめる |
+| Issue に「人が対応する Issue のため、bot は実装しません」とコメントされる | Issue の本文に、行頭が `> この Issue は bot に頼まず、人が対応する。` の行がある。bot に変えさせないファイル（`.github/workflows/`）が主な Issue のため、人が手元で対応する（`/aidd:issue-start --implement-only` など）。bot に頼みたいなら、本文から注記を外してから頼み直す |
 | Issue に「トークンが空か空白だけです」とコメントされる | secret が登録されていないか、名前が違う。準備の 6 |
 | 実行が environment の保護ルールで失敗する | environment の **Deployment branches** に `main` が無い。準備の 4 |
 | Issue に「PR を作れませんでした」とコメントされる | コメントの「理由」と実行のログを見る。認証のエラーなら、トークンの期限切れ（下の「トークンを更新する」）か、App が入っていない（準備の 2） |
