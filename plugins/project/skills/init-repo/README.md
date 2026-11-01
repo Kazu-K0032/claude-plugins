@@ -59,6 +59,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト）。概要の上限（300 文字）をコメントで示す | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
+| `files/.github/workflows/label-pr-by-title.yml` | PR のタイトルの `[Bug]` などの分類から、分類のラベルを付け直す（fork の PR でも動くよう `pull_request_target` で動かし、PR のコードは checkout しない。分類で始まらないタイトルでは何もせず、無いラベルは作らない） | 分類やラベルの名前を変えたら、`case` と `managed` を合わせる |
 | `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks）とリポジトリ全体のスペルチェック（cspell） | `branches`（既定は `main`）を保護ブランチに合わせる |
 | `files/.github/workflows/sync-labels.yml` | `labels.yml` を GitHub のラベルへ同期（`labels.yml` に無いラベルは消さない） | 消したいときは、`labels.yml` をそろえてから `skip-delete` を `false` にする |
 | `files/.vscode/extensions.json` | VS Code の推奨拡張機能（markdownlint・スペルチェック・GitHub Actions・YAML） | 技術スタックに合わせて追加する（Skill が提案する） |
