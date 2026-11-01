@@ -16,6 +16,7 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 | --- | --- |
 | `.claude/skills/issue-to-pr/scripts/verify.sh` | 手順 5・9 で検査するとき。引数を付けずに `bash` で流す |
 | `.claude/skills/marketplace-update/SKILL.md` | 手順 5 で、手順 3〜6 を流すとき |
+| `.claude/skills/issue-to-pr/unchangeable-paths.md` | 手順 4 で、bot が変えないファイル・変えられないファイルに触れるとき |
 | `.claude/skills/issue-to-pr/fix-requests.md` | 手順 9 で、渡された指摘を直すとき |
 | `.claude/skills/issue-to-pr/finish-checks.md` | 手順 10 で、「AI を使った確認」を仕上げるとき |
 
@@ -49,13 +50,7 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 
 計画のとおりに実装する。Issue に無い判断が要るときは、推測で進めず、手順 8 の形で理由を返して止める。人が決めることを、bot が決めないため。
 
-次のファイルは変えず、そのまま当てられる diff を、PR の本文の末尾に `<details>` で畳んで書く。
-
-- `.github/workflows/`・`.github/scripts/`：権限と secret に関わるため、人が確かめて当てる
-- `.claude/hooks/`：deny と並ぶ守りのため、人が確かめて当てる
-- `.claude/settings.json`：ワークフローがランナーの中で deny を外し、`--skip-worktree` を付けているため、変えてもコミットに入らない
-
-これらを commit して push しようとすると、ワークフローの pre-push フックが止める。PR に入っていれば、PR は下書きのまま残る。
+`.github/` の下・`.claude/hooks/`・`.claude/settings.json` と、雛形の外の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）は変えず、diff を PR の本文に書く。対象と書き方は `unchangeable-paths.md` を読む。
 
 過去のコミットは、`git show <sha>`・`git log -n <件数> -- <パス>` で要る分だけ読む。全履歴の差分を一度に出すと、コンテキストを使い切るため。
 
@@ -96,7 +91,7 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 ## 保守
 
 - このスキルは `.github/workflows/claude-issue-to-pr.yml` から呼ぶ（手順 1〜8 は `--append-system-prompt`、手順 9・10 は `prompt`）。使えるコマンドは、ワークフローの `--allowedTools`（手順 9 は `FIX_TOOLS_BASE` に、作業ブランチへの push を足したもの）で決まる。手順で新しいコマンドを使うときは、そちらにも足す
-- 変えてはいけないパスの一覧は、`.github/scripts/guard-paths.sh` の `protected` が正典。変えるときは、手順 4・禁止事項・`CONTRIBUTING.md` も直す
+- 変えてはいけないパスの一覧は、`.github/scripts/guard-paths.sh` の `protected` が正典。変えるときは、手順 4・`unchangeable-paths.md`・禁止事項・`CONTRIBUTING.md` も直す
 - 流れは Anthropic の「Building effective agents」の型にならう。実装 → CI の直し（最大 3 回）→ `/security-review`・code-review・docs-sync → 直し（1 回）→ CI の直し（最大 3 回）→ 仕上げの順で、回数はワークフローが数える（図は `docs/claude-bot.md`）。検査を `verify.sh` の 1 本にまとめ、引数を取らないのは、bot が取り違えないようにするため（同じ記事の poka-yoke）
 - 公式の code-review は、下書きの PR と、Claude がコメント済みの PR を飛ばす。そのため、ワークフローはレビューの前にレビュー待ちにし、記録のコメントはレビューの後に書く
 - `aidd` の `commit`・`pr-create`・`docs-sync`・`issue-pr-sync` と `marketplace-update` は `disable-model-invocation: true` のため、bot からはスキルとして呼べない。そのため、決まりのファイルを直接読ませている。ファイルの場所が変わったら、手順 5〜7・`finish-checks.md`・ワークフローの docs-sync の段を直す

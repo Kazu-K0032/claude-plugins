@@ -49,6 +49,7 @@ bot を使えるようにする準備（App・environment・secret）、確か�
 - 最後の CI が通らなければ、PR は下書きに戻る。どちらの場合も、計画・CI・レビューの記録が PR にコメントされる
 - マージは、ほかの PR と同じく人が行う
 - `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` は、bot に変えさせない。変更は、PR の本文に diff で届く。人が確かめて当てる。bot が変えて push しようとすると、push の前に止まる。それでも PR に入ったときは、下書きのまま残る
+- bot は、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の外にある Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）を直せない。編集は `which is a sensitive file` で拒否される。雛形の中は、ワークフローのフックが許可する（`files/.claude/settings.json`・`files/.claude/hooks/` を除く）。直せないファイルの変更は、PR の本文に diff で届く
 - bot が push できるのは、自分の作業ブランチだけ。`develop` と `main` には、push できない
 - PR を作れなかったときは、理由が Issue にコメントされる
 - 動くのは `main` にあるワークフローのため、ワークフローを変えたら、リリースするまで反映されない
