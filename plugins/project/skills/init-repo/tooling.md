@@ -4,6 +4,7 @@
 
 - [推奨拡張機能（.vscode/extensions.json）](#推奨拡張機能vscodeextensionsjson)
 - [Lint と整形のツール（lefthook.yml の claude-edit）](#lint-と整形のツールlefthookyml-の-claude-edit)
+  - [整形のツールが LF を求めるとき（.gitattributes）](#整形のツールが-lf-を求めるときgitattributes)
 - [ツールを入れる](#ツールを入れる)
 - [スペルチェックの除外語（cspell.json の words）](#スペルチェックの除外語cspelljson-の-words)
 
@@ -75,6 +76,16 @@ claude-edit:
 - `npx` の形は、初回にパッケージの取得が走って遅い。時間は、2 回目以降で比べる
 - 重いツール（型検査・cspell など）を足したら、「動くかを確かめる」で時間を測る。`timeout` に近ければ、延ばすことを提案する
 - Claude Code の既定（600 秒）ほどは延ばさない。編集のたびに、長く待たされるため
+
+### 整形のツールが LF を求めるとき（.gitattributes）
+
+決めた整形のツールが既定で LF に整形するとき（Prettier・Biome など）は、`.gitattributes` に足す行も一緒に提案する。`core.autocrlf=true` の Windows では作業ツリーのファイルが CRLF になり、整形の検査（`prettier --check` など）が全件で失敗するため。既定の改行は、ツールの公式の文書で確かめる。推測で書かない。
+
+- 足す行は、`claude-edit` の整形の `glob` と同じ拡張子を、`*.<拡張子> text eol=lf` の形で 1 行ずつにする（例：`*.js text eol=lf`）。`* text=auto eol=lf` にはしない。Windows で CRLF が要る `.bat` などを巻き込まず、renormalize の差分も小さくするため
+- 既存の `.gitattributes` に同じ拡張子の行があるときの扱いは、`merge-policy.md` の `.gitattributes` の行に従う
+- ほかの提案と同じく、足す行の一覧を見せて承認を得てから書き込む
+- Prettier の `endOfLine: auto` などの、ツール側で改行を許す設定は示さない。作業ツリーの CRLF が残り、ツールごとに設定の名前も違うため
+- CRLF でコミット済みのファイルがあれば、手順 6 で `after-install.md` の renormalize を案内する
 
 ## ツールを入れる
 

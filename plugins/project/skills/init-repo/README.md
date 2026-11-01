@@ -77,7 +77,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/lefthook.yml` | Lint・整形のツールの定義（`claude-edit`。`post-edit-lint.sh` が使う）と、人のコミットで commitlint を動かす `commit-msg`。`pre-commit`・`pre-push` は書き方の例だけ | 使うツールを `claude-edit` に足す（Skill が既存の設定を探して提案する）。人のコミット・push にも検査をかけるなら、例を見て `pre-commit`・`pre-push` を足す |
 | `files/cspell.json` | スペルチェックの設定と除外語（VS Code の拡張機能と `pr-checks.yml` が共有する。テンプレート自身が使う語は登録済み） | プロジェクトの固有名詞を `words` に入れる（Skill が候補を出す） |
 | `files/.gitignore` | Claude Code の作業ファイル（`tmp.md`・`tmp/`）・個人設定・秘匿ファイル・OS のファイルの除外 | 言語・ビルド成果物の除外を追記する |
-| `files/.gitattributes` | シェルスクリプト（`*.sh`）の改行を LF に固定する。Windows の `core.autocrlf=true` で checkout しても、フックが CRLF になって Linux の bash で動かなくなるのを防ぐ | そのまま使える |
+| `files/.gitattributes` | シェルスクリプト（`*.sh`）の改行を LF に固定する。Windows の `core.autocrlf=true` で checkout しても、フックが CRLF になって Linux の bash で動かなくなるのを防ぐ | 整形のツールが LF を求めるなら、その拡張子の行を足す（Skill が提案する） |
 
 ## 前提と制約
 
@@ -114,6 +114,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | Terraform の秘匿ファイル（`*.tfvars`・`*.tfstate` 等）の deny と、破壊的なコマンドの検出 | Terraform を使うリポジトリにだけ要る。`/project:terraform` が `settings.json` に deny を足し、`guard-terraform.sh` で止める |
 | clasp の認証情報（`.clasprc.json`）の deny と、`clasp push`・`login` などの検出 | GAS を使うリポジトリにだけ要る。`/project:gas` が `settings.json` に deny を足し、`guard-clasp.sh` で止める |
 | 言語別の Lint・整形のツールの設定（ESLint・stylelint など） | 使うツールはプロジェクトで決める。Skill が既存の設定を探して `lefthook.yml` に足すか、技術スタック別の Skill が足す |
+| 整形のツールの拡張子の改行の指定（`.gitattributes` の `*.js text eol=lf` など） | 拡張子は技術に依る。整形のツールが LF を求めるとき、Skill が `claude-edit` の整形の `glob` と同じ拡張子の行を提案する |
 | `docker compose down -v` の検出 | Docker のローカル環境を配るのは `/project:wordpress` だけ。そのスキルが `guard-destructive.sh` に足す |
 
 ## なぜ Skill として配るのか
