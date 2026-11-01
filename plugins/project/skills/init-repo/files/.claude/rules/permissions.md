@@ -46,6 +46,7 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 
 - 足すときも外すときも、上の「線引きの考え方」に当てて決める
 - 外すと、Claude もその操作をできるようになる。削除・コミット・push の deny を外す前に、利用者に確かめる
+- GitHub Actions で動く Claude App（Issue のコメントなどで動く bot）に作業ブランチへのコミット・push を任せるときも、このファイルの deny は外さない。ワークフローが、ランナーの中だけで `git commit`・`git push` の deny を外す。マージ・承認・リリースは、bot に任せず人が行う。人が頼んで動き、結果を PR で人が確かめる仕組みのため
 - 実行前の確認（許可プロンプト）を減らしたいだけなら、deny は変えず、`.claude/settings.local.json` の `permissions.allow` に足す
 - 秘匿ファイルの deny（`Read(./.env)` など）は、このリポジトリの秘匿ファイルの置き場所に合わせて足す
 - Terraform の秘匿ファイル（変数の値・state など）の deny は、`/project:terraform` が足す。clasp の認証情報の deny は、`/project:gas` が足す

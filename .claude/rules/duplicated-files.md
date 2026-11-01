@@ -27,7 +27,7 @@ paths:
 | ファイル | 組になるファイル | 内容 | 意図的な差分 |
 | --- | --- | --- | --- |
 | `plugins/aidd/references/markdown.md` | `plugins/project/references/markdown.md` | markdownlint 準拠の書式 | なし |
-| `plugins/aidd/references/short-body.md` | `plugins/config/skills/plugin-feedback/references/short-body.md` | Issue・PR の本文の長さ（[P8](../../docs/policies/p08-short-body.md)） | なし |
+| `plugins/aidd/references/short-body.md` | `plugins/config/skills/plugin-feedback/references/short-body.md` | Issue・PR の本文の書き方と長さ（[P8](../../docs/policies/p08-short-body.md)） | なし |
 | `plugins/aidd/scripts/body_length.js` | `plugins/config/skills/plugin-feedback/scripts/body_length.js` | 本文の文字数を数えるスクリプト | なし |
 | `.claude/rules/branch.md` | `plugins/project/skills/init-repo/files/.claude/rules/branch.md` | ブランチ名の規約 | なし |
 | `.claude/rules/tmp-output.md` | `plugins/project/skills/init-repo/files/.claude/rules/tmp-output.md` | `tmp/` への出力の規約 | なし |

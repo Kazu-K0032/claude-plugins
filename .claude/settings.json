@@ -68,6 +68,9 @@
       "Bash(gh release *)",
       "Bash(gh workflow run *)",
       "Bash(gh run rerun*)",
+      "Bash(gh issue comment *@claude*)",
+      "Bash(gh pr comment *@claude*)",
+      "Bash(gh api *@claude*)",
       "Bash(gh repo create *)",
       "Bash(gh repo edit *)",
       "Bash(gh repo delete *)",
@@ -123,6 +126,9 @@
       "PowerShell(gh release *)",
       "PowerShell(gh workflow run *)",
       "PowerShell(gh run rerun*)",
+      "PowerShell(gh issue comment *@claude*)",
+      "PowerShell(gh pr comment *@claude*)",
+      "PowerShell(gh api *@claude*)",
       "PowerShell(gh repo create *)",
       "PowerShell(gh repo edit *)",
       "PowerShell(gh repo delete *)",
@@ -163,6 +169,10 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/guard-destructive.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-claude-mention.sh"
           }
         ]
       }

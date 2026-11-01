@@ -14,12 +14,12 @@ Google Apps Script（GAS）のリポジトリへ「clasp で push する `src/` 
 
 衝突状況の確認 → 計画の提示 → 承認 → 既存コードの `src/` への移動（必要な場合） → コピー → 既存コードの振り分け → `.gitignore` の調整 → フックと deny の登録 → スペルチェックの除外語の追加、の順に進む。
 
-| 引数の例 | 動き |
+| 引数 | 動き |
 | --- | --- |
-| `規約だけ` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけを入れる |
-| `フックだけ` | `.claude/hooks/guard-clasp.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
-| `src だけ` | `src/` 配下だけを入れる |
-| `既存は置き換えない` | 既存ファイルに触らない |
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけを入れる |
+| `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-clasp.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
+| `--src-only`（「src だけ」なども同じ） | `src/` 配下だけを入れる |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルに触らない |
 
 既存の GAS コードがある場合は、規約に沿って関数をどのファイルへ移すかの案を出す。トリガー・カスタムメニュー・エディタの実行メニューから名前で呼ばれている関数は改名しない。コードが `src/` 以外にある場合は、先に `src/` へ移すか、今の場所のまま規約だけを入れるかを選ぶ。手順の詳細は [SKILL.md](SKILL.md) を参照。
 
@@ -47,6 +47,7 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 
 ## 前提と制約
 
+- 1 つのリポジトリに、Apps Script のプロジェクトが 1 つある構成だけを対象にする。`.clasp.json` を直下で探し、規約の `paths` を `src/**` に決めているため。`.clasp.json` が複数ある構成と、サブフォルダにだけある構成は試しておらず、Skill は導入せずに止まる
 - JavaScript（V8 ランタイム）だけを対象にする。clasp は TypeScript を変換しないため、TypeScript を使うにはバンドラー（Rollup 等）の導入が要る。Ref: [clasp](https://github.com/google/clasp)
 - `.clasp.json` はコミットする前提にしている。`scriptId` は秘匿値ではなく、clone してすぐ push できるようにするため。開発用と本番用で `scriptId` を切り替える運用の場合は、`.gitignore` に入れて手元で管理する
 - `.clasprc.json`（`clasp login --creds` で作業ディレクトリに保存される認証情報）は `.gitignore` に入れる。Skill が追記を提案する

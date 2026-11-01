@@ -3,7 +3,7 @@ name: mod-output-customize
 description: config に同梱した mod（サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える。スキルの実行時に SKILL.md へのリンクを出す）を ~/.claude/mods/ にコピーし、~/.claude/settings.json の CLAUDE_CODE_PLUGIN_DIRS に足して読み込ませる。mod を使い始める時、mod を更新したい時、または外したい時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Bash(diff:*), Bash(claude plugin validate:*)
-argument-hint: "[する操作（任意。省略時は導入・更新。例: 外す）]"
+argument-hint: "[--uninstall（任意。省略時は導入・更新。付けると外す）]"
 ---
 
 # mod の導入（mod-output-customize）
@@ -17,17 +17,20 @@ config に同梱した mod を、ユーザー全体で読み込まれるよう�
 
 | ファイル | いつ読むか |
 | --- | --- |
+| `${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/plugin-dirs.md` | 手順 1・4 で `CLAUDE_CODE_PLUGIN_DIRS` を読む・直すとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/files/mod-output-customize/` | mod の本体（コピー元）。手順 1 で差分を取るとき、手順 4 でコピーするとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/features.md` | 手順 3 で mod の機能や差分の要点を示すとき、手順 5 で報告するとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/errors.md` | 手順 4 でコピーが失敗したとき、手順 5 で `claude plugin validate` がエラーを出したとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/uninstall.md` | 引数で外すよう指示されたとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/mod-output-customize/uninstall.md` | 引数に `--uninstall` があるとき |
 
 ## 想定している引数
 
 | 引数 | 動き |
 | --- | --- |
 | 省略 | 導入・更新（手順 1〜5） |
-| `外す` / `アンインストール` 等 | 外す（`uninstall.md` の手順） |
+| `--uninstall`（「外す」などの言い方も同じ） | 外す（`uninstall.md` の手順） |
+
+表に無い指定は使わず、使える指定を示して聞く。
 
 ## 出力先
 
@@ -35,8 +38,6 @@ config に同梱した mod を、ユーザー全体で読み込まれるよう�
 | --- | --- |
 | mod のフォルダ | `~/.claude/mods/mod-output-customize/`（同梱版をコピーする） |
 | `~/.claude/settings.json` の `env.CLAUDE_CODE_PLUGIN_DIRS` | 上のフォルダのパス（`~/.claude/mods/mod-output-customize`）を含める |
-
-`CLAUDE_CODE_PLUGIN_DIRS` に書いたフォルダは、起動のたびに `--plugin-dir` と同じように読み込まれる。複数のパスは区切り文字でつなぐ（Windows は `;`、macOS・Linux は `:`）。`~` も使える。ユーザーの `settings.json` の `env` とプロセスの環境変数からだけ読まれ、プロジェクトの設定に書いても読まれない。
 
 ## 手順
 

@@ -50,6 +50,9 @@ const isCustomized = atom({ plugin: 'mod-output-customize', key: 'isCustomized' 
 /** Issue・PR の本文やコメントなど、外に書き出す文書を簡潔に書かせるか */
 const isDocConcise = atom({ plugin: 'mod-output-customize', key: 'isDocConcise' } as const, true)
 
+/** 保存した on/off を $.state に読み込んだか。/clear・/resume・/branch で $.state が既定値に戻ると false に戻る */
+const hasLoadedToggles = atom({ plugin: 'mod-output-customize', key: 'hasLoadedToggles' } as const, false)
+
 /**
  * 最新の応答の次アクションにあった、Claude ができる作業の依頼文。無ければ空文字。
  * エンジン自身の入力欄の候補が後から来たときに、この文に差し替えるために持っておく
@@ -141,6 +144,33 @@ async function loadSavedToggles($: Pick<CoreEngineInterface, 'state' | 'store'>)
   ])
   await update($, isCustomized, () => savedCustomized !== false)
   await update($, isDocConcise, () => savedDocConcise !== false)
+  await update($, hasLoadedToggles, () => true)
+}
+
+/**
+ * 応答のカスタマイズの on/off を読む。$.state が既定値に戻った後（/clear・/resume・/branch）は、保存した値を読む
+ * （戻った後に読み直せる classic.SessionStart は、管理設定のある環境ではユーザーの mod で動かないため）。
+ * 描く間は $.state に書けないので、ここでは読むだけにし、$.state への読み込みはボタンを押したときに行う
+ * @param $ - フックが受け取った engine のインターフェース
+ * @returns 応答を mod の形式で書かせるか
+ */
+async function readCustomized($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<boolean> {
+  if (await read($, hasLoadedToggles)) {
+    return read($, isCustomized)
+  }
+  return (await $.store.get(CUSTOMIZED_STORE_KEY)) !== false
+}
+
+/**
+ * 文書の書き方の指定の on/off を読む。読み方は readCustomized と同じ
+ * @param $ - フックが受け取った engine のインターフェース
+ * @returns 外に書き出す文書を簡潔に書かせるか
+ */
+async function readDocConcise($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<boolean> {
+  if (await read($, hasLoadedToggles)) {
+    return read($, isDocConcise)
+  }
+  return (await $.store.get(DOC_CONCISE_STORE_KEY)) !== false
 }
 
 /**
@@ -151,8 +181,8 @@ async function loadSavedToggles($: Pick<CoreEngineInterface, 'state' | 'store'>)
 async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<ToggleState[]> {
   const [chatMode, customized, docConcise] = await Promise.all([
     read($, isChatMode),
-    read($, isCustomized),
-    read($, isDocConcise),
+    readCustomized($),
+    readDocConcise($),
   ])
 
   return [
@@ -167,6 +197,9 @@ async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>)
       toggle: CUSTOMIZED_TOGGLE,
       isOn: customized,
       onPress: async () => {
+        // $.state が既定値に戻った後は保存した値を描いているため、先に 2 つとも読み込んでから切り替える。
+        // 片方だけ読み込むと、読み込み済みの印が立ち、もう片方が既定値で描かれてしまう
+        await loadSavedToggles($)
         const value = await update($, isCustomized, isOnNow => !isOnNow)
         await $.store.set(CUSTOMIZED_STORE_KEY, value)
       },
@@ -175,6 +208,7 @@ async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>)
       toggle: DOC_CONCISE_TOGGLE,
       isOn: docConcise,
       onPress: async () => {
+        await loadSavedToggles($)
         const value = await update($, isDocConcise, isOnNow => !isOnNow)
         await $.store.set(DOC_CONCISE_STORE_KEY, value)
       },
@@ -306,12 +340,13 @@ const PLAIN_TEXT = [
 const DOC_CONCISE_TEXT = [
   '# 文書の書き方',
   'Issue・PR・Discussion の本文やコメント、レビューコメント、リポジトリ内の文書（README・docs・ADR など）、Notion・Slack・メールなど外部サービスへの投稿を書くときは、次の書き方にする。新しく書くときも、既存の文書を更新するときも同じ。コミットメッセージとコード内のコメントは対象外。',
-  '- 一番大事なのは文字数を少なくすること。長い文章は読み手の集中力を下げる。書き終えたら、削っても意味が変わらない語や文がないか見直して削る',
+  '- 一番大事なのは、読み手が判断できること。冒頭の概要は短く保ち、概要より後の節は、再現手順・エラー文・要件のように作業に使う情報を削らない。長い文章は読み手の集中力を下げるため、書き終えたら、削っても意味が変わらない語や文がないか見直して削る',
   '- 難しい言葉・専門用語・カタカナ語はできるだけ使わず、誰が読んでも分かる言葉で書く。専門用語が避けられないときは、初めて出すときに短い言い換えを添える',
   '- 冒頭の 1〜2 文で、目的か結論（何をするか・何が起きたか、なぜか）を書く',
-  '- 1 文・1 項目は 50 文字以内にし、1 文に 1 つの事柄だけを書く。箇条書きと短い見出しで区切る。コメントは 1〜3 文を目安にする',
-  '- Issue・PR の本文とコメントは、全体を 500 文字以内にする。見出し・記号も数え、HTML コメント・リンクの URL・チェックリストと関連 Issue の節は数えない。既存の本文が超えているときは、縮める案を示して承認を取る',
-  '- 詳細は書かず、処理の流れを平易に書く。技術的な内容は、引用かリンクで示す。判断の理由は、短くても残す',
+  '- 1 文に 1 つの事柄だけを書く。箇条書きと短い見出しで区切る。コメントは 1〜3 文を目安にする',
+  '- Issue・PR の本文とコメントは、冒頭の概要（最初の節）を 300 文字以内にする。見出し・記号も数え、HTML コメント・リンクの URL・チェックリストと関連 Issue の節は数えない。既存の本文の概要が超えているときは、縮める案を示して承認を取る',
+  '- 概要より後の節は上限を置かない。Issue は種類で書き分ける。バグ修正は再現手順・エラーメッセージ（そのまま引用）・原因の根拠を、新機能は決めた要件（どこに・何を・どんな形で）を詳しく書き、文書や版の更新は概要とタスクだけにする',
+  '- 処理の流れを平易に書く。技術的な内容は、引用かリンクで示す。判断の理由は残す',
   '- 読み手が判断や作業をするのに必要なことだけを書く。調べた経緯、同じ内容の繰り返し、前置きやあいさつは書かない',
   '- 「いい感じに」「適宜」のようなあいまいな語を避け、数値・ファイル名・手順で具体的に書く',
   '- 既存の文書を更新するときは、足す・直す部分をこの書き方にする。書き足すより書き換えを優先し、変更で古くなった記述や重複は消す。頼まれていない部分は書き直さない',
@@ -384,8 +419,8 @@ export const register: Register = on => {
 
     const [chatMode, customized, docConcise] = await Promise.all([
       read($, isChatMode),
-      read($, isCustomized),
-      read($, isDocConcise),
+      readCustomized($),
+      readDocConcise($),
     ])
     const added = [
       customized ? GUIDE_TEXT : PLAIN_TEXT,
@@ -453,12 +488,6 @@ export const register: Register = on => {
     return closed
   })
 
-  // /clear・/resume・/branch は $.state を既定値に戻し、session.start は再び来ないので読み直す
-  on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
-    await loadSavedToggles($)
-    return next(e)
-  })
-
   // サイドバーに置けないとき（全画面でない表示・端末の幅が足りない・閉じた）だけ、入力欄の上の帯にボタンを出す
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     // アンケートが帯を使っている間は譲る
@@ -519,7 +548,7 @@ export const register: Register = on => {
       return completed
     }
 
-    const request = !e.isAborted && (await read($, isCustomized)) ? nextClaudeRequest(e.answer) : null
+    const request = !e.isAborted && (await readCustomized($)) ? nextClaudeRequest(e.answer) : null
     await update($, nextSuggestion, () => request ?? '')
     if (request !== null) {
       try {

@@ -20,13 +20,13 @@
 /project:init-repo
 ```
 
-衝突状況の確認 → 計画の提示（Lint と整形のツールを自分で入れるか Claude が入れるか、`docs/log/` を入れるかも聞く） → 承認 → コピー → エディタ設定・Lint と整形のツール・スペルチェックの除外語の調整（Claude が入れると選んだら、ツールを入れて動くかを確かめる） → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
+衝突状況の確認 → 計画の提示（Lint と整形のツールを自分で入れるか Claude が入れるかも聞く） → 承認 → コピー → エディタ設定・Lint と整形のツール・スペルチェックの除外語の調整（Claude が入れると選んだら、ツールを入れて動くかを確かめる） → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
 
 | 引数の例 | 動き |
 | --- | --- |
 | `.github だけ` / `.claude/hooks を除く` | 指定したパスで絞る |
-| `必要なものだけ` | プロジェクトの構成から、要るテンプレートだけを選ぶ |
-| `既存は置き換えない` | 既存ファイルに触らず、パスが違っても同じ役割のものがあればそのテンプレートは入れない |
+| `--needed-only`（「必要なものだけ」なども同じ） | プロジェクトの構成から、要るテンプレートだけを選ぶ |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルに触らず、パスが違っても同じ役割のものがあればそのテンプレートは入れない |
 | `docs/spec.md の要件を満たす最小限` / `<URL> の要求を満たすものは最低限` | 参照先の要件を読み、満たすのに要るテンプレートだけを入れる |
 
 判定の基準（各テンプレートの役割・入れる条件・依存関係）は [template-inventory.md](template-inventory.md) にある。既存ファイルは承認なしに上書きされない。手順の詳細は [SKILL.md](SKILL.md) を参照。
@@ -55,8 +55,8 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/rules/branch.md` | ブランチ名を `issues/<Issue番号>-<説明>` にし、スキルの引数などに要る Issue 番号をブランチ名から取る規約 | 名前の形が違うリポジトリでは書き換える |
 | `files/.claude/rules/tmp-output.md` | `tmp/<ブランチ名>/` の置き方の規約。スキルの出力と、Claude の作業ファイル（`work/<目的>/`）を分け、Python は `-B` で実行する | そのまま使える |
 | `files/.claude/rules/ai-docs.md` | `SKILL.md`・規約・`CLAUDE.md` など AI が読む文書を、人も読み切れる形で書く規約（`SKILL.md`・規約の骨組み・本筋と細部を分ける・本文 5,000 文字以内） | そのまま使える |
-| `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / リファクタ / リリース / AIDD 振り返り）。先頭に本文の長さの上限を示す | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[after-install.md](after-install.md)） |
-| `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト）。本文の長さの上限をコメントで示す | ローカル確認 URL・チェック項目 |
+| `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / リファクタ / リリース / AIDD 振り返り）。先頭に、概要の上限（300 文字）と詳しく書く欄を示す | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[after-install.md](after-install.md)） |
+| `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト）。概要の上限（300 文字）をコメントで示す | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる） | そのまま使える |
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
 | `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks）とリポジトリ全体のスペルチェック（cspell） | `branches`（既定は `main`）を保護ブランチに合わせる |
@@ -71,7 +71,6 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/docs/strategies/ai-driven-development.md` | AI 駆動開発の戦略（AI・機械・人の分担と振り分け方、文書で AI の向かう先をそろえる方法）。ハーネスの考え方そのもの | そのまま使える（変えるときは ADR を残す） |
 | `files/docs/strategies/development.md` | 開発の流れ（1 つの変更を進める順と担い手、aidd のスキルとの対応） | 「このプロジェクトでの決まり」の `TODO:` |
 | `files/docs/strategies/test-strategy.md` | テスト戦略の雛形（目的・テストの層・機械と人の分担・いつ動かすか・AI が書いたテストの扱い・テストデータと環境・完了の基準） | `TODO:` 行を実態に書き換える |
-| `files/docs/log/` | 作業ログの案内板（ファイル名の決まり）と雛形（`YYYY-MM-DD-作業の対象.template.md`）。導入するときに選んだ場合だけ入れる | 雛形から最初のログを作り、雛形の削除を提案する。ログを足したら表に行を足す |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（案内板。文書は `docs/README.md` だけを案内する） | `TODO:` 行を実態に書き換える |
 | `files/commitlint.config.mjs` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |

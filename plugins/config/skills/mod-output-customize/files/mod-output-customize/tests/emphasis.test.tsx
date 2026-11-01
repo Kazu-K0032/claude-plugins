@@ -136,6 +136,7 @@ test('==語句== を赤の太字、{{仕様}} を緑で描く', async $ => {
 })
 
 test('印のない応答は engine の描画に任せる', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   let isEngineDrawn = false
   on('ui.render', { component: 'AssistantMessage' }, ($, e) => {
     isEngineDrawn = true
@@ -168,6 +169,7 @@ const BAND_PROPS = {
 } as const
 
 test('ボタンには数字キーを割り当てず、クリックでだけ切り替える', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   on('session.surfaces', () => ({ value: ['terminal'] }))
 
   const band = await $.ui.mount({
@@ -185,6 +187,7 @@ test('ボタンには数字キーを割り当てず、クリックでだけ切�
 })
 
 test('端末に描く実行ではプロンプトに記法の説明を文脈として添える', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   let surfaces: readonly ('terminal' | 'desktop')[] = ['terminal']
   on('session.surfaces', () => ({ value: surfaces }))
   on('prompt.submit', (_$, e) => ({ text: e.text, context: e.context }))
@@ -199,9 +202,9 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
       block => block.includes('### 変えた設定') && block.includes('反映に要る操作') && block.includes('止め方と戻し方'),
     ),
   ).toBe(true)
-  expect(drawn.context?.some(block => block.includes('# 文書の書き方') && block.includes('文字数を少なく'))).toBe(true)
+  expect(drawn.context?.some(block => block.includes('# 文書の書き方') && block.includes('概要は短く保ち'))).toBe(true)
   // 上限の数は、方針 P8（docs/policies/p08-short-body.md）とそろえる
-  expect(drawn.context?.some(block => block.includes('1 項目は 50 文字以内') && block.includes('全体を 500 文字以内'))).toBe(true)
+  expect(drawn.context?.some(block => block.includes('概要（最初の節）を 300 文字以内') && block.includes('Issue は種類で書き分ける'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('チャットモード'))).toBe(false)
 
   surfaces = []
@@ -210,6 +213,7 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
 })
 
 test('応答カスタムのボタンで OFF にすると、記法を使わせない文を添えて保存する', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   const saved: [string, unknown][] = []
   on('store.set', (_$, e) => {
     saved.push([e.key, e.value])
@@ -236,6 +240,7 @@ test('応答カスタムのボタンで OFF にすると、記法を使わせな
 })
 
 test('文書を簡潔にのボタンで OFF にすると、解除の文を添えて保存する', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   const saved: [string, unknown][] = []
   on('store.set', (_$, e) => {
     saved.push([e.key, e.value])
@@ -253,7 +258,7 @@ test('文書を簡潔にのボタンで OFF にすると、解除の文を添え
   await band.press({ key: 'toggle-doc-concise' })
 
   const submitted = await $.prompt.submit(PROMPT)
-  expect(submitted.context?.some(block => block.includes('文字数を少なく'))).toBe(false)
+  expect(submitted.context?.some(block => block.includes('概要は短く保ち'))).toBe(false)
   expect(submitted.context?.some(block => block.includes('# 文書の書き方') && block.includes('解除'))).toBe(true)
   expect(submitted.context?.some(block => block.includes('# 応答の色分け'))).toBe(true)
   expect(saved).toEqual([['isDocConcise', false]])
@@ -261,7 +266,21 @@ test('文書を簡潔にのボタンで OFF にすると、解除の文を添え
   await band.unmount()
 })
 
+test('session.start が来なくても、保存した OFF を読み直して、プロンプトに解除の文を添える', async ($, on) => {
+  // /clear などで $.state が既定値に戻った後と同じく、session.start を通さずに送る
+  on('store.get', () => ({ value: false }))
+  on('session.surfaces', () => ({ value: ['terminal'] }))
+  on('prompt.submit', (_$, e) => ({ text: e.text, context: e.context }))
+
+  const submitted = await $.prompt.submit(PROMPT)
+  expect(submitted.context?.some(block => block.includes('# 応答の色分け'))).toBe(false)
+  expect(submitted.context?.some(block => block.includes('# 応答の形式') && block.includes('今回は通常の形式'))).toBe(true)
+  expect(submitted.context?.some(block => block.includes('概要は短く保ち'))).toBe(false)
+  expect(submitted.context?.some(block => block.includes('# 文書の書き方') && block.includes('解除'))).toBe(true)
+})
+
 test('チャットモードのボタンで ON にすると、読み取り用のツールとコマンドだけを通す', async ($, on) => {
+  on('store.get', () => ({ value: undefined }))
   const saved: unknown[] = []
   on('store.set', (_$, e) => {
     saved.push(e.value)

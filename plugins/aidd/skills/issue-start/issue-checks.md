@@ -1,6 +1,16 @@
 # Issue の記述の確かめ方（issue-start）
 
-手順 2 で Issue の記述を確かめるとき、手順 3 で判定するときに読む。
+手順 1 で Issue と今の状態を集めるとき、手順 2 で Issue の記述を確かめるとき、手順 3 で判定するときに読む。
+
+## 集める
+
+```bash
+gh issue view <Issue> --json number,title,body,state,labels,assignees,comments,closedByPullRequestsReferences,url
+gh repo view --json nameWithOwner,defaultBranchRef
+gh issue develop --list <Issue>
+git status --porcelain
+git log --oneline --all --grep "#<番号>"
+```
 
 ## 確かめること
 

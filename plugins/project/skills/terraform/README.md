@@ -14,11 +14,11 @@ Terraform でインフラを管理するリポジトリへ「`infra/` 配下の�
 
 衝突状況の確認 → 計画の提示 → 承認 → コピー → 衝突の片付け → フックと deny の登録 → Lint のフックへの追加、の順に進む。
 
-| 引数の例 | 動き |
+| 引数 | 動き |
 | --- | --- |
-| `規約だけ` | `.claude/rules/terraform.md` だけを入れる |
-| `フックだけ` | `.claude/hooks/guard-terraform.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
-| `既存は置き換えない` | 既存ファイルに触らない |
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/terraform.md` だけを入れる |
+| `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-terraform.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルに触らない |
 
 既に `.tf` がある場合は、ファイルを動かさず、規約とフックだけを入れて、規約を今の構成に合わせる。手順の詳細は [SKILL.md](SKILL.md) を参照。
 

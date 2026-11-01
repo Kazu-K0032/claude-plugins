@@ -10,7 +10,7 @@
 
 ## 要否の判定
 
-「必要性の判定」（`必要なものだけ` など）では、「入れる条件」を満たすファイルだけを対象にする。「同じ役割の既存物」の探索にも使う。
+「必要性の判定」（`--needed-only`）では、「入れる条件」を満たすファイルだけを対象にする。「同じ役割の既存物」の探索にも使う。
 
 | テンプレート | 満たす要件 | 入れる条件 | 同じ役割の既存物の例 |
 | --- | --- | --- | --- |
@@ -43,13 +43,12 @@
 | `docs/specs/`（`README.md`・`specifications.template.md`） | 要件の置き場所の案内板と、要件定義書の雛形 | `docs/README.md` を入れる | 要件定義書・仕様書の置き場所（`docs/spec.md`・`docs/specifications/`・`requirements/`） |
 | `docs/architecture/`（`README.md`・`architecture.template.md`・`.drawio`・`.png`） | 構成の置き場所の案内板と、アーキテクチャ概要・構成図の雛形 | `docs/README.md` を入れる | 構成図・設計書の置き場所（`docs/architecture*`・`docs/design/`・Wiki の構成図） |
 | `docs/strategies/README.md` + `ai-driven-development.md` + `development.md` + `test-strategy.md` | AI 駆動開発の戦略（AI・機械・人の分担）と、開発の流れ・テストの方針（`CLAUDE.md` の SSOT 一覧が指す） | `docs/README.md` を入れる | `CONTRIBUTING.md`・`docs/` 内の開発・テストの方針 |
-| `docs/log/`（`README.md`・作業ログの雛形） | 実作業の経緯を時系列で残す場所と、作業ログの雛形 | 手順 2 で入れると選ばれた | `docs/` 内の作業ログ・日報 |
 | `CLAUDE.md` | Claude Code 向けのガイド | Claude Code を使う（常に該当） | `CLAUDE.md`・`.claude/CLAUDE.md`・`AGENTS.md` |
 | `README.md` | リポジトリの入口（案内板） | 常に該当 | `README.md`・`README.*` |
 
 ## 同じ役割の既存物
 
-`既存は置き換えない` の指定では、パスが違っても同じ役割のものが既にあるテンプレートを対象から外す。
+`--keep-existing` の指定では、パスが違っても同じ役割のものが既にあるテンプレートを対象から外す。
 
 - 上の表の「同じ役割の既存物の例」を手がかりに、Glob / Read で探す
 - 見つかったら、そのテンプレートを対象から外し、手順 2 の計画で「既存の〇〇があるため入れない」と理由を添えて示す

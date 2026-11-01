@@ -23,7 +23,7 @@ argument-hint: "[起票したい内容（任意。省略時はこのセッショ
 | `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/existing-issues.md` | 手順 3・4・6 で既存の Issue を探し、扱いを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/policy-check.md` | 手順 5 で方針と照らすとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/issue-format.md` | 手順 7 で下書きを作るとき、手順 8 で公開前に点検するとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/short-body.md` | 手順 8 で本文の長さを確かめるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/references/short-body.md` | 手順 7・8 で本文を書くとき・概要の長さを確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.js` | 手順 8 で本文の文字数を数えるとき |
 
 ## 想定している引数
@@ -78,7 +78,7 @@ argument-hint: "[起票したい内容（任意。省略時はこのセッショ
 
 `issue-format.md` の「公開前の点検」に従い、利用先の情報を下書きから消すか言い換える。利用先は `git rev-parse --show-toplevel` と `gh repo view --json nameWithOwner,isPrivate` で特定し、どちらも失敗したら（Git の管理外など）作業ディレクトリ名とする。今いるのが `Kazu-K0032/claude-plugins` 自身なら、リポジトリ名は言い換えなくてよい。
 
-点検を終えたら本文を数え、超えていたら縮めて数え直す。3 回直しても収まらなければ、承認を取るときは手順 9、省くときは手順 11 で超えた箇所を示す。Node.js が無い・実行を断られたときは、数えずに進み、手順 11 で伝える。
+点検を終えたら本文の概要（最初の節）を数え、超えていたら概要を縮めて数え直す。3 回直しても収まらなければ、承認を取るときは手順 9、省くときは手順 11 で超えた箇所を示す。Node.js が無い・実行を断られたときは、数えずに進み、手順 11 で伝える。
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/plugin-feedback/scripts/body_length.js" - <<'__ISSUE_BODY__'

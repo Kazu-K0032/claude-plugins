@@ -84,6 +84,8 @@ test('書き込み・ほかのコマンドの起動・確かめられない書�
     'rg --pre ./script foo',
     'rg --hostname-bin=./script foo',
     'tree -o out.txt',
+    'tree -R -H . src',
+    'tree -dR src',
     'npm install',
     'ls && rm a',
     'echo "unterminated',

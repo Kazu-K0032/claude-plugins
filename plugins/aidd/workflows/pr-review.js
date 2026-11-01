@@ -34,9 +34,15 @@ const CONTEXT_SCHEMA = {
     'resolvedThreads',
     'resolvedThreadsError',
     'tmpIgnored',
+    'headRefOid',
+    'headRefName',
+    'localHead',
   ],
   properties: {
     pr: { type: 'number', description: 'PR 番号' },
+    headRefOid: { type: 'string', description: 'PR の先頭のコミット（gh pr view の headRefOid）' },
+    headRefName: { type: 'string', description: 'PR のブランチ名（gh pr view の headRefName）' },
+    localHead: { type: 'string', description: '手元の HEAD のコミット（git rev-parse HEAD）' },
     title: { type: 'string' },
     body: { type: 'string', description: 'PR 本文の原文（要約しない）' },
     issueNumber: { type: 'number', description: '紐づく Issue 番号。無ければ 0' },
@@ -123,18 +129,28 @@ const isNonCodeFile = (f) =>
 const isCodeFile = (f) => !isNonCodeFile(f)
 
 // 画面に出る要素を触る差分（レイアウト耐性の対象）
+// Liquid と sections・snippets・layouts は、Shopify などのテーマの構成
 const isFrontendFile = (f) =>
   /\.(css|scss|sass|less|vue|svelte|astro)$/.test(f) ||
   /\.(jsx|tsx)$/.test(f) ||
-  /\.(html|erb|twig|hbs|ejs|pug)$/.test(f) ||
-  /\/(templates?|views?|components?|assets|theme|themes)\//.test(f)
+  /\.(html|erb|twig|hbs|ejs|pug|liquid)$/.test(f) ||
+  /(^|\/)(templates?|views?|components?|assets|theme|themes|sections|snippets|layouts?)\//.test(f)
 
 // 自動デプロイに乗らない・環境差分が出やすい差分（反映経路の対象）
+// ディレクトリはルート直下に限らない（例：identity-center/terraform/・database/migrations/・backend/apps/x/migrations/）。
+// フォルダ名で当てるときは、コード・設定のファイルだけを当てる。文書だけの変更（terraform/README.md など）で観点が動かないため。
+// fixtures/ は、テスト用のフォルダの下ならテストのデータのため当てない
+// db/・database/ だけはルート直下に限る。深い位置の db/ は、DB を扱うコードのことが多いため
+// GAS は clasp で手で反映するため、.gs と設定ファイルも対象にする
 const isDeliverySensitive = (f) =>
-  /^(infra|terraform|deploy|ops|provisioning)\//.test(f) ||
+  (/(^|\/)(infra|terraform|deploy|ops|provisioning|migrations?|seeds?|seeders)\//.test(f) && isCodeFile(f)) ||
+  (/(^|\/)fixtures\//.test(f) && isCodeFile(f) && !isTestFile(f)) ||
+  /\.(tf|tfvars|hcl)$/.test(f) ||
   /^\.github\/workflows\//.test(f) ||
-  /^(migrations?|db|seed|seeds|fixtures)\//.test(f) ||
+  /^(db|database)\//.test(f) ||
   /(^|\/)(Dockerfile|docker-compose\.ya?ml|compose\.ya?ml|Procfile)$/.test(f) ||
+  /\.gs$/.test(f) ||
+  /(^|\/)(appsscript\.json|\.clasp\.json)$/.test(f) ||
   /\/(mu-plugins|plugins)\//.test(f)
 
 const isTestFile = (f) =>
@@ -289,7 +305,7 @@ const ctx = await agent(
       : '現在のブランチに紐づく PR のレビューに必要なコンテキストを収集せよ。PR 番号は `gh pr view --json number` で解決する。',
     '',
     '手順（すべて Bash の gh CLI・git で取得する）:',
-    '1. `gh pr view <番号> --json number,title,body,additions,deletions` で PR 情報を取得する。',
+    '1. `gh pr view <番号> --json number,title,body,additions,deletions,headRefOid,headRefName` で PR 情報を取得する。`git rev-parse HEAD` の出力を localHead に入れる。',
     '2. 紐づく Issue 番号を特定する。手掛かりは PR 本文の「#<数字>」参照（Closes #N 等）と、ブランチ名が `issues/<番号>-<説明>` か `hotfix/<番号>-<説明>` の形のときの <番号> だけ。ほかの形のブランチ名からは、番号を推測しない（違う Issue を要件として読まないため）。見つかれば `gh issue view <番号>` で本文を取得する。無ければ issueNumber は 0、issueBody は空文字。',
     '3. `gh pr diff <番号> --name-only` で変更ファイル一覧を取得し、出力行をそのまま files に入れる。',
     '4. totalChangedLines は additions + deletions の合計。',
@@ -306,6 +322,15 @@ const ctx = await agent(
   { label: 'context', phase: 'Context', schema: CONTEXT_SCHEMA }
 )
 const pr = ctx.pr
+
+// レビューと検証の段は、手元のファイルを Read して判定する。手元が PR の先頭と違うと、別のコードを見て判定し、
+// レポートも別のブランチのフォルダに出るため、ここで止める
+if (ctx.localHead !== ctx.headRefOid) {
+  throw new Error(
+    `手元の HEAD（${ctx.localHead.slice(0, 7)}）が PR #${pr} の先頭（${ctx.headRefOid.slice(0, 7)}）と違います。` +
+      `\`gh pr checkout ${pr}\` で ${ctx.headRefName} に切り替えるか、手元のコミットを push してから実行してください。`
+  )
+}
 
 // 観点の選択: args の明示指定が最優先。無ければ差分のファイル種別で自動判定する
 const active = DIMENSIONS.filter((d) =>

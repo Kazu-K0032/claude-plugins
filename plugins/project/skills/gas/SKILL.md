@@ -3,7 +3,7 @@ name: gas
 description: Google Apps Script（GAS）のリポジトリに、clasp で push する src/ 配下の構成と .clasp.json、ファイルの書き分けと GAS 特有の注意点をまとめた規約（.claude/rules/gas.md・gas-runtime.md・gas-sheet-style.md）、Claude による clasp push・pull・login などを止めるフック（.claude/hooks/guard-clasp.sh）を導入する。GAS のプロジェクトを立ち上げる時、または既存の GAS リポジトリへ構成と規約を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*)
-argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省略時はテンプレート全体が対象。例: 規約だけ / src だけ / 既存は置き換えない）]"
+argument-hint: "[--rules-only | --hooks-only | --src-only（任意。省略時はテンプレート全体。付けると規約だけ・フックだけ・src だけ）] [--keep-existing（任意。省略時は既存ファイルを 1 件ずつ聞く。付けると置き換えない）]"
 ---
 
 # GAS プロジェクトのセットアップ（gas）
@@ -32,18 +32,22 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 引数は「どのファイルを入れるか」と「既存物をどうするか」の指定として読む。省略時はテンプレート全体が対象で、`DIFF` は手順 5 で 1 件ずつ判断してもらう。範囲を絞ったときは、手順 4 で `--only` に `NEW` のファイルだけを並べる。
 
-| 引数の例 | 対象・扱い |
+| 引数 | 対象・扱い |
 | --- | --- |
-| `規約だけ` | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけ |
-| `フックだけ` | `.claude/hooks/guard-clasp.sh` だけ（手順 8 の登録も対象） |
-| `src だけ` | `src/` 配下だけ |
-| `既存は置き換えない` | `DIFF` はすべて据え置き、手順 5 を飛ばす |
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけ |
+| `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-clasp.sh` だけ（手順 8 の登録も対象） |
+| `--src-only`（「src だけ」なども同じ） | `src/` 配下だけ |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | `DIFF` はすべて据え置き、手順 5 を飛ばす |
+
+表に無い指定（入れないファイルなど）は補足として、手順 2 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
 
 ## 手順
 
 ### 1. 現状を確かめる
 
-`init-repo-first.md` で土台の有無を確かめ、`install-flow.md` の「状態を確かめる」に従って `--skill gas --check` を実行する。あわせて、既存の GAS コードを Glob で探す（`**/*.gs`・`**/*.js`・`**/*.html`・`**/appsscript.json`・`.clasp.json`。`node_modules/` は除く）。
+`init-repo-first.md` で土台の有無を確かめ、`install-flow.md` の「状態を確かめる」に従って `--skill gas --check` を実行する。あわせて、既存の GAS コードを Glob で探す（`**/*.gs`・`**/*.js`・`**/*.html`・`**/appsscript.json`・`**/.clasp.json`。`node_modules/` は除く）。
+
+`.clasp.json` が 2 つ以上あれば、プロジェクトが複数ある構成には対応していないと伝えて終わる。どのプロジェクトに入れるかを決められないため。1 つだけで直下に無ければ、プロジェクトがサブフォルダにある構成には対応していないと伝えて終わる。規約の `paths` を、直下の `src/**` に決めているため（どちらも README の「前提と制約」）。
 
 既存のコードがあり、`.clasp.json` の `rootDir` が `src` 以外（未指定・絶対パスを含む）なら、`existing-layout.md` の方針 A・B から選んでもらう。決めずにコピーすると、既存のコードと別の場所（`src/`）にテンプレートのコードができてしまうため。
 
@@ -77,7 +81,7 @@ argument-hint: "[導入する範囲・既存ファイルの扱い（任意。省
 
 ### 8. フックと deny を登録する
 
-`settings-additions.md` に従い、`.claude/settings.json` にフック（`guard-clasp.sh`）と認証情報の deny を足す案を差分で示し、承認を得てから足す。引数が `規約だけ`・`src だけ` のときは飛ばす。
+`settings-additions.md` に従い、`.claude/settings.json` にフック（`guard-clasp.sh`）と認証情報の deny を足す案を差分で示し、承認を得てから足す。引数が `--rules-only`・`--src-only` のときは飛ばす。
 
 ### 9. スペルチェックの除外語を足す
 

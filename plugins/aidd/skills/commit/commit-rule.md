@@ -1,6 +1,6 @@
 # Git コミットメッセージルール
 
-Conventional Commits の形式に従い、日本語でコミットメッセージを記述する。
+Conventional Commits の形式に従い、日本語でコミットメッセージを記述する。リポジトリにコミット規約が無いときの既定で、規約があればそちらが優先する。規約に無いことは、ここで補う。
 
 ## 目次
 
@@ -10,6 +10,7 @@ Conventional Commits の形式に従い、日本語でコミットメッセー�
 - body（本文）のルール
 - footer（フッター）のルール
 - CI の失敗を直すコミット
+- Discussion で決めたことのコミット
 - コミットタイプと例（feat・fix・docs・refactor・test・chore・perf）
 - 禁止事項
 - 適用範囲外
@@ -26,8 +27,10 @@ What:
 - <何を変えたか（誰でもわかる平易な言葉で）>
 
 Ref: Issue#<番号>
+Ref: Discussion#<番号>
 ```
 
+- `Ref: Discussion#<番号>` は、このコミットの内容を決めた Discussion があるときだけ書く（下記「Discussion で決めたことのコミット」）
 - **scope は使用しない**。`<type>: <subject>` の形式で記述すること
 - body が不要なほど自明な変更は、subject のみでよい
 
@@ -71,8 +74,9 @@ commitlint（config-conventional）で検証するリポジトリでは、違反
 
 - `Ref: Issue#123` または `Ref: PR#456` で関連リンクを記載
 - Issue か PR か不明な場合は `Ref: #123` でよい
+- Discussion で決めたことのコミットは、決めた場の Discussion も記載（下記「Discussion で決めたことのコミット」）
 - GitHub Actions の失敗を直すコミットは、失敗した実行の URL も記載（下記「CI の失敗を直すコミット」）
-- 無い場合は省略
+- 書く参照が無い場合は省略
 - 破壊的変更がある場合は `BREAKING CHANGE:` を記載
 
 ## CI の失敗を直すコミット
@@ -98,6 +102,29 @@ What:
 
 Ref: PR#4
 Ref: https://github.com/example/app/actions/runs/12345678901
+```
+
+## Discussion で決めたことのコミット
+
+Discussion で決めたことを形にしたコミットでは、決めた場の Discussion を `Ref:` に書く。Issue や PR だけでは、なぜそう決めたのかを後からたどれないため。
+
+- **対象**: 会話で番号か URL が出ていて、このコミットの内容を決めた場の Discussion だけ。差分だけでは判断できず、`gh` などで探すと別の Discussion を取り違えるおそれがあるため、探さない
+- **書き方**: 同じリポジトリの Discussion は `Ref: Discussion#<番号>`。`Issue#`・`PR#` と形をそろえ、行を短くするため。`Ref: #<番号>` には混ぜない。Issue か PR か不明な場合の書き方と区別するため
+- **別のリポジトリ**: URL（`https://github.com/<owner>/<repo>/discussions/<番号>`）で書く。番号だけでは、どのリポジトリか分からないため。会話に URL が出て、同じリポジトリか分からないときも URL のまま書く
+- **並び**: Issue・PR、Discussion、CI の実行の URL の順にする。`Ref:` は 1 行に 1 つ書く
+- **書かないとき**: 番号や URL が分からない、この変更を決めた場か判断できない、`Ref:` の行が行長の上限を超える。番号を推測で書かない
+
+```bash
+docs: 認証トークンの有効期限の方針を追加
+
+Why:
+- Discussion で決めた有効期限の方針を、あとから参照できるようにするため
+
+What:
+- 有効期限を 24 時間とする方針と、更新のタイミングを追加
+
+Ref: Issue#52
+Ref: Discussion#48
 ```
 
 ## コミットタイプと例

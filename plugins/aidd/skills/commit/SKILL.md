@@ -1,14 +1,14 @@
 ---
 name: commit
-description: ステージング済みの差分を分析し、Conventional Commits 形式のコミットメッセージを提案する。コミットメッセージの作成やステージング済み変更のレビューを求められた時に使用する
+description: ステージング済みの差分を分析し、リポジトリのコミット規約（無ければ Conventional Commits 形式の同梱の規約）に沿ったコミットメッセージを提案する。コミットメッセージの作成やステージング済み変更のレビューを求められた時に使用する
 disable-model-invocation: true
-allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Bash(gh pr checks:*), Read, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
+allowed-tools: Bash(git status:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Bash(gh pr checks:*), Read, Glob, Grep, Read(tmp.md), Edit(tmp.md), Edit(tmp/*/commit/*.patch)
 argument-hint: "[補足指示（任意。省略時はステージ済みの差分と会話の経緯から提案する。例: Issue#5 を参照に付ける / 1 コミットにまとめる）]"
 ---
 
 # コミット提案
 
-ステージ済みの差分と会話の経緯から、`commit-rule.md` のルールに従ってコミットメッセージを提案し、`tmp.md` に書く。
+ステージ済みの差分と会話の経緯から、リポジトリのコミット規約に従ってコミットメッセージを提案し、`tmp.md` に書く。規約が無ければ、同梱の `commit-rule.md` に従う。
 
 - 外へ書き込むもの：プロジェクトルートの `tmp.md`。ファイルの中の変更を分けるときは、`tmp/<ブランチ名>/commit/` のパッチ
 - 人がすること：`tmp.md` の手順でステージを整え、コミットする
@@ -17,7 +17,7 @@ argument-hint: "[補足指示（任意。省略時はステージ済みの差分
 
 | ファイル | いつ読むか |
 | --- | --- |
-| `${CLAUDE_PLUGIN_ROOT}/skills/commit/commit-rule.md` | 手順 6〜8 でメッセージを作るとき（形式・commitlint の制約・type ごとの例） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/commit/commit-rule.md` | 手順 5 でリポジトリの規約が見つからなかったとき、手順 7・8 で規約に無いことを補うとき（形式・commitlint の制約・type ごとの例） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/commit/output-format.md` | 手順 9 で `tmp.md` に書くとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/commit/split-within-file.md` | 手順 6 で、1 つのファイルの中の変更を別々のコミットに分けるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/commit/ci-run-url.md` | 手順 7 で、CI の失敗を直すコミットに失敗した実行の URL を添えるとき |
@@ -61,9 +61,15 @@ sh "${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/check-symlinks.sh"
 
 `git log --oneline -5` で確かめる。
 
-### 5. commitlint の設定を読む
+### 5. コミット規約と commitlint の設定を読む
 
-リポジトリに commitlint の設定（`commitlint.config.*`・`.commitlintrc.*`・`package.json` の `commitlint`）があれば Read し、行長の上限・許可する type を確かめる。
+リポジトリのコミット規約を、次の順に探す。規約と違う形で書くと、レビューで直す手間が増えるため。
+
+1. `CLAUDE.md`・`.claude/rules/` を「コミット」「commit」で Grep し、コミットの規約の文書を指していれば Read する
+1. 指していなければ、ファイル名に `commit` を含む文書（例：`docs/commit-rule.md`）と `CONTRIBUTING.md`（`.github/` も）を Glob で探し、コミットメッセージの形を決めていれば Read する
+1. どちらも無ければ、同梱の `commit-rule.md` を規約にする
+
+あわせて、commitlint の設定（`commitlint.config.*`・`.commitlintrc.*`・`package.json` の `commitlint`）があれば Read し、行長の上限・許可する type を確かめる。規約の文書と食い違えば、commitlint の設定に従う。違反すると commit が弾かれるため。
 
 ### 6. コミットを分けるかを決める
 
@@ -75,17 +81,20 @@ sh "${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/check-symlinks.sh"
 
 1 つのファイルの中に目的の違う変更が混ざっているときは、ファイルの中の変更も分ける。`split-within-file.md` の手順でパッチを書く。
 
-### 7. CI の失敗を直すコミットかを判断する
+### 7. 参照に添えるものを判断する
 
-会話の経緯から、GitHub Actions の失敗を直すコミットかを判断する（例：失敗した実行のログを読んで直した、補足指示で CI の修正と言われた）。差分だけでは判断できないため、会話にそうした経緯が無ければ、通常のコミットとして扱う。CI の修正なら、Why に CI の失敗を書き（`commit-rule.md` の「CI の失敗を直すコミット」）、`ci-run-url.md` で URL を取る。
+会話の経緯から、GitHub Actions の失敗を直すコミットか、Discussion で決めたことのコミットかを判断する。差分だけでは判断できないため、会話にそうした経緯が無ければ、通常のコミットとして扱う。
+
+- CI の失敗を直すコミット：失敗した実行のログを読んで直した、補足指示で CI の修正と言われた、など。Why に CI の失敗を書き（`commit-rule.md` の「CI の失敗を直すコミット」）、`ci-run-url.md` で URL を取る
+- Discussion で決めたコミット：会話で Discussion の番号か URL が出ていて、このコミットの内容を決めた場だった、など。`commit-rule.md` の「Discussion で決めたことのコミット」に従い、`Ref:` に添える。探しには行かない
 
 ### 8. メッセージを作る
 
-`commit-rule.md` の Conventional Commits の形式で作る。`<type>: <subject>` の形を守り、scope は使わない。`tmp.md` に書く前に、各行（subject・body・footer）が行長の上限以内か、footer の前に空行があるかを確かめる。commitlint に違反すると commit が弾かれるため（`commit-rule.md` の「commitlint の制約」）。
+手順 5 で決めた規約の形で作る。規約に無いこと（body の形・CI の失敗の書き方など）は、`commit-rule.md` で補う。`tmp.md` に書く前に、各行（subject・body・footer）が行長の上限以内か、footer の前に空行があるかを確かめる。commitlint に違反すると commit が弾かれるため（`commit-rule.md` の「commitlint の制約」）。
 
 ### 9. `tmp.md` に書く
 
-`output-format.md` の形で書く。既存の `tmp.md` があれば、上書きする前に必ず Read してから Write する（新規ならそのまま作る）。`tmp.md` が除外されていなければ、上書きの前に `tmp-ignore.md` のとおり聞く。
+`output-format.md` の形で書く。既存の `tmp.md` があれば、上書きする前に必ず Read してから Write する（新規ならそのまま作る）。`tmp.md` が除外されていなければ、上書きの前に `tmp-ignore.md` のとおり聞く。書いた後に、手順 5 で使った規約（リポジトリの文書のパスか、同梱の規約か）を伝える。
 
 ## 禁止事項
 
