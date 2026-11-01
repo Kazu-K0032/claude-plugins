@@ -38,16 +38,18 @@ allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(git check
 
 ## 手順
 
-### 1. 比べるブランチを決める
+### 1. 比べるブランチと ADR のフォルダを決める
 
 `base-branch.md` の「規約を探す」「今のブランチのマージ先を決める」「比べる先を最新にする」で、今のブランチのマージ先を決める。PR も規約も無ければ、`--base` を付けずに手順 2 へ進む（スクリプトが既定ブランチ（`origin/HEAD`）と比べる）。決めたブランチと根拠（PR のマージ先・規約のファイル・既定ブランチ）は、手順 4 のレポートに書くため控えておく。
 
+続けて、ADR のフォルダを、規約（`CLAUDE.md`・`.claude/rules/`）→ 候補（`docs/adr/`・`doc/adr/`・`docs/decisions/`・`adr/` を Glob）の順に探す。見つかれば手順 2 で `--adr-dir` に渡し、無ければ渡さない。利用者には聞かない。ADR の本文は書き換えない決まりのため、直せないリンク切れを high から分けるのに使う。
+
 ### 2. 差分を列挙し、機械チェックを実行する
 
-リポジトリのルートで次を実行し、標準出力を保持する。スクリプトは `git`・`bash`（4.4 以上）・`perl`・`awk` を使い、足りなければ `ERROR` で止まる。`<比べるブランチ>` は手順 1 で決めたもの（通常は `origin/<マージ先>`）で、決まらなければ `--base` を付けない。
+リポジトリのルートで次を実行し、標準出力を保持する。スクリプトは `git`・`bash`（4.4 以上）・`perl`・`awk` を使い、足りなければ `ERROR` で止まる。`<比べるブランチ>` は手順 1 で決めたもの（通常は `origin/<マージ先>`）で、決まらなければ `--base` を付けない。`<ADR のフォルダ>` も手順 1 で決めたもの（リポジトリのルートからのパス）で、無ければ `--adr-dir` を付けない。
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比べるブランチ>"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比べるブランチ>" --adr-dir "<ADR のフォルダ>"
 ```
 
 `STOP`・`ERROR` が出たら、`errors.md` に従って終わる。出力の中身は `docdd-design.md` の「スクリプトの出力」にある。`SKIP` は異常ではないため FAIL に数えず、レポートには「対象外」と書く。
@@ -87,5 +89,5 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh" --base "<比
 ## 保守
 
 - リポジトリの規約への適合と、横断的な重複記述・値の矛盾を網羅して監査するのは `/aidd:harness-audit`（範囲は全体・差分・ディレクトリから選べる）。差分に絞っても見るのは変えたファイルの規約適合で、変更に追従していない md は見つけない。このスキルは「このブランチの変更にドキュメントが追従しているか」に特化する
-- `issue-start` は、このスキルを呼ばずに手順 2〜4 を使う（`issue-start` の `docs-check.md`）。手順の番号・出力先・スクリプトの場所を変えるときは、そちらも直す
+- `issue-start` は、このスキルを呼ばずに手順 2〜4 を使う（`issue-start` の `docs-check.md`）。手順の番号・出力先・スクリプトの場所を変えるときは、そちらも直す。マーケットプレイスのリポジトリの `@claude` の bot（`.github/workflows/claude-issue-to-pr.yml` の docs-sync の段と、`.claude/skills/issue-to-pr/finish-checks.md`）も、このファイルを直接読んで手順 2〜4 を使うため、同じく直す
 - `allowed-tools` に `run-checks.sh` の `Bash` パターンを含めていない。プラグインの実体パスは `${CLAUDE_PLUGIN_ROOT}` で解決するが、この変数が `allowed-tools` の frontmatter で展開されるかは公式に記載がないため、当てにせず通常の許可プロンプトを通す

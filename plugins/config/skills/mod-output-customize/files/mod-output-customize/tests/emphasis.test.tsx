@@ -221,6 +221,8 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
   expect(drawn.context?.some(block => block.includes('# 文書の書き方') && block.includes('概要は短く保ち'))).toBe(true)
   // 上限の数は、方針 P8（docs/policies/p08-short-body.md）とそろえる
   expect(drawn.context?.some(block => block.includes('概要（最初の節）を 300 文字以内') && block.includes('Issue は種類で書き分ける'))).toBe(true)
+  // 名前のリンクの決まりは、references/short-body.md の「書き方（全種類）」とそろえる
+  expect(drawn.context?.some(block => block.includes('初めて出すときに名前をリンクテキストにし') && block.includes('2 回目からは名前だけ'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('チャットモード'))).toBe(false)
 
   surfaces = []

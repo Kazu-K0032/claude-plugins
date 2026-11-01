@@ -27,6 +27,7 @@
 
 - マージ先は `develop` にする。GitHub の既定のマージ先は `main` のため、PR を作るときに変える。作った後に変えても、CI は新しいマージ先で動き直す
 - `main` に向けてよいのは、`release/`・`hotfix/` のブランチだけ
+- PR のラベルは、`.github/workflows/label-pr-by-title.yml` がタイトルの `[Bug]` などの分類から付け直す。手で付けた分類のラベルも、タイトルに合わなければ外れる。ラベルを変えたいときは、タイトルを直す
 
 ## PR をマージする場合
 
@@ -43,11 +44,14 @@ bot を使えるようにする準備（App・environment・secret）、確か�
 - bot は Issue の本文とコメントを読んで動く。決めたこと・変えるファイル・確かめ方を Issue に書いておくと、意図どおりに動きやすい
 - bot のブランチ名は `issues/<Issue番号>-claude-<日時>` になる。上の「ブランチを作る場合」の `<説明>`（英語 2〜4 語）の例外で、action が自動で付けるため。`issues/<Issue番号>-` で始まるので、Issue 番号はこの名前から取れる
 - bot は、まず下書きの PR を作る。CI が落ちたら、bot がログを読んで直す（最大 3 回）
-- CI が通ると PR はレビュー待ちになり、セキュリティレビュー（`/security-review`）とコードレビュー（公式の code-review）が動く。直すべき指摘があれば bot が 1 回だけ直し、もう一度 CI が通るまで直す（最大 3 回）
+- CI が通ると PR はレビュー待ちになり、セキュリティレビュー（`/security-review`）・コードレビュー（公式の code-review）・文書の追従の点検（docs-sync）が動く。直すべき指摘があれば bot が 1 回だけ直し、もう一度 CI が通るまで直す（最大 3 回）
+- 最後の CI が通ると、bot が PR 本文の「AI を使った確認」のうち docs-sync・marketplace-update・issue-pr-sync の 3 行を点検し、条件を満たす行にチェックを入れる。承認の要らない Issue・PR の更新も反映する。`/aidd:pr-review` の行は人が実行する。流れの図は [docs/claude-bot.md](docs/claude-bot.md) にある
 - 最後の CI が通らなければ、PR は下書きに戻る。どちらの場合も、計画・CI・レビューの記録が PR にコメントされる
 - マージは、ほかの PR と同じく人が行う
 - `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` は、bot に変えさせない。変更は、PR の本文に diff で届く。人が確かめて当てる。bot が変えて push しようとすると、push の前に止まる。それでも PR に入ったときは、下書きのまま残る
+- bot は、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の外にある Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）を直せない。編集は `which is a sensitive file` で拒否される。雛形の中は、ワークフローのフックが許可する（`files/.claude/settings.json`・`files/.claude/hooks/` を除く）。直せないファイルの変更は、PR の本文に diff で届く
 - bot が push できるのは、自分の作業ブランチだけ。`develop` と `main` には、push できない
+- 上の bot に変えさせないファイル・直せないファイルの変更が主な Issue は、bot に頼まない。本文の冒頭に `> [!IMPORTANT]` の注記を置き、次の行を `> この Issue は bot に頼まず、人が対応する。` で始める（`/aidd:issue-start --issue-only` が書く）。この行のある Issue では、bot は動かずに、理由を Issue にコメントする。人が手元で対応する（`/aidd:issue-start --implement-only` など）
 - PR を作れなかったときは、理由が Issue にコメントされる
 - 動くのは `main` にあるワークフローのため、ワークフローを変えたら、リリースするまで反映されない
 - 手元の Claude は、`@claude` を含むコメントを書かない。deny とフック（`.claude/hooks/guard-claude-mention.sh`）で止めている

@@ -2,7 +2,37 @@
 
 Issue のコメントの `@claude` で動く bot（`.github/workflows/claude-issue-to-pr.yml`）を使えるようにするための手順。準備・入れた後の確かめ方・動かないとき・トークンの更新・止め方を決める。頼み方と、bot が作る PR の扱いは [CONTRIBUTING.md](../CONTRIBUTING.md) の「Claude の bot に頼む場合」にある。
 
-bot に任せるのは、作業ブランチへのコミット・push と PR の作成まで（[P1](policies/p01-operation-boundary.md) の例外）。マージは人が行う。この文書の準備は、リポジトリの設定と secret の変更のため、人が行う。Claude は行わない（P1）。
+bot に任せるのは、作業ブランチへのコミット・push と PR の作成、承認の要らない Issue・PR の更新まで（[P1](policies/p01-operation-boundary.md) の例外）。マージは人が行う。この文書の準備は、リポジトリの設定と secret の変更のため、人が行う。Claude は行わない（P1）。
+
+## 流れ
+
+橙の段は、ファイルを変えずに点検する段。段の中身と許すコマンドは、ワークフローと [issue-to-pr の SKILL.md](../.claude/skills/issue-to-pr/SKILL.md) にある。
+
+```mermaid
+flowchart TD
+  start([人：Issue に起動語でコメントする]) --> gate{本文に人が対応する注記}
+  gate -- ある --> stop[理由を Issue にコメントして止める<br/>Claude は動かない]
+  gate -- 無い --> impl[実装して下書きの PR を作る<br/>issue-to-pr の手順 1〜8<br/>marketplace-update の手順 2〜6 を含む]
+  impl --> ci1{CI}
+  ci1 -- 失敗 --> fix1[CI を直す<br/>最大 3 回] --> ci1
+  ci1 -- 通過 --> ready[レビュー待ちにする]
+  ready --> sec["/security-review"]:::check
+  sec --> cr[code-review<br/>ルートの CLAUDE.md から .claude/rules/ を読む]:::check
+  cr --> ds[docs-sync の段<br/>sonnet]:::check
+  ds --> col[指摘を review-feedback.md にまとめる<br/>docs-sync は high・medium]
+  col -- 直す指摘あり --> rfix[レビューの指摘を直す<br/>1 回]
+  rfix --> ci2{CI}
+  ci2 -- 失敗 --> fix2[CI を直す<br/>最大 3 回] --> ci2
+  col -- 指摘なし --> fin
+  ci2 -- 通過 --> fin[AI を使った確認を仕上げる<br/>sonnet]:::check
+  fin --> rec[記録を PR にコメントする]
+  ci2 -- 3 回で通らない --> draft[PR を下書きに戻す] --> rec
+  rec --> human([人：レビューしてマージする])
+
+  classDef check fill:#ffe0b2,stroke:#e65100,color:#000
+```
+
+「AI を使った確認を仕上げる」段は、PR 本文の「AI を使った確認」のうち、docs-sync・marketplace-update・issue-pr-sync の 3 行を点検する。条件を満たす行にチェックを入れ、行ごとの根拠を記録に書く。`issue-pr-sync` の決まりで承認が要る変更は反映せず、案を記録に残す。`/aidd:pr-review` の行は、bot は流さないため、人が実行する。
 
 ## 動く条件
 
@@ -10,6 +40,7 @@ bot に任せるのは、作業ブランチへのコミット・push と PR の�
 - 手順のスキル（`.claude/skills/issue-to-pr/`）と、CI を待つスクリプト（`.github/scripts/wait-pr-checks.sh`）が `develop` にある。ワークフローは `develop` を checkout して使う
 - 下の「準備（一度だけ）」が済んでいる
 - 頼む人が、リポジトリの所有者・メンバー・共同作業者である。それ以外の人のコメントでは、ジョブを始めない（権限の無い人のコメントで、権限のある人の待ちの依頼が置き換わるのを防ぐため）
+- Issue の本文に、行頭が `> この Issue は bot に頼まず、人が対応する。` の行が無い。この行があれば、前段のジョブが理由を Issue にコメントして止め、Claude は動かない（[CONTRIBUTING.md](../CONTRIBUTING.md) の bot の節）
 
 ## 準備（一度だけ）
 
@@ -42,7 +73,8 @@ bot に任せるのは、作業ブランチへのコミット・push と PR の�
 1. その Issue に `@claude この Issue を実装して` とコメントする
 1. **Actions** に「Claude による Issue の実装」の実行が出て、Issue に Claude の進み具合のコメントが付くか
 1. `develop` 向けの下書きの PR ができ、CI が通った後にレビュー待ちに変わるか
-1. PR に、code-review のコメントと、Claude の作業記録（計画・CI・レビュー・直し）のコメントが付くか
+1. PR に、code-review のコメントと、Claude の作業記録（計画・CI・レビュー・直し・AI を使った確認）のコメントが付くか
+1. PR 本文の「AI を使った確認」で、条件を満たす行にチェックが入り、作業記録に行ごとの根拠が出るか
 1. 書き込み権限の無いアカウントのコメントでは、動かないか
 
 確かめた PR は、ほかの PR と同じく中身を見て、マージするか閉じる。
@@ -54,6 +86,8 @@ bot に任せるのは、作業ブランチへのコミット・push と PR の�
 | **Actions** に実行が出ない | ワークフローが `main` に無い。コメントに `@claude` が無い（`@claude-bot` のように語が続くものは別の名前として扱われる）。PR へのコメントで頼んだ（Issue のコメントでだけ動く）。コメントした人が、所有者・メンバー・共同作業者ではない（読み取りだけの人のコメントでは、ジョブを始めない） |
 | bot の push が「変えてはいけないファイル」で止まる | `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` を変えようとした。意図した変更なら、bot ではなく人が当てる。PR の本文に diff があれば、それを使う |
 | PR に「変えてはいけないファイルの変更が入っている」と書かれ、下書きのまま残る | 上と同じファイルが PR に入っている。差分を確かめ、不要ならコミットを外す。必要なら、人が確かめてから、PR を手でレビュー待ちにする |
+| ログに `which is a sensitive file` と出て、編集が拒否される | Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）を、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の外で直そうとした。雛形の中は、ワークフローのフック（`.github/scripts/allow-template-edits.sh`）が許可する。ただし `files/.claude/settings.json`・`files/.claude/hooks/` は許可しない。範囲の外の変更は、PR の本文の diff を人が当てる |
+| Issue に「人が対応する Issue のため、bot は実装しません」とコメントされる | Issue の本文に、行頭が `> この Issue は bot に頼まず、人が対応する。` の行がある。bot に変えさせないファイルが主な Issue のため、人が手元で対応する（`/aidd:issue-start --implement-only` など）。bot に頼みたいなら、本文から注記を外してから頼み直す |
 | Issue に「トークンが空か空白だけです」とコメントされる | secret が登録されていないか、名前が違う。準備の 6 |
 | 実行が environment の保護ルールで失敗する | environment の **Deployment branches** に `main` が無い。準備の 4 |
 | Issue に「PR を作れませんでした」とコメントされる | コメントの「理由」と実行のログを見る。認証のエラーなら、トークンの期限切れ（下の「トークンを更新する」）か、App が入っていない（準備の 2） |
@@ -73,6 +107,6 @@ bot に任せるのは、作業ブランチへのコミット・push と PR の�
 
 ## 使う量の目安
 
-- 1 回の依頼で、Claude は最大 10 回動く（実装 1 回、CI の直し 3 回 × 2、レビュー 2 回、レビューの直し 1 回）。ジョブの上限は 300 分
+- 1 回の依頼で、Claude は最大 12 回動く（実装 1 回、CI の直し 3 回 × 2、レビュー 3 回（security-review・code-review・docs-sync）、レビューの直し 1 回、仕上げ 1 回）。ジョブの上限は 335 分
 - 使うのは、トークンを作った人のサブスクリプションの使用量と、Actions の時間。公開リポジトリでは、GitHub の標準のランナーの時間は無料
 - Issue に、決めたこと・変えるファイル・確かめ方を詳しく書くと、直しの回数が減りやすい

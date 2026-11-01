@@ -2,7 +2,7 @@
 
 | 区分 | 内容 |
 | --- | --- |
-| 対象 | Issue・PR のタイトルを決めるスキル（`aidd` の `issue-pr-sync`・`pr-create`、`config:plugin-feedback`）。`project:init-repo` の Issue フォームと `labels.yml`。このリポジトリの bot（`issue-to-pr`）とリリースの仕組み |
+| 対象 | Issue・PR のタイトルを決めるスキル（`aidd` の `issue-pr-sync`・`pr-create`、`config:plugin-feedback`）。`project:init-repo` の Issue フォームと `labels.yml`。このリポジトリの bot（`issue-to-pr`）とリリースの仕組み。タイトルから PR のラベルを付け直すワークフロー（このリポジトリと `init-repo` の `label-pr-by-title.yml`） |
 | 例外 | 振り返りのフォーム（`[Retro]`）は、作業の分類に入れない。作業の Issue ではなく、対象の Issue に貼る記録のため。dependabot など、ツールが自動で作る PR のタイトルは変えない |
 | 価値 | [V2](../values/v02-understand-before-accept.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
@@ -32,7 +32,7 @@
 
 ## 変えたいとき
 
-- 分類を足す・変えるときは、この方針の表、`title-and-sidebar.md` の表、`init-repo` の Issue フォームと `labels.yml`、`plugin-feedback` の `issue-format.md`、このリポジトリのリリースノートの見出し（`.github/release.yml`）をすべて直す
+- 分類を足す・変えるときは、この方針の表、`title-and-sidebar.md` の表、`init-repo` の Issue フォームと `labels.yml`、`plugin-feedback` の `issue-format.md`、このリポジトリのリリースノートの見出し（`.github/release.yml`）、PR のラベルを付け直すワークフローの対応表（`.github/workflows/label-pr-by-title.yml` と `init-repo` の同じファイルの `case`・`managed`）をすべて直す
 - 利用先で別の書式を使うときは、`CONTRIBUTING.md`・`.claude/rules/` などにタイトルの決まりを書くか、Issue フォームの `title` を書き換える。スキルは、決まりがあればそちらに従い、この方針の書式を当てない
 
 ## Q&A

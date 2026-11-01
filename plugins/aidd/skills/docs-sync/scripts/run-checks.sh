@@ -3,10 +3,12 @@
 # 担当: ブランチ差分の列挙 / 変更 md の 相対リンク切れ・markdown 規約 / 全走査のリンク切れ・SSOT ポインタ・囲まれた @import
 # 基準ブランチ上と main・master では停止する。docs 追従要否の LLM 判定は SKILL.md 側で実施する。
 #
-# 使い方: run-checks.sh [--base <ref>]
+# 使い方: run-checks.sh [--base <ref>] [--adr-dir <dir>]
 #   --base は比べるブランチ（今のブランチのマージ先）。SKILL.md が PR・規約から決めて渡す。
 #   マージ先はブランチ戦略（develop → stg → main など）で変わり、規約を読める LLM 側でしか決められないため。
 #   省略時は origin/HEAD（リモートの既定ブランチ）から決める。
+#   --adr-dir は ADR のフォルダ。SKILL.md が規約・候補から決めて渡す。
+#   ADR の本文は書き換えない決まりのため、変えた行以外のリンク切れを別の見出しに分ける。省略時は分けない。
 #
 # リポジトリごとに構成が違うため、SSOT 一覧テーブルのポインタ存在は「一覧があれば検査し、無ければスキップ」する。
 # 使っていない規約で FAIL を出さないための措置。
@@ -39,6 +41,7 @@ cd "$ROOT"
 
 # --- 引数 -------------------------------------------------------------------
 BASE_ARG=""
+ADR_DIR=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --base)
@@ -49,12 +52,31 @@ while [[ $# -gt 0 ]]; do
       BASE_ARG="$2"
       shift 2
       ;;
+    --adr-dir)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "ERROR: --adr-dir には ADR のフォルダを渡す（例: --adr-dir docs/adr）" >&2
+        exit 2
+      fi
+      ADR_DIR="$2"
+      shift 2
+      ;;
     *)
-      echo "ERROR: 知らない引数です: $1（使い方: run-checks.sh [--base <ref>]）" >&2
+      echo "ERROR: 知らない引数です: $1（使い方: run-checks.sh [--base <ref>] [--adr-dir <dir>]）" >&2
       exit 2
       ;;
   esac
 done
+
+# git のパスと比べるため、先頭の ./ と末尾の / を外す。
+# 渡し間違いを「ADR なし」の黙った扱いで隠さないため、フォルダが無ければ止める。
+if [[ -n "$ADR_DIR" ]]; then
+  ADR_DIR="${ADR_DIR#./}"
+  while [[ "$ADR_DIR" == */ ]]; do ADR_DIR="${ADR_DIR%/}"; done
+  if [[ ! -d "$ADR_DIR" ]]; then
+    echo "ERROR: --adr-dir のフォルダが見つかりません: $ADR_DIR（リポジトリのルートからのパスを渡す）" >&2
+    exit 2
+  fi
+fi
 
 # --- 基準ブランチの解決 -----------------------------------------------------
 # --base があればそれを使う。無ければ origin/HEAD（リモートの既定ブランチ）を見て、取れなければよくある候補を順に試す。
@@ -132,7 +154,7 @@ done
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-touch "$TMP/links.txt" "$TMP/md.txt" "$TMP/links_all.txt" "$TMP/ssot.txt" "$TMP/enclosed.txt"
+touch "$TMP/links.txt" "$TMP/md.txt" "$TMP/links_all.txt" "$TMP/ssot.txt" "$TMP/enclosed.txt" "$TMP/adr_raw.txt" "$TMP/adr.txt"
 
 # 全走査用: 差分に関係なく全散文 md を列挙する。
 # 既存ファイルの壊れリンク・壊れ SSOT ポインタは差分に現れないため、ここだけはリポジトリ全体を対象にする。
@@ -164,6 +186,28 @@ mapfile -t ALL_DOC_MD_LINK < <(link_targets "${ALL_DOC_MD[@]}")
 DOC_LINK_SKIPPED=$(( ${#DOC_MD[@]} - ${#DOC_MD_LINK[@]} ))
 ALL_LINK_SKIPPED=$(( ${#ALL_DOC_MD[@]} - ${#ALL_DOC_MD_LINK[@]} ))
 
+# 書き換えない ADR か。--adr-dir の中の md のうち、一覧（README.md）と雛形（_template*）は書き換えてよいため除く。
+is_adr() {
+  [[ -n "$ADR_DIR" && "$1" == "$ADR_DIR"/* ]] || return 1
+  local base="${1##*/}"
+  [[ "$base" != "README.md" && "$base" != _template* ]]
+}
+
+# 差分に入った ADR の、足した・変えた行（"<ファイル>:<行>"）。ここにあるリンク切れだけは直せるため、ADR でも high に出す。
+# 新しく足した ADR は全行が入るため、今までどおり high で出る。
+declare -A ADR_CHANGED=()
+for f in "${DOC_MD_LINK[@]}"; do
+  is_adr "$f" || continue
+  while IFS= read -r ln; do
+    [[ -n "$ln" ]] && ADR_CHANGED["$f:$ln"]=1
+  done < <(git diff --no-color --no-ext-diff -U0 "$MERGE_BASE" -- "$f" | perl -ne '
+    if (/^@@ -\S+ \+(\d+)(?:,(\d+))? @@/) {
+      my $n = defined $2 ? $2 : 1;
+      print "$_\n" for $1 .. $1 + $n - 1;
+    }
+  ')
+done
+
 # --- 規約の使用有無を検出 ---------------------------------------------------
 # SSOT 一覧テーブル: 「唯一の情報源」列を持つテーブルがあるファイルを探す。
 # 候補は索引になりやすいファイルに限る（本文中の言及を誤検出しないため）。
@@ -178,12 +222,15 @@ done
 
 # --- 検査ロジック -----------------------------------------------------------
 # 指定 md 群の相対リンク（](path) 形式）の参照先存在を検査し、FAIL 行を第1引数のファイルへ追記する。
+# 書き換えない ADR の、変えていない行の FAIL 行は、第2引数のファイルへ追記する。
 # 差分チェックと全走査チェックで同じ判定ロジックを共有するため関数化する。
 check_links() {
-  out="$1"; shift
+  out="$1"; adr_out="$2"; shift 2
   for f in "$@"; do
     [[ -e "$f" ]] || continue
     dir=$(dirname "$f")
+    adr=0
+    is_adr "$f" && adr=1
     perl -ne 'while (/\]\(([^)\s]+)\)/g) { print "$.\t$1\n"; }' "$f" | while IFS=$'\t' read -r ln target; do
       case "$target" in
         http://*|https://*|mailto:*) continue ;;
@@ -192,7 +239,12 @@ check_links() {
       path="${target%%#*}"
       [[ -z "$path" ]] && continue
       if [[ "$path" = /* ]]; then resolved="$ROOT$path"; else resolved="$dir/$path"; fi
-      [[ ! -e "$resolved" ]] && echo "FAIL: $f:$ln -> $target" >> "$out"
+      [[ -e "$resolved" ]] && continue
+      if [[ $adr -eq 1 && -z "${ADR_CHANGED["$f:$ln"]:-}" ]]; then
+        echo "FAIL: $f:$ln -> $target" >> "$adr_out"
+      else
+        echo "FAIL: $f:$ln -> $target" >> "$out"
+      fi
     done
   done
 }
@@ -251,7 +303,7 @@ echo "## 相対リンク切れ"
 if [[ $DOC_LINK_SKIPPED -gt 0 ]]; then
   echo "変更された散文 md のうち ${DOC_LINK_SKIPPED} 件を $LINK_IGNORE_FILE の指定で対象から外した。"
 fi
-if [[ ${#DOC_MD_LINK[@]} -gt 0 ]]; then check_links "$TMP/links.txt" "${DOC_MD_LINK[@]}"; fi
+if [[ ${#DOC_MD_LINK[@]} -gt 0 ]]; then check_links "$TMP/links.txt" "$TMP/adr_raw.txt" "${DOC_MD_LINK[@]}"; fi
 if [[ -s "$TMP/links.txt" ]]; then cat "$TMP/links.txt"; else echo "PASS"; fi
 
 # 2. markdown 規約（散文 md のみ・コードブロック内除外）
@@ -327,8 +379,26 @@ echo "差分に含まれない既存ファイルの壊れリンクも検出す�
 if [[ $ALL_LINK_SKIPPED -gt 0 ]]; then
   echo "ほかに ${ALL_LINK_SKIPPED} 件を $LINK_IGNORE_FILE の指定で対象から外した。"
 fi
-if [[ ${#ALL_DOC_MD_LINK[@]} -gt 0 ]]; then check_links "$TMP/links_all.txt" "${ALL_DOC_MD_LINK[@]}"; fi
+if [[ ${#ALL_DOC_MD_LINK[@]} -gt 0 ]]; then check_links "$TMP/links_all.txt" "$TMP/adr_raw.txt" "${ALL_DOC_MD_LINK[@]}"; fi
 if [[ -s "$TMP/links_all.txt" ]]; then cat "$TMP/links_all.txt"; else echo "PASS"; fi
+
+# 3b. 書き換えない ADR のリンク切れ（--adr-dir を渡したときだけ）
+# 変更 md と全走査の両方で拾うため、重複を外す。渡さないときは見出しを出さず、出力を変えない。
+if [[ -n "$ADR_DIR" ]]; then
+  awk '!seen[$0]++' "$TMP/adr_raw.txt" > "$TMP/adr.txt"
+  echo
+  echo "## ADR のリンク切れ（書き換えない本文）"
+  echo "$ADR_DIR の ADR（README.md・_template* を除く）の、差分で変えていない行のリンク切れ。本文は書き換えないため、上の 2 つと分けて出す。"
+  if [[ -s "$TMP/adr.txt" ]]; then
+    echo "ファイルごとの件数:"
+    perl -ne 'print "$1\n" if /^FAIL: (.*?):\d+ -> /' "$TMP/adr.txt" | uniq -c | while read -r n f; do
+      echo "- $f: $n 件"
+    done
+    cat "$TMP/adr.txt"
+  else
+    echo "PASS"
+  fi
+fi
 
 # 4. SSOT 一覧ポインタ存在（全走査・差分非依存）
 echo
@@ -384,12 +454,16 @@ MD_FAIL=$(wc -l < "$TMP/md.txt" | tr -d ' ')
 ALLLINK_FAIL=$(wc -l < "$TMP/links_all.txt" | tr -d ' ')
 SSOT_FAIL=$(wc -l < "$TMP/ssot.txt" | tr -d ' ')
 ENCLOSED_FAIL=$(wc -l < "$TMP/enclosed.txt" | tr -d ' ')
+ADR_FAIL=$(wc -l < "$TMP/adr.txt" | tr -d ' ')
 
 echo
 echo "## サマリ"
 echo "リンク切れ FAIL（変更 md）: ${LINK_FAIL:-0}"
 echo "markdown 規約 FAIL: ${MD_FAIL:-0}"
 echo "全 docs リンク切れ FAIL（全走査）: ${ALLLINK_FAIL:-0}"
+if [[ -n "$ADR_DIR" ]]; then
+  echo "ADR のリンク切れ FAIL（書き換えない本文）: ${ADR_FAIL:-0}"
+fi
 if [[ -z "$SSOT_FILE" ]]; then
   echo "SSOT ポインタ FAIL（全走査）: スキップ（SSOT 一覧なし）"
 else
@@ -401,7 +475,7 @@ else
   echo "囲まれた @import FAIL（全走査）: ${ENCLOSED_FAIL:-0}"
 fi
 
-TOTAL=$((LINK_FAIL + MD_FAIL + ALLLINK_FAIL + SSOT_FAIL + ENCLOSED_FAIL))
+TOTAL=$((LINK_FAIL + MD_FAIL + ALLLINK_FAIL + SSOT_FAIL + ENCLOSED_FAIL + ADR_FAIL))
 if [[ $TOTAL -gt 0 ]]; then
   exit 1
 fi

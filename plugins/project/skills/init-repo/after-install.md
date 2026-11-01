@@ -11,11 +11,12 @@
 1. `.claude/hooks/guard-destructive.sh` の `patterns` に、このプロジェクト固有の破壊的操作（クラウド CLI の削除系・本番ホストへの接続等）を追記する
 1. `commitlint.config.mjs` を使うなら、`@commitlint/cli` と `@commitlint/config-conventional` を devDependencies に追加し、`lefthook install` で Git のフックを入れる。`lefthook.yml` の `commit-msg` が commitlint を呼ぶ（入っていなければ飛ばす）。`.git/` の下を書き換えるため、人が実行する
 1. GitHub のリポジトリの Settings の Advanced Security で、シークレットスキャンの push protection を有効にする。秘密が入った push を、リポジトリに入る前に止めるため。リポジトリの設定の変更のため、人が行う。非公開のリポジトリは GitHub Secret Protection の契約が要る（[push protection の有効化](https://docs.github.com/ja/code-security/secret-scanning/enabling-secret-scanning-features/enabling-push-protection-for-your-repository)）
-1. `.github/workflows/` には「シークレットスキャン」「スペルチェック」「ラベル同期」しか入っていない。ビルド・テストの CI はプロジェクト側で作る
+1. `.github/workflows/` には「シークレットスキャン」「スペルチェック」「ラベル同期」「PR のラベルの付け直し」しか入っていない。ビルド・テストの CI はプロジェクト側で作る
 1. `pr-checks.yml` の `pull_request` の `branches`（既定は `main`）を、保護ブランチに合わせる（例：`develop` に PR を溜めるなら `[main, develop]`）。合わせないと、そのブランチへの PR で検査が動かない
 1. `sync-labels.yml` は、`labels.yml` に無いラベルを消さない（`skip-delete: true`）。消して `labels.yml` にそろえたいときは、使っているラベルを `labels.yml` に足してから `false` にする。消したラベルは Issue・PR からも外れ、戻せない
+1. `label-pr-by-title.yml` は、PR のタイトルが `[Bug]` などの分類で始まるときだけ、分類のラベルを付け直す。手で付けた分類のラベルも、タイトルに合わなければ外れる。タイトルの決まりが違うリポジトリでは何もしない
 1. Issue テンプレートを入れたら、`.github/ISSUE_TEMPLATE/release.yml` の「事前確認」と「リリース手順」を、このリポジトリのデプロイの方式に合わせる。テンプレートは、検証環境があり、リリース用ブランチへのマージでデプロイワークフローが動く構成を前提にしている（例：`main` へのマージでホスティングが自動でデプロイするなら、リリース用ブランチとデプロイワークフローの行をその方式の手順に置き換える）
-1. 既存の `.sh` が CRLF でコミットされているときは、`.gitattributes` を入れた後に `git add --renormalize .` で LF にそろえる。LF にそろえる差分が出るため、内容を確かめてから人がコミットする。CRLF のままだと、Linux の bash でそのフックが動かない
+1. 既存の `.sh` と、手順 5 で `.gitattributes` に足した拡張子のファイルが CRLF でコミットされているときは、`.gitattributes` を入れた後に `git add --renormalize .` で LF にそろえる。LF にそろえる差分が出るため、内容を確かめてから人がコミットする。CRLF のままだと、Linux の bash でそのフックが動かず、整形のツールの検査も通らない
 
 ## 配線していないフック
 
