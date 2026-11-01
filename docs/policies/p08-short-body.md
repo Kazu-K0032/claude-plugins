@@ -47,7 +47,7 @@
 
 ### Q. Issue の種類が分からない
 
-タイトルと中身から一番近い種類を選び、計画や承認の画面で、どれに合わせたかを示す。リファクタリングや調査も、一番近い種類に合わせる。
+タイトルの分類（`[Bug]` など）と中身から一番近い種類を選び、計画や承認の画面で、どれに合わせたかを示す。リファクタリングや調査も、一番近い種類に合わせる。
 
 ### Q. PR も種類で書き分けたい
 
@@ -61,6 +61,6 @@
 - `aidd`：`pr-create` の `pr-body-guide.md`、`issue-start` の `issue-update.md`・`requirements-tree.md`・`comment-template.md`、`issue-pr-sync` の `SKILL.md`・`approval-rules.md`・`body-policy.md`・`errors.md`、`README.md`、`references/harness-principles.md`（監査の物差し）
 - `config:plugin-feedback`：`references/issue-format.md`
 - mod：`hooks/register.tsx` の `DOC_CONCISE_TEXT` と、`tests/emphasis.test.tsx`
-- テンプレート：`init-repo` の PR テンプレートと Issue フォーム 5 つ、このリポジトリの `.github/PULL_REQUEST_TEMPLATE.md`。`init-repo` の `README.md`（収録物の表の説明）
+- テンプレート：`init-repo` の PR テンプレートと Issue フォーム 8 つ、このリポジトリの `.github/PULL_REQUEST_TEMPLATE.md`。`init-repo` の `README.md`（収録物の表の説明）
 - このリポジトリの `.claude/skills/issue-to-pr/SKILL.md`（bot が PR 本文を数える手順）
 - この方針のファイル

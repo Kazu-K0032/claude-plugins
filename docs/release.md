@@ -35,7 +35,7 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
 1. `release.yml` が次を行う。終わると、Issue に PR の URL がコメントされる
    - `plugin-checks.yml` と同じ検査を `develop` で動かす
    - `develop` から `release/v<version>` を作る
-   - `main` へ PR（タイトル：`v<version> をリリース`）を作る。本文には Issue の本文と `Closes #<Issue番号>` が入る
+   - `main` へ PR（タイトル：`[Release] v<version> をリリース`）を作る。本文には Issue の本文と `Closes #<Issue番号>` が入る
 1. PR の中身を確かめ、マージする。Issue を作った後に `develop` へ入った変更は、このリリースに入らない
 1. `release.yml` が、マージした `main` のコミットにタグ `v<version>` と GitHub Release を作り、PR と Issue にコメントする
 

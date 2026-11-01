@@ -4,13 +4,28 @@
 
 ## タイトル
 
+タイトルは `[分類] 本文` の形にする。Release の説明は PR のタイトルの一覧のため、分類があると、バグの修正か機能の追加かを開かずに見分けられる。
+
+| 分類 | 使う場面 | ラベル |
+| --- | --- | --- |
+| `[Bug]` | 期待と違う動き・エラーを直す | `bug` |
+| `[Feature]` | 機能を足す・変える、手順や仕組みを改善する | `feature`（無ければ `enhancement`） |
+| `[Docs]` | 文書だけを足す・直す | `docs`（無ければ `documentation`） |
+| `[Refactor]` | 外から見た振る舞いを変えずに、構造を直す | `refactor` |
+| `[Release]` | リリースの Issue と、リリースの PR | `release` |
+| `[Research]` | 調べて決める。実装を伴わない | `research` |
+| `[Other]` | 上のどれにも当たらない（版を上げる、依存を更新するなど） | `other` |
+
+- 本文は、何をするか・何が起きるかを動詞で終える 1 文にする（例：`[Bug] bot の保護パスの確認が、名前の変更を見落とす`）
+- 版を上げる Issue・PR は `[Other]` にする。`release` ラベルの Issue はリリースのワークフローを動かし、`release` ラベルの PR はリリースノートから外れるため
+- `[Retro]`（振り返りのフォーム）と、dependabot などツールが自動で作るタイトルは変えない
 - Issue のタイトルが基準。閉じる Issue が 1 つなら、PR のタイトルは Issue のタイトルと**同じ文字列**にする
 - 閉じる Issue が複数（PR 本文の「関連 Issue」に `Closes #<番号>` が 2 つ以上）なら、PR のタイトルを Issue にそろえない。Release の説明は PR のタイトルの一覧のため、1 つの Issue のタイトルではほかの変更が載らない
   - ほかの Issue は、`gh issue view <番号> --json title,body` で取る。手順 1 では引数の Issue しか取らないため
-  - PR のタイトルが、どれか 1 つの Issue のタイトルと同じときだけ、全ての Issue の中身が伝わる案を作る（承認を取る）
+  - PR のタイトルが、どれか 1 つの Issue のタイトルと同じときだけ、全ての Issue の中身が伝わる案を作る（承認を取る）。分類は、Issue の分類がそろえばそれ、違えば主な変更の分類にし、どれに合わせたかを示す
   - それ以外は変えない。人が決めたタイトルを上書きしないため
-- Issue のタイトルは、対応内容が変わって**今のタイトルでは中身が伝わらない**ときだけ直す。言い回しを整えるだけの変更はしない
-- 直すときは、何をするかが一読で分かる短い名詞句にする。既存の書式（日付などの接頭辞）は残す
+- Issue のタイトルに分類が無ければ、頭に分類を足す案を作る（承認を取る）。言い回しは変えない。既存の書式（日付などの接頭辞）は、分類の後ろに残す
+- Issue のタイトルの本文は、対応内容が変わって**今のタイトルでは中身が伝わらない**ときだけ直す。言い回しを整えるだけの変更はしない
 - どちらも直す必要が無ければ「変更なし」
 
 ## サイドバー
@@ -19,7 +34,7 @@
 
 | 項目 | 変更案を出す条件 | 反映のしかた |
 | --- | --- | --- |
-| ラベル | 差分の性質（バグ修正・機能追加・ドキュメント等）と現在のラベルが食い違うとき。Issue と PR で揃える | `--add-label` / `--remove-label`。外すときは承認を取る |
+| ラベル | タイトルの分類に合うラベル（上の表）が付いていないとき、または分類と食い違うラベルが付いているとき。Issue と PR で揃える。`release` は足さない（リリースのワークフローを動かすため） | `--add-label` / `--remove-label`。外すときは承認を取る |
 | 担当者 | 未設定のとき。PR は Issue の担当者に、Issue も未設定なら `@me` に揃える。設定済みなら触らない | `--add-assignee` |
 | レビュワー | 未設定で、かつリポジトリに CODEOWNERS があるとき。CODEOWNERS から差分の所有者を選ぶ | `gh pr edit --add-reviewer`。通知が届くため承認を取る |
 | マイルストーン | Issue に設定があり、PR が未設定のとき（Issue に揃える）。Issue も未設定なら提案しない | `gh pr edit --milestone` |
@@ -32,6 +47,6 @@ Development セクションの Issue 紐付けは、`gh` の `edit` サブコマ
 反映する項目をまとめて反映する（例）。
 
 ```bash
-gh issue edit <Issue> --add-label enhancement --add-assignee @me
-gh pr edit <PR> --add-label enhancement --add-assignee @me --add-reviewer <ユーザー名> --milestone "<マイルストーン名>"
+gh issue edit <Issue> --add-label feature --add-assignee @me
+gh pr edit <PR> --add-label feature --add-assignee @me --add-reviewer <ユーザー名> --milestone "<マイルストーン名>"
 ```
