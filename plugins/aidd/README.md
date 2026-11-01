@@ -84,6 +84,7 @@ aidd/
     ├── ai-check-lines.md # PR 本文の「AI を使った確認」の欄
     ├── base-branch.md   # マージ先（比べるブランチ）の決め方
     ├── pr-template.md   # PR テンプレートの探し方（pr-create・issue-pr-sync）
+    ├── repo-rules.md    # リポジトリの決まりの探し方（同梱の規約より優先する）
     ├── report-format.md # 点検レポート（docs-sync・pr-review・harness-audit）の構成
     ├── markdown.md      # markdownlint 準拠の書式
     ├── document.md      # SSOT・文体・構造
@@ -114,6 +115,8 @@ Markdown の書式は `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` を Read �
 | `references/*.md` | Skill 実行時に `SKILL.md` の指示で**明示的に** | その Skill の判断基準 |
 
 自動適用の機能は移せないため、`references/` は「Skill が使う判断基準」に限定している。
+
+`references/` の書式・本文の長さ・文書の規約と、スキルが同梱する雛形は、作業中のリポジトリに同じ話題の決まりが無いときの既定にとどめる。リポジトリに決まりがあればそちらに従い、同梱の規約は混ぜない。リポジトリの書き方は、そのリポジトリの人が決めるため（[P6](../../docs/policies/p06-common-template.md)）。探し方は `references/repo-rules.md` にある。
 
 常時適用したい規約（`.claude/rules/*.md`）は、[project](../project/README.md) プラグインの `/project:init-repo` などが導入先リポジトリへコピーする形で配る。コピーされて初めて自動適用の対象になる。
 
@@ -203,7 +206,7 @@ GitHub に書き込むのは次の 2 つ。どこまで Claude に任せるか�
 
 ### Issue・PR の本文は、冒頭の概要を 300 文字以内にする
 
-`pr-create`・`issue-start`・`issue-pr-sync` は、本文の冒頭の概要（最初の節）を 300 文字以内で書き、`scripts/body_length.js` で数える。概要より後の節は上限なしで、Issue は種類（バグ修正・新機能・文書や版の更新）で詳しく書く節を変える。長い本文の全体は読まれなくても、冒頭は読まれるため（[P8](../../docs/policies/p08-short-body.md)）。上限・数え方・書き分けは `references/short-body.md` にある。
+`pr-create`・`issue-start`・`issue-pr-sync` は、リポジトリに本文の決まりが無ければ、本文の冒頭の概要（最初の節）を 300 文字以内で書き、`scripts/body_length.js` で数える。概要より後の節は上限なしで、Issue は種類（バグ修正・新機能・文書や版の更新）で詳しく書く節を変える。長い本文の全体は読まれなくても、冒頭は読まれるため（[P8](../../docs/policies/p08-short-body.md)）。上限・数え方・書き分けは `references/short-body.md` にある。
 
 ### 点検レポートは同じ構成にする
 
