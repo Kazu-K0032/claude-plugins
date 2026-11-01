@@ -4,14 +4,15 @@
 # 見るもの：check.py（NG があれば失敗）、develop から変えた JSON が読めるか、変えたシェルスクリプトの構文。
 # コミット前の変更と、新しく作ったファイルも見る。bot はコミットの前に流すため。
 # 終了コード：0 = 通った、1 = 直すものがある
-# check.py は、このスクリプトと同じフォルダにあればそれを、無ければ作業ツリーの版を流す。
-#   bot のワークフローは、bot が動く前にこのスクリプトと check.py を同じフォルダに写し、写しを流させる。
-#   作業ツリーの check.py は bot が書き換えられ、書き換えた版をトークンを持つ段で動かさないため
+# check.py は、このスクリプトがリポジトリの中にあれば作業ツリーの版を、外（bot のワークフローの写し）にあれば写しを流す。
+#   bot のワークフローは、bot が動く前に、このスクリプトを <trusted>/issue-to-pr/scripts/ に、check.py を <trusted>/ に写す。
+#   作業ツリーの check.py は bot が書き換えられ、書き換えた版をトークンを持つ段で動かさないため。写しが無ければ、作業ツリーの版に頼らず NG にする
 
 set -uo pipefail
 
 script_dir=$(cd "$(dirname "$0")" && pwd)
-cd "$(git rev-parse --show-toplevel)" || exit 1
+repo=$(git rev-parse --show-toplevel) || exit 1
+cd "$repo" || exit 1
 
 base=origin/develop
 status=0
@@ -29,8 +30,16 @@ if [ -z "$python" ]; then
   exit 1
 fi
 
-check_py=.claude/skills/marketplace-update/scripts/check.py
-[ -f "$script_dir/check.py" ] && check_py=$script_dir/check.py
+# このスクリプトのフォルダが、同じリポジトリの中かで分ける。パスの書き方（C:/ と /c/）の違いで取り違えないよう、git に聞く
+if [ "$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)" = "$repo" ]; then
+  check_py=.claude/skills/marketplace-update/scripts/check.py
+else
+  check_py=$script_dir/../../check.py
+  if [ ! -f "$check_py" ]; then
+    echo "NG: 写しの check.py（$check_py）が無い。作業ツリーの版は流さない"
+    exit 1
+  fi
+fi
 echo "## check.py（$check_py）"
 if ! "$python" -B "$check_py"; then
   status=1

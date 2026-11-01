@@ -12,7 +12,7 @@
 
 ## 変えてよいが、注意書きに並ぶファイル
 
-`.github/scripts/`・`.claude/`（`settings.json`・`hooks/`・`skills/`・`rules/` など）・`CLAUDE.md`・`.mcp.json`・`.vscode/`・`lefthook.yml`、雛形の `files/.claude/settings.json`・`files/.claude/hooks/` は変えてよい。
+`.github/scripts/`・`.claude/`（`settings.json`・`hooks/`・`skills/`・`rules/` など）・`.mcp.json`・`.vscode/`・`lefthook.yml` と、雛形（`files/`）の中の同じファイル、どの階層の `CLAUDE.md`、`.claude-plugin/`、プラグインの `.claude-plugin/`・`hooks/` は変えてよい。雛形の `files/.github/workflows/` も変えてよい（push を拒まれるのは、リポジトリのルートの `.github/workflows/` だけ）。
 
 - Claude Code の protected paths の編集は、ワークフローが `PermissionRequest` フック（`.github/scripts/allow-protected-edits.sh`）で許可する。`.git/` とリポジトリの外は許可しない
 - 変えても、同じ実行の中では効かない。どの段も、`develop` から取り分けた設定・フック・手順の写しで動くため。変えたフックや設定を、push の前に動かして確かめることはできない

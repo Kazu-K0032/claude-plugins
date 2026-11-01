@@ -117,7 +117,7 @@ jobs:
       # 止めるスクリプトは、git の pre-push フックとしても据える。bot が push する前に、.github/workflows/ などの変更を止めるため
       # 検査のスクリプト（check.py・docs-sync の run-checks.sh・body_length.js）、注意書きのスクリプト、Claude Code のフック（.claude/hooks/）、
       # issue-to-pr の手順（SKILL.md・参照の md・verify.sh）も写す。bot が書き換えた版を、同じ実行の中のトークンを持つ段で動かさないため
-      # verify.sh は、同じフォルダの check.py を流す。そのため、check.py を verify.sh の隣にも写す
+      # 写しの verify.sh は、2 つ上のフォルダ（$RUNNER_TEMP/trusted/）の check.py の写しを流す
       - name: ワークフローのスクリプトを取り分ける
         run: |
           mkdir -p "$RUNNER_TEMP/trusted/hooks" "$RUNNER_TEMP/trusted/claude-hooks"
@@ -127,27 +127,27 @@ jobs:
             plugins/aidd/scripts/body_length.js "$RUNNER_TEMP/trusted/"
           cp .claude/hooks/*.sh "$RUNNER_TEMP/trusted/claude-hooks/"
           cp -R .claude/skills/issue-to-pr "$RUNNER_TEMP/trusted/issue-to-pr"
-          cp .claude/skills/marketplace-update/scripts/check.py "$RUNNER_TEMP/trusted/issue-to-pr/scripts/"
           printf '#!/usr/bin/env bash\nexec bash "%s/trusted/guard-paths.sh" --pre-push "$@"\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/trusted/hooks/pre-push"
           chmod +x "$RUNNER_TEMP/trusted/hooks/pre-push"
           git config core.hooksPath "$RUNNER_TEMP/trusted/hooks"
 
       # Claude の段に渡す設定の写しを、develop の .claude/settings.json から作る。どの段も --setting-sources user で、作業ツリーの設定を読まないため
-      # Actions の Claude App には、コミットと push を任せる（P1 の例外）。リポジトリの deny は手元の Claude 向けのため、写しの中だけで外す
+      # Actions の Claude App には、コミットと push を任せる（P1 の例外）。リポジトリの deny は手元の Claude 向けのため、ファイルを直す段の写しの中だけで外す
       # フックは、取り分けた写しを指すように書き換える。スキルの !`コマンド` を止め、作業ツリーの .mcp.json のサーバーも使わせない。
       # bot が書き換えたものを、同じ実行の中で動かさないため
-      # 写しは 2 つ作る。ファイルを直す段（実装・直し）には、protected paths の編集を許可するフックを足した claude-settings-edit.json を渡す
-      # （permissions.allow では許可できないため）。ファイルを直さない段（レビュー・仕上げ）には、このフックの無い claude-settings.json を渡す
+      # 写しは 2 つ作る。ファイルを直す段（実装・直し）には、commit・push の deny を外し、protected paths の編集を許可するフックを足した
+      # claude-settings-edit.json を渡す（protected paths は permissions.allow では許可できないため）。
+      # ファイルを直さない段（レビュー・仕上げ）には、deny を残し、このフックの無い claude-settings.json を渡す。PR の内容を読む段に、守りを 2 重に残すため
       - name: Claude の設定の写しを作る
         run: |
           jq --arg hooks "$RUNNER_TEMP/trusted/claude-hooks/" '
-            .permissions.deny |= map(select(test("^(Bash|PowerShell)\\(git (-[cC] \\* )?(commit|push)") | not))
-            | .hooks |= with_entries(.value |= map(.hooks |= map(if .type == "command" then .command |= sub("\\.claude/hooks/"; $hooks) else . end)))
+            .hooks |= with_entries(.value |= map(.hooks |= map(if .type == "command" then .command |= sub("\\.claude/hooks/"; $hooks) else . end)))
             | .disableSkillShellExecution = true
             | .enableAllProjectMcpServers = false
           ' .claude/settings.json > "$RUNNER_TEMP/trusted/claude-settings.json"
           jq --arg cmd "bash $RUNNER_TEMP/trusted/allow-protected-edits.sh" '
-            .hooks.PermissionRequest += [{matcher: "Edit|Write|MultiEdit", hooks: [{type: "command", command: $cmd}]}]
+            .permissions.deny |= map(select(test("^(Bash|PowerShell)\\(git (-[cC] \\* )?(commit|push)") | not))
+            | .hooks.PermissionRequest += [{matcher: "Edit|Write|MultiEdit", hooks: [{type: "command", command: $cmd}]}]
           ' "$RUNNER_TEMP/trusted/claude-settings.json" > "$RUNNER_TEMP/trusted/claude-settings-edit.json"
           # 書き換え損ねて、作業ツリーのフックを指したままの写しで動かさない
           for f in "$RUNNER_TEMP/trusted/claude-settings.json" "$RUNNER_TEMP/trusted/claude-settings-edit.json"; do
@@ -221,7 +221,9 @@ jobs:
           if [ "$files" -gt 10 ] || [ "$lines" -gt 500 ]; then level=2; cr_model=sonnet
           elif [ "$files" -gt 3 ] || [ "$lines" -gt 100 ]; then level=1
           fi
-          if jq -r '.files[].path' <<< "$pr" | grep -qE '^\.github/|(^|/)\.claude/(settings\.json|hooks/)|(^|/)plugin\.json$|\.(sh|py|js|mjs|ts|tsx)$'; then
+          # 影響の大きいファイルは、注意書きと同じ一覧（pr-caution.sh --list）と、コードのファイル
+          paths=$(jq -r '.files[].path' <<< "$pr")
+          if [ -n "$(bash "$RUNNER_TEMP/trusted/pr-caution.sh" --list <<< "$paths")" ] || grep -qE '\.(sh|py|js|mjs|ts|tsx)$' <<< "$paths"; then
             level=$(( level < 2 ? level + 1 : 2 ))
           fi
           case "$level" in
@@ -901,12 +903,9 @@ jobs:
               echo "最後の CI が通らなかったため、下書きのまま残しています。"
             fi
             echo
-            # 重要なファイルの注意書き。PR 本文の先頭と同じ一覧を載せる
+            # 重要なファイルの注意書き。PR 本文の先頭と同じものを、同じスクリプトで作って載せる
             if [ -s "$DIR/caution.txt" ]; then
-              echo "> [!CAUTION]"
-              echo "> 権限・実行・bot の振る舞いに関わるファイルを変えています（PR 本文の先頭にも同じ一覧があります）。マージの前に、差分を人が確かめてください。"
-              echo ">"
-              sed 's/^/> - `/; s/$/`/' "$DIR/caution.txt"
+              bash "$RUNNER_TEMP/trusted/pr-caution.sh" --render < "$DIR/pr-files.txt"
               echo
             fi
             # 実装した Claude の記録（## 計画・## 確かめたこと・## 直したこと）をそのまま載せる

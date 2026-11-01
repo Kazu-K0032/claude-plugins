@@ -12,12 +12,18 @@ path=$(jq -r '.tool_input.file_path // empty')
 # .. を含むパスは、範囲の外を指せるため許可しない
 case "$path" in *..*) exit 0 ;; esac
 
+# 相対パスは、どこを指すかが動いている場所で変わるため許可しない
+case "$path" in /*|[A-Za-z]:[/\\]*) ;; *) exit 0 ;; esac
+
+# ./ や // を含む形・シンボリックリンクで、下の判定をすり抜けないよう、パスを正規化してから比べる
 root=$(git rev-parse --show-toplevel) || exit 0
+root=$(realpath -m -- "$root") || exit 0
+path=$(realpath -m -- "$path") || exit 0
 rel=${path#"$root"/}
 
 # リポジトリの外は許可しない
 [ "$rel" != "$path" ] || exit 0
-# .git/ は、履歴と git の設定（フックの場所など）のため許可しない
-[[ $rel =~ ^\.git(/|$) ]] && exit 0
+# .git/ は、履歴と git の設定（フックの場所など）のため許可しない。どの階層の .git/ も同じ
+[[ $rel =~ (^|/)\.git(/|$) ]] && exit 0
 
 jq -n '{hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "allow"}}}'

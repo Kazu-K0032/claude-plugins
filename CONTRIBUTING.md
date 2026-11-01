@@ -51,7 +51,7 @@ bot を使えるようにする準備（App・environment・secret）、確か�
 - `.github/workflows/` は、bot に変えさせない。Claude App には workflow の書き込み権限が無いため。変更は、PR の本文に diff で届く。人が確かめて当てる。bot が変えて push しようとすると、push の前に止まる。それでも PR に入ったときは、下書きのまま残る
 - ほかのファイル（`.github/scripts/`、Claude Code の protected paths の `.claude/`・`.vscode/`・`lefthook.yml` など）は、bot が変えてよい。protected paths の編集は、ワークフローのフックが許可する（`.git/` を除く）
 - bot の段は、どれも `develop` から取り分けた設定・フック・手順の写しで動く。bot が書き換えた設定やフックは、同じ実行の中では動かない
-- 権限・実行・bot の振る舞いに関わるファイル（`.github/`・`.claude/`・`CLAUDE.md`・`.mcp.json`・`.vscode/`・`lefthook.yml`、雛形の `files/.claude/settings.json`・`files/.claude/hooks/`）が PR に入ると、PR 本文の先頭に注意書きが出る。マージの前に、人が差分を確かめる
+- 権限・実行・bot の振る舞いに関わるファイル（`.github/`・`.claude/`・`.mcp.json`・`.vscode/`・`lefthook.yml` と、雛形（`files/`）の中の同じファイル、どの階層の `CLAUDE.md`、`.claude-plugin/`、プラグインの `.claude-plugin/`・`hooks/`）が PR に入ると、PR 本文の先頭に注意書きが出る。マージの前に、人が差分を確かめる
 - bot が push できるのは、自分の作業ブランチだけ。`develop` と `main` には、push できない
 - 上の bot に変えさせないファイル（`.github/workflows/`）の変更が主な Issue は、bot に頼まない。本文の冒頭に `> [!IMPORTANT]` の注記を置き、次の行を `> この Issue は bot に頼まず、人が対応する。` で始める（`/aidd:issue-start --issue-only` が書く）。この行のある Issue では、bot は動かずに、理由を Issue にコメントする。人が手元で対応する（`/aidd:issue-start --implement-only` など）
 - PR を作れなかったときは、理由が Issue にコメントされる

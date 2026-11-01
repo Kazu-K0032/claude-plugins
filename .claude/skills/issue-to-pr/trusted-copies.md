@@ -9,10 +9,10 @@
 | 写し | 元のファイル | 使い方 |
 | --- | --- | --- |
 | `<trusted>/issue-to-pr/` | `.claude/skills/issue-to-pr/` | 実装・直し・仕上げの段が、`SKILL.md` と参照ファイル（`unchangeable-paths.md`・`fix-requests.md`・`finish-checks.md`・この文書）を Read で読む |
-| `<trusted>/issue-to-pr/scripts/verify.sh` と同じフォルダの `check.py` | `verify.sh`・`.claude/skills/marketplace-update/scripts/check.py` | 手順 5・9 で流す。`verify.sh` は、同じフォルダに `check.py` があればそれを流す |
+| `<trusted>/issue-to-pr/scripts/verify.sh`・`<trusted>/check.py` | `verify.sh`・`.claude/skills/marketplace-update/scripts/check.py` | 手順 5・9 で `verify.sh` を流す。写しの `verify.sh` は、写しの `check.py` を流す。写しが無ければ NG にし、作業ツリーの版は流さない |
 | `<trusted>/body_length.js` | `plugins/aidd/scripts/body_length.js` | 手順 7・9・10 で、本文の概要を数えるときに流す |
 | `<trusted>/claude-hooks/` | `.claude/hooks/` | 設定の写しから呼ばれる |
-| `<trusted>/claude-settings.json`・`claude-settings-edit.json` | `.claude/settings.json` | どの段も `--setting-sources user` とこの写し（`--settings`）で動く。`-edit` は、ファイルを直す段（実装・直し）にだけ、protected paths の編集を許可するフックを足したもの |
+| `<trusted>/claude-settings.json`・`claude-settings-edit.json` | `.claude/settings.json` | どの段も `--setting-sources user` とこの写し（`--settings`）で動く。`-edit` は、ファイルを直す段（実装・直し）にだけ渡す。commit・push の deny を外し、protected paths の編集を許可するフックを足したもの |
 
 ## 写しで動く場合の決まり
 
