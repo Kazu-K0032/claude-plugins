@@ -28,7 +28,7 @@
 
 - 基準ブランチ（決め方を括弧で添える）・変更ファイル総数
 - 「## 変更された md」「## 変更された非 md（docs 追従判断の入力）」のファイル一覧
-- 変更 md に対する「相対リンク切れ」「markdown 規約」の PASS/FAIL
+- 変更 md に対する「相対リンク切れ」「markdown 規約」の PASS/FAIL。「markdown 規約」の 1 行目には、読んだ markdownlint の設定と、それで検査しない規則を出す（「markdown 規約チェック」）
 - 全走査（差分非依存）の「全 docs リンク切れ」「SSOT 一覧ポインタ存在」「囲まれた @import」の PASS/FAIL。`SSOT 一覧ポインタ` は規約を使っていないリポジトリで、`囲まれた @import` は `CLAUDE.md`・`AGENTS.md` が無いリポジトリで、`SKIP` を返す（「リポジトリごとに検査するかを切り替える項目」）
 - リンク検査から外したファイルの件数（外したときだけ。指定のしかたは「リンク検査から外すファイル」）
 - 「## サマリ」配下に各カテゴリの FAIL 件数（レポートの材料。レポートの構成とは別で、レポートにサマリの節は作らない）
@@ -56,12 +56,12 @@
 
 | ルール領域 | 参照先 |
 | --- | --- |
-| markdown 規約 | プラグインの `references/markdown.md` |
-| 重複排除（SSOT）・文体・構造 | プラグインの `references/document.md` |
+| markdown 規約 | **リポジトリ側を探索**（`.markdownlint*` の設定・Markdown の規約）。無い項目はプラグインの `references/markdown.md` |
+| 重複排除（SSOT）・文体・構造 | **リポジトリ側を探索**（`references/repo-rules.md` の探し方）。無い項目はプラグインの `references/document.md` |
 | ドキュメント更新の判断軸・情報と唯一の情報源の対応表 | **リポジトリ側を探索**（`CLAUDE.md`・`docs/README.md`・`AGENTS.md` 等） |
 | ドキュメント階層の責務・参照方向 | **リポジトリ側を探索**（`.claude/rules/*.md`・`docs/strategies/*.md`・`CONTRIBUTING.md` 等） |
 
-前 2 つはプラグインが同梱する共通規約。後 2 つはリポジトリごとに置き場所が違うため、パスを固定せず探索する。**見つからない観点は規約違反として指摘しない。**
+前 2 つは、リポジトリに規約が無いときに、プラグインが同梱する共通規約で補う。リポジトリに同じ話題の規約があればそちらに従い、同梱の規約は混ぜない（P6）。後 2 つはリポジトリごとに置き場所が違うため、パスを固定せず探索する。**見つからない観点は規約違反として指摘しない。**
 
 外部ルールの内容を本ファイルに複製しない。本ファイルでは「どのルールを根拠にするか」のみを宣言する。
 
@@ -123,6 +123,7 @@ SSOT 一覧ポインタ存在は、`CLAUDE.md`・`docs/README.md`・`README.md`�
 [Markdownlint](https://github.com/DavidAnson/markdownlint) を元に、誤りが多発する次を優先検査する。
 
 - MD025（H1 複数）/ MD040（コードフェンス言語）/ MD012（連続空行）/ MD047（末尾改行）
+- リポジトリに markdownlint の設定（`.markdownlint-cli2.{jsonc,yaml,cjs,mjs}`・`.markdownlint.{jsonc,json,yaml,yml,cjs,mjs}`・`.markdownlintrc`）があれば、最初に見つかった 1 つを読み、`false` にした規則（`default: false` で切った規則も）は検査しない。利用先で意図して切った規則を、毎回指摘しないため。JavaScript の設定（`.cjs`・`.mjs`）は読めないため、同梱の規約のまま検査し、出力に注記する
 
 ## 追従判定範囲（LLM・変更された非 md を入力に）
 
