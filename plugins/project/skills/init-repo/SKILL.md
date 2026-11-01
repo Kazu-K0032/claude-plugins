@@ -10,7 +10,7 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 
 同梱テンプレート（`${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/`）を実行中のリポジトリのルートへコピーし、エディタ設定・Lint と整形のツール・スペルチェックの除外語をプロジェクトに合わせる。**既存ファイルは承認なしに上書きしない**。
 
-- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.gitattributes`・`.vscode/`・`cspell.json`・`lefthook.yml` など）。Claude が入れると選ばれたときは、ツールの導入（`package.json`・`node_modules`、または OS のパッケージ管理）
+- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.gitattributes`・`.vscode/`・`cspell.json`・`lefthook.yml` など）。承認を得て前の版の残り物を外す書き込み（`.claude/settings.json`・`docs/README.md`・`CLAUDE.md`。ファイルの削除は人）。Claude が入れると選ばれたときは、ツールの導入（`package.json`・`node_modules`、または OS のパッケージ管理）
 - 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、ツールを自分で入れるかの選択、コミット、導入後の作業（手順 6）。フックは `jq` を使い、無いとガードは止める側に倒れる（`README.md` の「前提と制約」）。編集後の Lint・整形は lefthook で動かし（最低の版は `README.md` の「前提と制約」）、無いとフックは何もしない
 
 ## 参照ファイル
