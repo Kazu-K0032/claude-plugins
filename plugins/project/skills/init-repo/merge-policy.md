@@ -1,11 +1,23 @@
 # 衝突したファイルのマージ方針
 
-`init-repo` の手順 4 で、`DIFF` のファイルがあるとき、上書き / 手でマージ / 据え置きを選んでもらう前に読む。既存の `CLAUDE.md` があるときも使う。
+`init-repo` の手順 4 で、`DIFF` のファイルがあるとき、上書き / 手でマージ / 据え置きを選んでもらう前に読む。既存の `CLAUDE.md` があるときも使う。手順 1 では、「前の版で配り、今は配らないもの」の一覧と突き合わせる。
 
 ## CLAUDE.md
 
 - テンプレートの見出し構成に、既存の記述を差し込む形でマージするのが基本。既存の内容を捨てない
-- 既存の `CLAUDE.md` に `docs-type` の節（「`.claude/` ファイルのメタデータ規約」）があれば、選んだ扱いや `--keep-existing` の指定に関わらず、外すことを提案する。前の版が配った節で、AI 向けの文書は人が読めなくてよいとしており、`.claude/rules/ai-docs.md` と食い違うため
+- 前の版が配った節・行は、下の「前の版で配り、今は配らないもの」に従って扱う
+
+## 前の版で配り、今は配らないもの
+
+`install.sh --check` はテンプレートにあるファイルしか見ないため、前の版で配った残り物は出てこない。手順 1 で、Claude が下の表の見分け方を `Read`・`Glob` で確かめる。見つけたものは、`--keep-existing` や範囲の指定に関わらず、手順 2 の計画に外す案と一緒に示す。前の版の残り物だと伝えないと、利用者が今も要るものと思って残すため。
+
+設定（`settings.json` の項目、`CLAUDE.md`・`docs/README.md` の節・行）は、承認を得て Claude が外す。ファイルは削除のコマンド（`rm` など）を示し、人が消す（P1）。
+
+| 残り物（配った版） | 見分け方 | 外す案 |
+| --- | --- | --- |
+| `.claude/hooks/session-start.sh` と、その配線（v2.1.0 まで。#132） | `.claude/hooks/session-start.sh` がある。`.claude/settings.json` の `hooks.SessionStart` に、`bash .claude/hooks/session-start.sh` を呼ぶ項目がある | 配線は、その項目だけを外す。ほかの `SessionStart` の項目は残し、空になったら `SessionStart` ごと外す。ファイルは `rm .claude/hooks/session-start.sh` を示す。`settings.json` を上書きした利用先では、ファイルだけが残る |
+| `docs/log/` の案内板と雛形（v2.2.0 まで。#197） | `docs/log/README.md`・`docs/log/YYYY-MM-DD-作業の対象.template.md` がある。`docs/README.md` の表に `log/` の行、`CLAUDE.md` のディレクトリの図に `log/` の行がある | 案内板と雛形だけなら、フォルダごと外す案にする（`rm -r docs/log` を示し、`docs/README.md`・`CLAUDE.md` の `log/` の行を外す）。作業ログがあれば、配らなくなったことだけを伝え、雛形だけを外す案にする（`rm` を示す）。案内板と `log/` の行は、ログを読むのに使うため残す |
+| `CLAUDE.md` の `docs-type` の節（v2.0.0 まで） | `CLAUDE.md` に「`.claude/` ファイルのメタデータ規約」の節があり、frontmatter に `docs-type` を求めている | 節を外す。AI 向けの文書は人が読めなくてよいとしており、`.claude/rules/ai-docs.md` と食い違うため |
 
 ## ファイル別の方針
 
