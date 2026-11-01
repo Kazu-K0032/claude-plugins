@@ -96,6 +96,7 @@ Claude の段は、どれも `--setting-sources user` と、`develop` から取�
 | 実行が environment の保護ルールで失敗する | environment の **Deployment branches** に `main` が無い。準備の 4 |
 | Issue に「PR を作れませんでした」とコメントされる | コメントの「理由」と実行のログを見る。認証のエラーなら、トークンの期限切れ（下の「トークンを更新する」）か、App が入っていない（準備の 2） |
 | PR が下書きのまま残る | 最後の CI が通らなかった。作業記録のコメントにある CI のログを見て、人が直すか、Issue を詳しく書いて頼み直す |
+| 作業記録の CI が「Actions の承認待ちで動かなかった」になる | bot の push の CI が、Actions の承認待ち（`action_required`）でジョブを作らなかった。push が App ではなく GITHUB_TOKEN（`github-actions[bot]`）の名義になると起きる。記録にある実行のページで承認すると CI が動く。通ったら、仕上げの「AI を使った確認」は人が確かめて入れる |
 | bot の push で CI が動かない | App のトークンで push できていない。App が入っているかを確かめる（準備の 2） |
 
 ## トークンを更新する

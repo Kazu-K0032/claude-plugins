@@ -39,6 +39,7 @@ Issue・PR・コメント・ブランチの作成は許可している。意図�
 | MCP のツール | 読み取り | 秘密の読み出し（ブラウザの保存領域・ログイン状態を保存したファイルなど） |
 
 - `git remote` は、読み取りも止めている。変更のサブコマンドを並べると、抜けが出やすいため。リモートの URL は `gh repo view` で確かめる
+- `gh release`・`gh ssh-key`・`gh gpg-key` も、同じ理由で読み取り（`view`・`list`）まで止めている。別名（`gh release new`）や、オプションを前に置く形（`gh release -R <リポジトリ> create`）で抜けが出やすいため。読み取りは `gh api` で行う（例：`gh api repos/{owner}/{repo}/releases/latest`・`gh api user/keys`）
 - 外部ツールの禁止は、deny に入れていない。使うツールが決まったら、deny に足す。Terraform と clasp は、`/project:terraform`・`/project:gas` が配るフックで止める
 - `attribution` の `commit`・`pr` を空文字にし、コミットと PR の本文に Claude の署名行を付けない。コミットの禁止を外しても、Claude の名前が履歴に残らないようにするため
 
