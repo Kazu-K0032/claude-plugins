@@ -199,6 +199,20 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
   // 次アクションの Claude の項目は、入力欄の候補にそのまま入るため、かぎ括弧で囲ませない
   expect(drawn.context?.some(block => block.includes('かぎ括弧（「」・『』）や引用符で囲まずに書く'))).toBe(true)
   expect(drawn.context?.some(block => block.includes('なぜなら') && block.includes('つまり'))).toBe(true)
+  // 言葉づかい・文の形・書かない内容・読み手は、yomiyasu の知見をこのリポジトリの言葉で書いたもの
+  expect(
+    drawn.context?.some(
+      block =>
+        block.includes('# 応答の言葉づかい') &&
+        block.includes('比喩の動詞') &&
+        block.includes('1 文の読点は 2 個まで') &&
+        block.includes('作業の結果にない原因・数値を足さない') &&
+        block.includes('定型の結び'),
+    ),
+  ).toBe(true)
+  expect(
+    drawn.context?.some(block => block.includes('読み手は専門知識のない人') && block.includes('読み手は開発者')),
+  ).toBe(true)
   expect(
     drawn.context?.some(
       block => block.includes('### 変えた設定') && block.includes('反映に要る操作') && block.includes('止め方と戻し方'),
@@ -234,6 +248,7 @@ test('応答カスタムのボタンで OFF にすると、記法を使わせな
 
   const submitted = await $.prompt.submit(PROMPT)
   expect(submitted.context?.some(block => block.includes('# 応答の色分け'))).toBe(false)
+  expect(submitted.context?.some(block => block.includes('# 応答の言葉づかい'))).toBe(false)
   expect(submitted.context?.some(block => block.includes('# 応答の形式') && block.includes('今回は通常の形式'))).toBe(true)
   expect(submitted.context?.some(block => block.includes('「### 変えた設定」') && block.includes('使わない'))).toBe(true)
   expect(saved).toEqual([['isCustomized', false]])
