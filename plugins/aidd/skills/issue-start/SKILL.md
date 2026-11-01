@@ -25,7 +25,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/requirements-tree.md` | 手順 7・8 で、計画モードに入れなかったときと、要件を詰めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-only.md` | `--issue-only` のとき、手順の通し方を決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/issue-update.md` | 手順 9・14 で、Issue の本文を書き換えるとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/implementation.md` | 手順 10〜12・15・16 で、実装・検査・ステージに置くとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/implementation.md` | 手順 10〜13・15・16 で、実装・検査・ADR を聞く・ステージに置くとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-start/docs-check.md`・`${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/` | 手順 12 で、文書の追従を点検するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md`・`${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | Issue の本文・コメントを書いて数えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/adr/SKILL.md` | 手順 2 で ADR の一覧を探すとき（「出力先」）、手順 13 で ADR にするかを聞く前と作るとき |
@@ -66,7 +66,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 
 ### 4. 作業ツリーを確かめる
 
-`tmp-ignore.md` で除外を確かめる。`git status --porcelain` に `tmp/`・`tmp.md` 以外の出力があれば、ブランチを作る前に止め、`branch-setup.md` に従って扱いを聞く。
+`branch-setup.md` の「作業ツリーを確かめる」に従う。
 
 ### 5. ブランチを用意する
 
@@ -102,7 +102,7 @@ Issue の記述を今のコードと突き合わせ、作業用のブランチ�
 
 ### 13. ADR にするかを聞く
 
-手順 8 で決めたことに ADR にできるものがあれば、`adr` の `SKILL.md` の手順 1 のとおり、`AskUserQuestion` で「作らない・極小・簡易・詳細」から選んでもらう。選ばれたものは、`adr` スキルを Skill ツールで呼んで作る（`disable-model-invocation: false` のため呼べる）。無ければ聞かずに手順 14 へ進む。
+`implementation.md` の「ADR にするかを聞く」に従う。
 
 ### 14. Issue のタスクを更新する
 
