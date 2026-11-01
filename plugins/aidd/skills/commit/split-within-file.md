@@ -21,8 +21,14 @@
 ## 順の確かめ
 
 1. 分けるファイルごとに、`git show HEAD:<ファイル>` で HEAD の中身を取り、`tmp/<ブランチ名>/commit/<ts>_base/<ファイルのパス>` に写す。`<ts>` はパッチと同じにする
-1. リポジトリのルートで、`git apply --check --directory=tmp/<ブランチ名>/commit/<ts>_base tmp/<ブランチ名>/commit/<ts>_1.patch tmp/<ブランチ名>/commit/<ts>_2.patch …` を 1 回だけ実行する。パッチは、コミットの順に並べる。最後のコミットの分は `git add` で入れるため、パッチは無い
+1. リポジトリのルートで、パッチを `cat` で 1 つにつなぎ、`git apply --check` に渡す。これを 1 回だけ実行する。パッチは、コミットの順に並べる。最後のコミットの分は `git add` で入れるため、パッチは無い
 1. 通らなければ、パッチを書き直して、もう一度実行する
+
+```bash
+cat tmp/<ブランチ名>/commit/<ts>_1.patch tmp/<ブランチ名>/commit/<ts>_2.patch | git apply --check --directory=tmp/<ブランチ名>/commit/<ts>_base
+```
+
+パッチを `git apply` の引数に並べない。引数に並べると、パッチを 1 つずつ写しに当てて確かめ、前のパッチを当てた結果に重ねないため（同じパッチを 2 回並べても通る）。1 つの入力の中なら、同じファイルへの差分を順に重ねて確かめる。PowerShell の `cat`（`Get-Content`）は行を組み直して渡すため、Bash で実行する。
 
 `git show`・`git apply` は許可プロンプトが出るため、利用者に承認してもらう。`--apply` は付けない。写しにはステージを使わないため、`--cached` も付けない。
 
