@@ -89,7 +89,7 @@ Claude の段は、どれも `--setting-sources user` と、`develop` から取�
 | **Actions** に実行が出ない | ワークフローが `main` に無い。コメントに `@claude` が無い（`@claude-bot` のように語が続くものは別の名前として扱われる）。PR へのコメントで頼んだ（Issue のコメントでだけ動く）。コメントした人が、所有者・メンバー・共同作業者ではない（読み取りだけの人のコメントでは、ジョブを始めない） |
 | bot の push が「変えてはいけないファイル」で止まる | `.github/workflows/` を変えようとした。Claude App には workflow の書き込み権限が無い。意図した変更なら、bot ではなく人が当てる。PR の本文に diff があれば、それを使う |
 | PR に「変えてはいけないファイルの変更が入っている」と書かれ、下書きのまま残る | 上と同じファイルが PR に入っている。差分を確かめ、不要ならコミットを外す。必要なら、人が確かめてから、PR を手でレビュー待ちにする |
-| ログに `which is a sensitive file` と出て、編集が拒否される | Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）のうち、ワークフローのフック（`.github/scripts/allow-template-edits.sh`）が許可しないもの（`.git/`・リポジトリの外・相対パス）を直そうとした。範囲の外の変更は、PR の本文の diff を人が当てる |
+| ログに `which is a sensitive file` と出て、編集が拒否される | Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）のうち、ワークフローのフック（`.github/scripts/allow-protected-edits.sh`）が許可しないもの（`.git/`・リポジトリの外・相対パス）を直そうとした。範囲の外の変更は、PR の本文の diff を人が当てる |
 | PR 本文の先頭に「bot が、権限・実行・bot の振る舞いに関わるファイルを変えた」と出る | bot が `.github/`・`.claude/`・`CLAUDE.md` などを変えた。失敗ではない。マージの前に、並んだファイルの差分を人が確かめる |
 | Issue に「人が対応する Issue のため、bot は実装しません」とコメントされる | Issue の本文に、行頭が `> この Issue は bot に頼まず、人が対応する。` の行がある。bot に変えさせないファイル（`.github/workflows/`）が主な Issue のため、人が手元で対応する（`/aidd:issue-start --implement-only` など）。bot に頼みたいなら、本文から注記を外してから頼み直す |
 | Issue に「トークンが空か空白だけです」とコメントされる | secret が登録されていないか、名前が違う。準備の 6 |

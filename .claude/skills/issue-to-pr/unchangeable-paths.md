@@ -14,11 +14,11 @@
 
 `.github/scripts/`・`.claude/`（`settings.json`・`hooks/`・`skills/`・`rules/` など）・`CLAUDE.md`・`.mcp.json`・`.vscode/`・`lefthook.yml`、雛形の `files/.claude/settings.json`・`files/.claude/hooks/` は変えてよい。
 
-- Claude Code の protected paths の編集は、ワークフローが `PermissionRequest` フック（`.github/scripts/allow-template-edits.sh`）で許可する。`.git/` とリポジトリの外は許可しない
+- Claude Code の protected paths の編集は、ワークフローが `PermissionRequest` フック（`.github/scripts/allow-protected-edits.sh`）で許可する。`.git/` とリポジトリの外は許可しない
 - 変えても、同じ実行の中では効かない。どの段も、`develop` から取り分けた設定・フック・手順の写しで動くため。変えたフックや設定を、push の前に動かして確かめることはできない
 - これらが PR に入ると、ワークフローが最後に PR 本文の先頭へ注意書き（`> [!CAUTION]`）を置く。bot は注意書きを書かない。マージの前に、人が差分を確かめる
 
 ## 保守
 
-- bot が編集できる protected paths の範囲は、`.github/scripts/allow-template-edits.sh` が正典。変えるときは、この節と `docs/claude-bot.md` も直す
-- 注意書きに並ぶファイルは、`.github/scripts/pr-caution.sh` の `important` が正典。変えるときは、この節と `CONTRIBUTING.md`・`docs/claude-bot.md` も直す
+- bot が編集できる protected paths の範囲は、`.github/scripts/allow-protected-edits.sh` が正典。変えるときは、この節と `CONTRIBUTING.md`・`docs/claude-bot.md`・`docs/policies/permissions.md` も直す
+- 注意書きに並ぶファイルは、`.github/scripts/pr-caution.sh` の `important` が正典。変えるときは、この節と `CONTRIBUTING.md`・`docs/claude-bot.md`・`docs/policies/permissions.md` も直す

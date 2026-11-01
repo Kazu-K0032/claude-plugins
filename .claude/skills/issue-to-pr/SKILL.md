@@ -16,12 +16,12 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 
 | ファイル | いつ読むか |
 | --- | --- |
-| `.claude/skills/issue-to-pr/trusted-copies.md` | 写しの置き場所と、写しで動く決まりを確かめるとき |
+| `<trusted>/issue-to-pr/trusted-copies.md` | 写しの置き場所と、写しで動く決まりを確かめるとき |
 | `<trusted>/issue-to-pr/scripts/verify.sh` | 手順 5・9 で検査するとき。引数を付けずに `bash` で流す |
 | `.claude/skills/marketplace-update/SKILL.md` | 手順 5 で、手順 3〜6 を流すとき |
-| `.claude/skills/issue-to-pr/unchangeable-paths.md` | 手順 4 で、bot が変えないファイル・変えられないファイルに触れるとき |
-| `.claude/skills/issue-to-pr/fix-requests.md` | 手順 9 で、渡された指摘を直すとき |
-| `.claude/skills/issue-to-pr/finish-checks.md` | 手順 10 で、「AI を使った確認」を仕上げるとき |
+| `<trusted>/issue-to-pr/unchangeable-paths.md` | 手順 4 で、bot が変えないファイルや、注意書きに並ぶファイルに触れるとき |
+| `<trusted>/issue-to-pr/fix-requests.md` | 手順 9 で、渡された指摘を直すとき |
+| `<trusted>/issue-to-pr/finish-checks.md` | 手順 10 で、「AI を使った確認」を仕上げるとき |
 
 ## 想定している引数
 
@@ -96,7 +96,7 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 
 ## 保守
 
-- このスキルは `.github/workflows/claude-issue-to-pr.yml` から呼ぶ（手順 1〜8 は `--append-system-prompt`、手順 9・10 は `prompt`）。使えるコマンドは、ワークフローの `--allowedTools`（手順 9 は `FIX_TOOLS_BASE` に、作業ブランチへの push を足したもの）で決まる。手順で新しいコマンドを使うときは、そちらにも足す
+- このスキルは `.github/workflows/claude-issue-to-pr.yml` から呼ぶ（手順 1〜8 は `--append-system-prompt`、手順 9・10 は `prompt`）。使えるコマンドは、ワークフローの `--allowedTools` で決まる。手順 9 は、`FIX_TOOLS_BASE` に「直しの許可を決める」step が写しのコマンドと push を足したもの。手順で新しいコマンドを使うときは、そちらにも足す
 - 変えてはいけないパスの一覧は、`.github/scripts/guard-paths.sh` の `protected` が正典。変えるときは、手順 4・`unchangeable-paths.md`・禁止事項・`CONTRIBUTING.md` も直す
 - 流れは Anthropic の「Building effective agents」の型にならう。実装 → CI の直し（最大 3 回）→ `/security-review`・code-review・docs-sync → 直し（1 回）→ CI の直し（最大 3 回）→ 仕上げの順で、回数はワークフローが数える（図は `docs/claude-bot.md`）。検査を `verify.sh` の 1 本にまとめ、引数を取らないのは、bot が取り違えないようにするため（同じ記事の poka-yoke）
 - 公式の code-review は、下書きの PR と、Claude がコメント済みの PR を飛ばす。そのため、ワークフローはレビューの前にレビュー待ちにし、記録のコメントはレビューの後に書く

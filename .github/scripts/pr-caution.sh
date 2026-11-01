@@ -10,7 +10,8 @@
 
 set -uo pipefail
 
-# 重要なファイル。変えるときは、CONTRIBUTING.md の bot の節と docs/claude-bot.md も直す
+# 重要なファイル。変えるときは、CONTRIBUTING.md の bot の節・docs/claude-bot.md・docs/policies/permissions.md・
+# .claude/skills/issue-to-pr/unchangeable-paths.md も直す
 important='^\.github/|^\.claude/|(^|/)CLAUDE\.md$|^\.mcp\.json$|^\.vscode/|^\.?lefthook\.ya?ml$|/files/\.claude/(settings\.json$|hooks/)'
 start='<!-- bot-caution:start -->'
 end='<!-- bot-caution:end -->'

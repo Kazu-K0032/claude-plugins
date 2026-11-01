@@ -17,7 +17,7 @@ name: Claude による Issue の実装
 #   - .github/workflows/ の変更は、push の前（pre-push フック）と PR の差分で止める（guard-paths.sh。止まった PR は下書きのまま残す）。
 #     Claude App には workflow の書き込み権限が無く、push は GitHub が拒むため、先に止めて diff を PR の本文に書かせる
 #   - Claude Code の protected paths（.claude/・.vscode/・lefthook.yml など）の編集は、リポジトリの中なら PermissionRequest フックで許可する
-#     （allow-template-edits.sh。.git/ は除く）
+#     （allow-protected-edits.sh。.git/ は除く。雛形の中だけを許可する allow-template-edits.sh は、main の古いワークフローのために残す）
 #   - Claude の段は、どれも --setting-sources user と、develop から作った設定の写し（--settings）で動く。作業ツリーの settings.json・
 #     settings.local.json・フック・スキル・エージェント・CLAUDE.md は読まない。手順・検査のスクリプト・フックも、bot が動く前に取り分けた写しを使う。
 #     bot が書き換えた設定やフックを、同じ実行の中のトークンを持つ段で動かさないため
@@ -121,7 +121,7 @@ jobs:
       - name: ワークフローのスクリプトを取り分ける
         run: |
           mkdir -p "$RUNNER_TEMP/trusted/hooks" "$RUNNER_TEMP/trusted/claude-hooks"
-          cp .github/scripts/wait-pr-checks.sh .github/scripts/guard-paths.sh .github/scripts/allow-template-edits.sh \
+          cp .github/scripts/wait-pr-checks.sh .github/scripts/guard-paths.sh .github/scripts/allow-protected-edits.sh \
             .github/scripts/pr-caution.sh "$RUNNER_TEMP/trusted/"
           cp .claude/skills/marketplace-update/scripts/check.py plugins/aidd/skills/docs-sync/scripts/run-checks.sh \
             plugins/aidd/scripts/body_length.js "$RUNNER_TEMP/trusted/"
@@ -146,7 +146,7 @@ jobs:
             | .disableSkillShellExecution = true
             | .enableAllProjectMcpServers = false
           ' .claude/settings.json > "$RUNNER_TEMP/trusted/claude-settings.json"
-          jq --arg cmd "bash $RUNNER_TEMP/trusted/allow-template-edits.sh" '
+          jq --arg cmd "bash $RUNNER_TEMP/trusted/allow-protected-edits.sh" '
             .hooks.PermissionRequest += [{matcher: "Edit|Write|MultiEdit", hooks: [{type: "command", command: $cmd}]}]
           ' "$RUNNER_TEMP/trusted/claude-settings.json" > "$RUNNER_TEMP/trusted/claude-settings-edit.json"
           # 書き換え損ねて、作業ツリーのフックを指したままの写しで動かさない
