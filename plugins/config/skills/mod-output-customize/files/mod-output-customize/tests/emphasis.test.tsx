@@ -198,6 +198,16 @@ test('端末に描く実行ではプロンプトに記法の説明を文脈と�
   expect(drawn.context?.some(block => block.includes('### 簡潔版') && block.includes('## 次アクション'))).toBe(true)
   // 次アクションの Claude の項目は、入力欄の候補にそのまま入るため、かぎ括弧で囲ませない
   expect(drawn.context?.some(block => block.includes('かぎ括弧（「」・『』）や引用符で囲まずに書く'))).toBe(true)
+  // 人に打ってもらうコマンドは、! を付けて入力欄で打たせ、Claude Code の外で打つものには打つ場所を添えさせる（#209）
+  expect(
+    drawn.context?.some(
+      block =>
+        block.includes('人に打ってもらうコマンド') &&
+        block.includes('行頭に `! ` を付け') &&
+        block.includes('どちらでも動く形を優先') &&
+        block.includes('打つ場所（PowerShell・コマンドプロンプト・Git Bash など）を添えて'),
+    ),
+  ).toBe(true)
   expect(drawn.context?.some(block => block.includes('なぜなら') && block.includes('つまり'))).toBe(true)
   // 言葉づかい・文の形・書かない内容・読み手は、yomiyasu の知見をこのリポジトリの言葉で書いたもの
   expect(
