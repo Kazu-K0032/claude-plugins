@@ -21,7 +21,7 @@ allowed-tools: Read, Glob, Grep, Bash(git branch --show-current), Bash(git check
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/scripts/run-checks.sh` | 手順 2 で実行する（差分の列挙・機械チェック） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/errors.md` | 手順 2 でスクリプトが `STOP`・`ERROR` を返したとき、終了コードの意味を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/docdd-design.md` | 手順 2 の出力を読むとき、手順 3 で追従を判定するとき、手順 4 で重さを分けるとき（役割分担・チェック対象・判定範囲・重大度） |
-| `${CLAUDE_PLUGIN_ROOT}/references/document.md` | 手順 3 で追従を判定するとき（重複排除（SSOT）・文体・構造のルール） |
+| `${CLAUDE_PLUGIN_ROOT}/references/document.md`・`${CLAUDE_PLUGIN_ROOT}/references/repo-rules.md` | 手順 3 で追従を判定するとき（重複排除（SSOT）・文体・構造のルール。リポジトリに同じ話題の規約があれば、そちらを使う） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/docs-sync/output-template.md` | 手順 4 でレポートを書くとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/report-format.md` | 手順 4 でレポートを書くとき（見出しの構成・推奨アクションの決まり） |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 手順 4 でレポートを書くとき（markdown の書式） |

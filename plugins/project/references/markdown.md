@@ -1,6 +1,6 @@
 # Markdown コーディング規約
 
-markdownlint（vscode-markdownlint）のルールに準拠する。各規則の理由は、[markdownlint の Rules.md](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md) の Rationale による（MD052・MD053 と区切り行の規則を除く）。
+markdownlint（vscode-markdownlint）のルールに準拠する。この規約は、リポジトリに Markdown の決まりが無いときの既定。リポジトリに markdownlint の設定（`.markdownlint*`）があるか、`CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`・`docs/` に Markdown の規約があれば、そちらに従い、この規約は決まりの無い項目にだけ当てる。2 つを混ぜないため。各規則の理由は、[markdownlint の Rules.md](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md) の Rationale による（MD052・MD053 と区切り行の規則を除く）。
 
 ## 見出し（Heading）
 
