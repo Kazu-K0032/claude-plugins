@@ -98,6 +98,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 - `.gitignore`・`.vscode/`・`cspell.json`・`.claude/settings.json`・`lefthook.yml` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない
 - `pr-checks.yml` のスペルチェックは、`npx` で版を固定した cspell を取得して動かす。版は `files/.github/workflows/pr-checks.yml` と、Skill の候補の洗い出しのコマンド（[tooling.md](tooling.md) の「スペルチェックの除外語」）の 2 か所に書いてある。版を上げるときは両方をそろえる
+- `label-pr-by-title.yml` は `pull_request_target` で動き、既定のブランチにある版を使う。そのため、既定のブランチに入るまでは動かない。公開リポジトリでは、GitHub が 2026-12-02 から `pull_request_target` を既定で止めるため、Actions のイベントポリシーで許可が要る（[after-install.md](after-install.md) の残作業）
 - `commitlint.config.mjs` は設定だけ。ESM の形式（`.mjs`）のため、`package.json` の `type` に関係なく読み込める。実行には `@commitlint/cli` と `@commitlint/config-conventional` の導入と、`lefthook install` による Git のフックの配線（`lefthook.yml` の `commit-msg` が呼ぶ）が要る。Node のプロジェクトが前提だが、コミット規約の検証は土台の考え方のため配る（[P6](../../../../docs/policies/p06-common-template.md) の例外）
 
 ## 除外したもの
