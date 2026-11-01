@@ -4,5 +4,5 @@
 changelog:
   exclude:
     labels:
-      # リリースの PR（v<version> をリリース）は、中身の PR と重なるため一覧から外す
+      # リリースの PR（[Release] v<version> をリリース）は、中身の PR と重なるため一覧から外す
       - release

@@ -114,7 +114,7 @@ TODO: 実際の構成に書き換える。各行のコメントは「そのデ�
 ├── .github/
 │   ├── dependabot.yml                    # 依存パッケージ更新（GitHub Actions 限定・月次）
 │   ├── labels.yml                        # GitHub ラベル定義（sync-labels.yml が同期）
-│   ├── ISSUE_TEMPLATE/                   # Issue フォーム（feature / bug / refactor / release / retro）
+│   ├── ISSUE_TEMPLATE/                   # Issue フォーム（feature / bug / docs / refactor / release / research / other / retro）
 │   └── workflows/                        # CI/CD
 ├── docs/
 │   ├── README.md                         # 全ドキュメントの案内板

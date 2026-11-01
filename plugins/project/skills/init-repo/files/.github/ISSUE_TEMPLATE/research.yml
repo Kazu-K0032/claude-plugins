@@ -1,0 +1,49 @@
+name: "調査"
+description: "実装の前に、調べて決める"
+title: "[Research] "
+labels: ["research"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        最初の「概要」は 300 文字以内で書いてください。調べることと、決めることは、詳しく書いて構いません。経緯や推測は書かないでください。
+
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      placeholder: 何を調べて、何を決めるかを一文で説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: questions
+    attributes:
+      label: 調べること
+      description: 答えを出したい問いを挙げてください
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: decisions
+    attributes:
+      label: 決めること
+      description: 調べた結果で決めることと、その期限があれば記述してください
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 検討チェックリスト
+      options:
+        - label: ADR の起票が必要か検討した（決めたことが戻しにくい場合は起票する）
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足
+      description: 参考リンク・関連 Issue 等があれば記述してください

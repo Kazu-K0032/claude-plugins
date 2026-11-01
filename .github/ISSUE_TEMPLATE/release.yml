@@ -1,6 +1,6 @@
 name: "リリース"
 description: "develop の内容を main にリリースする（手順は docs/release.md）"
-title: "リリース"
+title: "[Release] リリース"
 labels: ["release"]
 body:
   - type: markdown

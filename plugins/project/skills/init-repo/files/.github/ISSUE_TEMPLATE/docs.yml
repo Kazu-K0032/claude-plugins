@@ -1,0 +1,34 @@
+name: "文書"
+description: "README・docs などの文書だけを足す・直す"
+title: "[Docs] "
+labels: ["docs"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        最初の「概要」は 300 文字以内で書いてください。文書の更新は、概要とタスクだけで足ります。経緯や推測は書かないでください。
+
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      placeholder: どの文書を、なぜ足す・直すかを一文で説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: タスク
+      description: 足す・直す文書と、その中身を挙げてください
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足
+      description: 参考リンク・関連 Issue 等があれば記述してください

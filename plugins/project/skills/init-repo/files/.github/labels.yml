@@ -25,6 +25,14 @@
   color: "0e8a16"
   description: "本番環境へのリリース作業"
 
+- name: "research"
+  color: "d876e3"
+  description: "実装の前に、調べて決める"
+
+- name: "other"
+  color: "ededed"
+  description: "ほかの分類に当たらない作業（版を上げる・依存を更新するなど）"
+
 - name: "test"
   color: "c4975a"
   description: "テストの追加・更新"
