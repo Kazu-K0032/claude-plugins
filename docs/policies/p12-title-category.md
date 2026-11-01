@@ -6,7 +6,7 @@
 | 例外 | 振り返りのフォーム（`[Retro]`）は、作業の分類に入れない。作業の Issue ではなく、対象の Issue に貼る記録のため。dependabot など、ツールが自動で作る PR のタイトルは変えない |
 | 価値 | [V2](../values/v02-understand-before-accept.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
-Issue・PR のタイトルは `[分類] 本文` の形にし、本文は何をするか・何が起きるかを動詞で終える 1 文で書く。分類に合うラベルも付ける。スキルが読む写しは `plugins/aidd/skills/issue-pr-sync/title-and-sidebar.md` の「タイトル」。
+リポジトリにタイトルの決まりが無ければ、Issue・PR のタイトルは `[分類] 本文` の形にし、本文は何をするか・何が起きるかを動詞で終える 1 文で書く。分類に合うラベルも付ける。スキルが読む写しは `plugins/aidd/skills/issue-pr-sync/title-and-sidebar.md` の「タイトル」。
 
 | 分類 | 使う場面 | ラベル |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ Issue・PR のタイトルは `[分類] 本文` の形にし、本文は何を�
 ## 変えたいとき
 
 - 分類を足す・変えるときは、この方針の表、`title-and-sidebar.md` の表、`init-repo` の Issue フォームと `labels.yml`、`plugin-feedback` の `issue-format.md` をすべて直す
-- 利用先で別の書式を使うときは、Issue フォームの `title` を書き換える。スキルは、Issue のタイトルにある既存の接頭辞を分類の後ろに残す
+- 利用先で別の書式を使うときは、`CONTRIBUTING.md`・`.claude/rules/` などにタイトルの決まりを書くか、Issue フォームの `title` を書き換える。スキルは、決まりがあればそちらに従い、この方針の書式を当てない
 
 ## Q&A
 
@@ -48,6 +48,10 @@ Issue の分類がそろえば、その分類にする。違えば、主な変�
 ### Q. 既存の Issue・PR に分類が無い
 
 一括では直さない。`/aidd:issue-pr-sync` で更新するときに、分類を頭に足す案を出し、承認を取る。Issue のタイトルを変える変更のため。
+
+### Q. 利用先に、タイトルの書き方の決まりがある
+
+利用先の決まりに従い、この方針の書式（`[分類] 本文`）は当てない。この方針は、決まりが無いリポジトリでの既定のため。決まりは `CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`・`docs/` と、Issue フォームの `title` から探し、どれに従ったかを承認の画面と結果に書く。両方を当てると、`[Bug] fix: 〜` のように 2 つの形が混ざるため。ラベルは、分類の表を使ってよい。
 
 ### Q. リポジトリに分類のラベルが無い
 
