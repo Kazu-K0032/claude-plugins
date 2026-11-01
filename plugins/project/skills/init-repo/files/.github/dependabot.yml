@@ -15,6 +15,11 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    # 公開から 7 日たった版だけを提案させる。乗っ取られた版は公開の直後に取り下げられることが多く、すぐ取り込むと巻き込まれるため。
+    # 7 日は、pr-checks.yml の zizmor（dependabot-cooldown）が求める既定の日数に合わせた
+    # Ref: https://docs.zizmor.sh/audits/#dependabot-cooldown
+    cooldown:
+      default-days: 7
     groups:
       # アクションごとに PR が乱立するとレビューが煩雑になるため、1 回の実行を 1 つの PR にまとめる
       github-actions:

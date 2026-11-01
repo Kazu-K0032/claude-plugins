@@ -20,7 +20,9 @@
     "frontmatter",
     "ghaction",
     "lefthook",
+    "mikefarah",
     "pgoptions",
+    "pipx",
     "pycache",
     "pythondontwritebytecode",
     "segs",
@@ -28,6 +30,7 @@
     "ssot",
     "stoks",
     "toks",
-    "toplevel"
+    "toplevel",
+    "zizmor"
   ]
 }

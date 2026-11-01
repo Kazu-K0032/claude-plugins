@@ -40,6 +40,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | 破壊的な操作を承認へ回す | PreToolUse のフック（`guard-destructive.sh` など。`matcher` は `Bash\|PowerShell\|Monitor`。判定できないときは止める側に倒す） | high |
 | コミット・PR に Claude の署名を付けない | `settings.json` の `attribution` が空 | low |
 | 秘密の混入を CI で止める | シークレットスキャン（gitleaks など）の CI | high |
+| ワークフローの書き方を CI で確かめる | ワークフローの規約（`github-actions.md` など）の【必須】（SHA の固定・`permissions: {}`・`timeout-minutes`）を確かめる CI（zizmor と `check-workflows.sh` など） | high |
 | 操作の線引きと理由を、利用先の Claude に伝える | `.claude/rules/permissions.md` など | low |
 | 作業ファイルをコミットから外す | `.gitignore` の `tmp/`・`tmp.md` | low |
 | `tmp/` の置き方を伝える | `.claude/rules/tmp-output.md` など | low |
@@ -51,7 +52,7 @@ DocDD の土台として、同じ情報は唯一の情報源に 1 か所だけ�
 | 編集後に Lint・整形を動かす | PostToolUse のフックと、その定義（`lefthook.yml` など） | low |
 | コミット規約を検証する（Node のプロジェクトだけ） | `commitlint.config.*` などと、それを呼ぶ `commit-msg` のフック（`lefthook.yml` など） | low |
 
-重大度は 2 段にする。安全に関わる仕組み（操作を止める deny・秘匿ファイルの deny・破壊的な操作のガード・秘密の混入を止める CI）は high、ほかは low。low の欠けは、意図して入れていないなら無視してよい。`init-repo` は、一部だけ入れることもできるため。
+重大度は 2 段にする。安全に関わる仕組み（操作を止める deny・秘匿ファイルの deny・破壊的な操作のガード・秘密の混入を止める CI・ワークフローの書き方を確かめる CI）は high、ほかは low。low の欠けは、意図して入れていないなら無視してよい。`init-repo` は、一部だけ入れることもできるため。
 
 ## init-repo の印
 
