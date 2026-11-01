@@ -14,10 +14,14 @@ name: Claude による Issue の実装
 #   - 頼めるのは、所有者・メンバー・共同作業者のコメントだけ（gate ジョブの if）
 #   - 本文に、行頭が「> この Issue は bot に頼まず、人が対応する。」の行がある Issue では、gate ジョブが理由をコメントして止め、Claude を動かさない
 #   - 直しの step が push できるのは、作業ブランチだけ（「直しの許可を決める」の step。--force や develop への push は許可に当たらない）
-#   - .github/workflows/・.github/scripts/・.claude/settings.json・.claude/hooks/ の変更は、push の前（pre-push フック）と PR の差分で止める
-#     （guard-paths.sh。止まった PR は下書きのまま残す）
-#   - Claude Code の protected paths（.claude/・.vscode/・lefthook.yml など）の編集は、スキルの雛形（plugins/project/skills/<スキル>/files/）の中だけ、
-#     PermissionRequest フックで許可する（allow-template-edits.sh。files/.claude/settings.json・files/.claude/hooks/ は除く）
+#   - .github/workflows/ の変更は、push の前（pre-push フック）と PR の差分で止める（guard-paths.sh。止まった PR は下書きのまま残す）。
+#     Claude App には workflow の書き込み権限が無く、push は GitHub が拒むため、先に止めて diff を PR の本文に書かせる
+#   - Claude Code の protected paths（.claude/・.vscode/・lefthook.yml など）の編集は、リポジトリの中なら PermissionRequest フックで許可する
+#     （allow-protected-edits.sh。.git/ は除く。雛形の中だけを許可する allow-template-edits.sh は、main の古いワークフローのために残す）
+#   - Claude の段は、どれも --setting-sources user と、develop から作った設定の写し（--settings）で動く。作業ツリーの settings.json・
+#     settings.local.json・フック・スキル・エージェント・CLAUDE.md は読まない。手順・検査のスクリプト・フックも、bot が動く前に取り分けた写しを使う。
+#     bot が書き換えた設定やフックを、同じ実行の中のトークンを持つ段で動かさないため
+#   - 重要なファイル（.github/・.claude/・CLAUDE.md など）が PR に入ったら、最後に PR 本文の先頭へ注意書きを置く（pr-caution.sh）
 # PR を作れなかったときは、Claude の最後の返答を理由として Issue にコメントする。マージは人が行う
 # Claude にコミット・push を任せるのは、P1 の例外（docs/policies/p01-operation-boundary.md）
 # PR の作成と push は、実装・直しの step の中で Claude App のトークンで行う。action は step の最後にこのトークンを取り消し、
@@ -93,10 +97,12 @@ jobs:
       statuses: read
     env:
       # 直しの step で bot に許すコマンド。issue-to-pr スキルの手順 9 で使うものだけにする。手順にコマンドを足したら、ここにも足す
-      # git push は、作業ブランチの名前が決まってから足す（「直しの許可を決める」の step）。送り先を絞らないと、--force や develop への push も通るため
-      FIX_TOOLS_BASE: "Skill,Read,Glob,Grep,Bash(gh issue view:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(git status:*),Bash(git add:*),Bash(git commit:*),Bash(git show:*),Bash(git log:*),Bash(bash .claude/skills/issue-to-pr/scripts/verify.sh),Bash(node plugins/aidd/scripts/body_length.js:*),Bash(claude plugin validate:*),Bash(claude plugin test:*)"
+      # 写し（$RUNNER_TEMP）のパスを使うコマンドと git push は、「直しの許可を決める」の step で足す。job の env では runner の文脈を使えず、
+      # git push は送り先を絞らないと、--force や develop への push も通るため
+      # claude plugin test は許さない。mod のテストは mod の本体も動かすため、PR の CI（plugin-checks.yml。トークンは read）に任せる
+      FIX_TOOLS_BASE: "Read,Glob,Grep,Bash(gh issue view:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(git status:*),Bash(git add:*),Bash(git commit:*),Bash(git show:*),Bash(git log:*),Bash(claude plugin validate:*)"
     steps:
-      # issue_comment では既定ブランチ（main）を取るため、develop を渡す。規約と deny を、作業の起点と同じ版で読ませるため
+      # issue_comment では既定ブランチ（main）を取るため、develop を渡す。設定・フック・手順の写しを、作業の起点と同じ版で作るため
       # 過去のコミットを読む Issue があるため、全履歴を取る
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -107,31 +113,49 @@ jobs:
           # push する Claude の step では、この GITHUB_TOKEN を env の GIT_CONFIG_* で消す（「Claude Code で実装する」の説明を参照）
           persist-credentials: true
 
-      # CI を待つスクリプト、変えさせないファイルを止めるスクリプト、雛形の編集を許可するスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
+      # CI を待つスクリプト、変えさせないファイルを止めるスクリプト、protected paths の編集を許可するスクリプトを、bot が書き換えられない場所（作業フォルダの外）に、bot が動く前に写す
       # 止めるスクリプトは、git の pre-push フックとしても据える。bot が push する前に、.github/workflows/ などの変更を止めるため
-      # レビューと仕上げの段で使う検査のスクリプト（check.py・docs-sync の run-checks.sh・body_length.js）も写す。
-      # 実装した bot が書き換えた版を、Issue・PR を書き換えられる段で動かさないため
+      # 検査のスクリプト（check.py・docs-sync の run-checks.sh・body_length.js）、注意書きのスクリプト、Claude Code のフック（.claude/hooks/）、
+      # issue-to-pr の手順（SKILL.md・参照の md・verify.sh）も写す。bot が書き換えた版を、同じ実行の中のトークンを持つ段で動かさないため
+      # 写しの verify.sh は、2 つ上のフォルダ（$RUNNER_TEMP/trusted/）の check.py の写しを流す
       - name: ワークフローのスクリプトを取り分ける
         run: |
-          mkdir -p "$RUNNER_TEMP/trusted/hooks"
-          cp .github/scripts/wait-pr-checks.sh .github/scripts/guard-paths.sh .github/scripts/allow-template-edits.sh "$RUNNER_TEMP/trusted/"
+          mkdir -p "$RUNNER_TEMP/trusted/hooks" "$RUNNER_TEMP/trusted/claude-hooks"
+          cp .github/scripts/wait-pr-checks.sh .github/scripts/guard-paths.sh .github/scripts/allow-protected-edits.sh \
+            .github/scripts/pr-caution.sh "$RUNNER_TEMP/trusted/"
           cp .claude/skills/marketplace-update/scripts/check.py plugins/aidd/skills/docs-sync/scripts/run-checks.sh \
             plugins/aidd/scripts/body_length.js "$RUNNER_TEMP/trusted/"
+          cp .claude/hooks/*.sh "$RUNNER_TEMP/trusted/claude-hooks/"
+          cp -R .claude/skills/issue-to-pr "$RUNNER_TEMP/trusted/issue-to-pr"
           printf '#!/usr/bin/env bash\nexec bash "%s/trusted/guard-paths.sh" --pre-push "$@"\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/trusted/hooks/pre-push"
           chmod +x "$RUNNER_TEMP/trusted/hooks/pre-push"
           git config core.hooksPath "$RUNNER_TEMP/trusted/hooks"
 
-      # Actions の Claude App には、コミットと push を任せる（P1 の例外）。リポジトリの deny は手元の Claude 向けのため、
-      # ランナーの中だけで外す。--skip-worktree で、書き換えた settings.json がコミットに入らないようにする
-      # 雛形の protected paths の編集を許可するフックも、ここで足す。protected paths は permissions.allow では許可できないため
-      - name: コミットと push の deny を外す
+      # Claude の段に渡す設定の写しを、develop の .claude/settings.json から作る。どの段も --setting-sources user で、作業ツリーの設定を読まないため
+      # Actions の Claude App には、コミットと push を任せる（P1 の例外）。リポジトリの deny は手元の Claude 向けのため、ファイルを直す段の写しの中だけで外す
+      # フックは、取り分けた写しを指すように書き換える。スキルの !`コマンド` を止め、作業ツリーの .mcp.json のサーバーも使わせない。
+      # bot が書き換えたものを、同じ実行の中で動かさないため
+      # 写しは 2 つ作る。ファイルを直す段（実装・直し）には、commit・push の deny を外し、protected paths の編集を許可するフックを足した
+      # claude-settings-edit.json を渡す（protected paths は permissions.allow では許可できないため）。
+      # ファイルを直さない段（レビュー・仕上げ）には、deny を残し、このフックの無い claude-settings.json を渡す。PR の内容を読む段に、守りを 2 重に残すため
+      - name: Claude の設定の写しを作る
         run: |
-          jq --arg cmd "bash $RUNNER_TEMP/trusted/allow-template-edits.sh" '
+          jq --arg hooks "$RUNNER_TEMP/trusted/claude-hooks/" '
+            .hooks |= with_entries(.value |= map(.hooks |= map(if .type == "command" then .command |= sub("\\.claude/hooks/"; $hooks) else . end)))
+            | .disableSkillShellExecution = true
+            | .enableAllProjectMcpServers = false
+          ' .claude/settings.json > "$RUNNER_TEMP/trusted/claude-settings.json"
+          jq --arg cmd "bash $RUNNER_TEMP/trusted/allow-protected-edits.sh" '
             .permissions.deny |= map(select(test("^(Bash|PowerShell)\\(git (-[cC] \\* )?(commit|push)") | not))
             | .hooks.PermissionRequest += [{matcher: "Edit|Write|MultiEdit", hooks: [{type: "command", command: $cmd}]}]
-          ' .claude/settings.json > "$RUNNER_TEMP/settings.json"
-          mv "$RUNNER_TEMP/settings.json" .claude/settings.json
-          git update-index --skip-worktree .claude/settings.json
+          ' "$RUNNER_TEMP/trusted/claude-settings.json" > "$RUNNER_TEMP/trusted/claude-settings-edit.json"
+          # 書き換え損ねて、作業ツリーのフックを指したままの写しで動かさない
+          for f in "$RUNNER_TEMP/trusted/claude-settings.json" "$RUNNER_TEMP/trusted/claude-settings-edit.json"; do
+            if jq -r '.. | .command? // empty' "$f" | grep -q '\.claude/hooks/'; then
+              echo "::error::設定の写し（$f）のフックが、作業ツリーの .claude/hooks/ を指したままになっている"
+              exit 1
+            fi
+          done
 
       # トークンが空・空白だけだと、Claude は理由を出さずに落ちるため、ここで分かるメッセージで止める
       - name: トークンを確かめる
@@ -166,11 +190,14 @@ jobs:
           branch_prefix: issues/
           branch_name_template: "{{prefix}}{{entityNumber}}-claude-{{timestamp}}"
           # tag モードの既定では PR を作らずリンクを書くだけなので、gh pr create を許し、下書きの PR の作成まで指示する
+          # --setting-sources user のため、プロジェクトのスキルは読み込まれない。手順は、取り分けた写しの SKILL.md を Read で読ませる
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings-edit.json
             --model opus
             --max-turns 100
-            --allowedTools "Skill,Bash(gh pr create:*),Bash(gh issue view:*),Bash(git show:*),Bash(git log:*),Bash(bash .claude/skills/issue-to-pr/scripts/verify.sh),Bash(node plugins/aidd/scripts/body_length.js:*),Bash(claude plugin validate:*),Bash(claude plugin test:*)"
-            --append-system-prompt "issue-to-pr スキルの手順 1〜8 で、Issue を実装して下書きの PR を作る。"
+            --allowedTools "Read(/${{ runner.temp }}/trusted/issue-to-pr/**),Bash(gh pr create:*),Bash(gh issue view:*),Bash(git show:*),Bash(git log:*),Bash(bash ${{ runner.temp }}/trusted/issue-to-pr/scripts/verify.sh),Bash(node ${{ runner.temp }}/trusted/body_length.js:*),Bash(claude plugin validate:*)"
+            --append-system-prompt "issue-to-pr スキルの写し（${{ runner.temp }}/trusted/issue-to-pr/SKILL.md）を Read で読み、その手順 1〜8 で、Issue を実装して下書きの PR を作る。"
 
       - name: できた PR を探す
         id: pr
@@ -194,7 +221,9 @@ jobs:
           if [ "$files" -gt 10 ] || [ "$lines" -gt 500 ]; then level=2; cr_model=sonnet
           elif [ "$files" -gt 3 ] || [ "$lines" -gt 100 ]; then level=1
           fi
-          if jq -r '.files[].path' <<< "$pr" | grep -qE '^\.github/|(^|/)\.claude/(settings\.json|hooks/)|(^|/)plugin\.json$|\.(sh|py|js|mjs|ts|tsx)$'; then
+          # 影響の大きいファイルは、注意書きと同じ一覧（pr-caution.sh --list）と、コードのファイル
+          paths=$(jq -r '.files[].path' <<< "$pr")
+          if [ -n "$(bash "$RUNNER_TEMP/trusted/pr-caution.sh" --list <<< "$paths")" ] || grep -qE '\.(sh|py|js|mjs|ts|tsx)$' <<< "$paths"; then
             level=$(( level < 2 ? level + 1 : 2 ))
           fi
           case "$level" in
@@ -207,12 +236,15 @@ jobs:
           mkdir -p "$dir"
           { echo "number=$(jq .number <<< "$pr")"; echo "dir=$dir"; echo "effort=$effort"; echo "cr_model=$cr_model"; } >> "$GITHUB_OUTPUT"
 
-      # 直しの step の許可に、作業ブランチだけへの push を足す。完全一致で書くため、--force や別のブランチへの push は許可に当たらない
+      # 直しの step の許可に、写しの検査のスクリプトと、作業ブランチだけへの push を足す
+      # push は完全一致で書くため、--force や別のブランチへの push は許可に当たらない
       - name: 直しの許可を決める
         if: always() && steps.pr.outputs.number != ''
         env:
           BRANCH: ${{ steps.claude.outputs.branch_name }}
-        run: echo "FIX_TOOLS=${FIX_TOOLS_BASE},Bash(git push origin ${BRANCH})" >> "$GITHUB_ENV"
+        run: |
+          trusted="$RUNNER_TEMP/trusted"
+          echo "FIX_TOOLS=${FIX_TOOLS_BASE},Bash(bash $trusted/issue-to-pr/scripts/verify.sh),Bash(node $trusted/body_length.js:*),Bash(git push origin ${BRANCH})" >> "$GITHUB_ENV"
 
       # bot が変えてはいけないファイルが、PR に入っていないかを確かめる。入っていたら、レビュー待ちにしない
       # push 前のフックを通らない経路（API でのコミット）の備えでもある。直しの後にも、記録の step でもう一度確かめる
@@ -260,9 +292,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-0.log`）を直す。
+            issue-to-pr スキルの写し（`${{ runner.temp }}/trusted/issue-to-pr/SKILL.md`）の手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-0.log`）を直す。
             作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings-edit.json
             --model opus
             --max-turns 50
             --permission-mode acceptEdits
@@ -292,9 +326,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-1.log`）を直す。
+            issue-to-pr スキルの写し（`${{ runner.temp }}/trusted/issue-to-pr/SKILL.md`）の手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-1.log`）を直す。
             作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings-edit.json
             --model opus
             --max-turns 50
             --permission-mode acceptEdits
@@ -324,9 +360,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-2.log`）を直す。
+            issue-to-pr スキルの写し（`${{ runner.temp }}/trusted/issue-to-pr/SKILL.md`）の手順 9 で、Issue #${{ github.event.issue.number }} の下書きの PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-1-2.log`）を直す。
             作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings-edit.json
             --model opus
             --max-turns 50
             --permission-mode acceptEdits
@@ -392,6 +430,8 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: /security-review
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings.json
             --model opus
             --effort ${{ steps.pr.outputs.effort }}
             --max-turns 50
@@ -434,6 +474,8 @@ jobs:
           plugins: code-review@claude-plugins-official
           prompt: /code-review:code-review --comment ${{ github.repository }}/pull/${{ steps.pr.outputs.number }}
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings.json
             --model ${{ steps.pr.outputs.cr_model }}
             --effort ${{ steps.pr.outputs.effort }}
             --max-turns 60
@@ -488,6 +530,8 @@ jobs:
             - 手順 2 のスクリプトは、ワークフローが `--base origin/develop` で流した。出力は `${{ steps.pr.outputs.dir }}/docs-sync-checks.log`、終了コードは ${{ steps.dscheck.outputs.code }}。流し直さずに、この出力を使う
             - 手順 4 のレポートは、SKILL.md の出力先の代わりに `${{ steps.pr.outputs.dir }}/docs-sync.md` に書く
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings.json
             --model sonnet
             --max-turns 40
             --allowedTools "Read,Glob,Grep,Edit(tmp/**),Bash(git branch --show-current),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(date:*)"
@@ -564,10 +608,12 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} へのレビューの指摘（`${{ steps.pr.outputs.dir }}/review-feedback.md`）を直す。
+            issue-to-pr スキルの写し（`${{ runner.temp }}/trusted/issue-to-pr/SKILL.md`）の手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} へのレビューの指摘（`${{ steps.pr.outputs.dir }}/review-feedback.md`）を直す。
             直すべき指摘が無ければ、何も変えずに終わる。
             作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings-edit.json
             --model opus
             --max-turns 50
             --permission-mode acceptEdits
@@ -611,9 +657,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-0.log`）を直す。
+            issue-to-pr スキルの写し（`${{ runner.temp }}/trusted/issue-to-pr/SKILL.md`）の手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-0.log`）を直す。
             作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings-edit.json
             --model opus
             --max-turns 50
             --permission-mode acceptEdits
@@ -643,9 +691,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-1.log`）を直す。
+            issue-to-pr スキルの写し（`${{ runner.temp }}/trusted/issue-to-pr/SKILL.md`）の手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-1.log`）を直す。
             作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings-edit.json
             --model opus
             --max-turns 50
             --permission-mode acceptEdits
@@ -675,9 +725,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            issue-to-pr スキルの手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-2.log`）を直す。
+            issue-to-pr スキルの写し（`${{ runner.temp }}/trusted/issue-to-pr/SKILL.md`）の手順 9 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の CI の失敗（`${{ steps.pr.outputs.dir }}/ci-2-2.log`）を直す。
             作業ブランチ ${{ steps.claude.outputs.branch_name }} は checkout 済み。直したら `git push origin ${{ steps.claude.outputs.branch_name }}` で push する。
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings-edit.json
             --model opus
             --max-turns 50
             --permission-mode acceptEdits
@@ -769,16 +821,37 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            issue-to-pr スキルの手順 10 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の「AI を使った確認」を仕上げる。
+            issue-to-pr スキルの写し（`${{ runner.temp }}/trusted/issue-to-pr/SKILL.md`）の手順 10 で、Issue #${{ github.event.issue.number }} の PR #${{ steps.pr.outputs.number }} の「AI を使った確認」を仕上げる。
             - 記録のフォルダ：`${{ steps.pr.outputs.dir }}`
             - 点検するコミット：${{ steps.fcheck.outputs.sha }}（最後の CI が通った先頭）
             - レビューの直しで変わったか：${{ steps.rfixed.outputs.changed == 'true' && 'true' || 'false' }}
             - docs-sync の機械チェックを流し直した終了コード：${{ steps.fcheck.outputs.ds_code || '流し直していない' }}
             - `body_length.js` の写し：`${{ runner.temp }}/trusted/body_length.js`
           claude_args: |
+            --setting-sources user
+            --settings ${{ runner.temp }}/trusted/claude-settings.json
             --model sonnet
             --max-turns 60
             --allowedTools "Read,Glob,Grep,Edit(tmp/**),Bash(git branch --show-current),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(date:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr edit:*),Bash(gh label list:*),Bash(node ${{ runner.temp }}/trusted/body_length.js:*)"
+
+      # bot が権限・実行・bot の振る舞いに関わるファイルを変えたら、PR 本文の先頭に注意書きを置く。bot の段がすべて終わった後に、写しのスクリプトで行う
+      # bot はこれらのファイルを変えてよい。代わりに、マージの前に人が見落とさないようにするため（V3）。前回の注意書きは置き換える
+      - name: 重要なファイルの注意書きを置く
+        if: always() && steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+          DIR: ${{ steps.pr.outputs.dir }}
+        run: |
+          # 改名・移動の元のパス（previous_filename）も渡すため、API で取る
+          gh api --paginate "repos/$GH_REPO/pulls/$PR/files" -q '.[] | .filename, (.previous_filename // empty)' > "$DIR/pr-files.txt"
+          bash "$RUNNER_TEMP/trusted/pr-caution.sh" --list < "$DIR/pr-files.txt" > "$DIR/caution.txt"
+          gh pr view "$PR" --json body -q .body > "$DIR/pr-body-current.md"
+          bash "$RUNNER_TEMP/trusted/pr-caution.sh" --body "$DIR/pr-body-current.md" < "$DIR/pr-files.txt" > "$DIR/pr-body-caution.md"
+          if ! cmp -s "$DIR/pr-body-current.md" "$DIR/pr-body-caution.md"; then
+            gh pr edit "$PR" --body-file "$DIR/pr-body-caution.md"
+          fi
 
       # ===== 7. 記録。コメントには起動語を書かない。GITHUB_TOKEN のコメントではワークフローは動かないが、読み手が真似ないようにするため
       - name: 結果を PR に書く
@@ -830,6 +903,11 @@ jobs:
               echo "最後の CI が通らなかったため、下書きのまま残しています。"
             fi
             echo
+            # 重要なファイルの注意書き。PR 本文の先頭と同じものを、同じスクリプトで作って載せる
+            if [ -s "$DIR/caution.txt" ]; then
+              bash "$RUNNER_TEMP/trusted/pr-caution.sh" --render < "$DIR/pr-files.txt"
+              echo
+            fi
             # 実装した Claude の記録（## 計画・## 確かめたこと・## 直したこと）をそのまま載せる
             if [ -s "$DIR/report.md" ]; then
               cat "$DIR/report.md"

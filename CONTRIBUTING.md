@@ -48,10 +48,12 @@ bot を使えるようにする準備（App・environment・secret）、確か�
 - 最後の CI が通ると、bot が PR 本文の「AI を使った確認」のうち docs-sync・marketplace-update・issue-pr-sync の 3 行を点検し、条件を満たす行にチェックを入れる。承認の要らない Issue・PR の更新も反映する。`/aidd:pr-review` の行は人が実行する。流れの図は [docs/claude-bot.md](docs/claude-bot.md) にある
 - 最後の CI が通らなければ、PR は下書きに戻る。どちらの場合も、計画・CI・レビューの記録が PR にコメントされる
 - マージは、ほかの PR と同じく人が行う
-- `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` は、bot に変えさせない。変更は、PR の本文に diff で届く。人が確かめて当てる。bot が変えて push しようとすると、push の前に止まる。それでも PR に入ったときは、下書きのまま残る
-- bot は、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の外にある Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）を直せない。編集は `which is a sensitive file` で拒否される。雛形の中は、ワークフローのフックが許可する（`files/.claude/settings.json`・`files/.claude/hooks/` を除く）。直せないファイルの変更は、PR の本文に diff で届く
+- `.github/workflows/` は、bot に変えさせない。Claude App には workflow の書き込み権限が無いため。変更は、PR の本文に diff で届く。人が確かめて当てる。bot が変えて push しようとすると、push の前に止まる。それでも PR に入ったときは、下書きのまま残る
+- ほかのファイル（`.github/scripts/`、Claude Code の protected paths の `.claude/`・`.vscode/`・`lefthook.yml` など）は、bot が変えてよい。protected paths の編集は、ワークフローのフックが許可する（`.git/` を除く）
+- bot の段は、どれも `develop` から取り分けた設定・フック・手順の写しで動く。bot が書き換えた設定やフックは、同じ実行の中では動かない
+- 権限・実行・bot の振る舞いに関わるファイル（`.github/`・`.claude/`・`.mcp.json`・`.vscode/`・`lefthook.yml` と、雛形（`files/`）の中の同じファイル、どの階層の `CLAUDE.md`、`.claude-plugin/`、プラグインの `.claude-plugin/`・`hooks/`）が PR に入ると、PR 本文の先頭に注意書きが出る。マージの前に、人が差分を確かめる
 - bot が push できるのは、自分の作業ブランチだけ。`develop` と `main` には、push できない
-- 上の bot に変えさせないファイル・直せないファイルの変更が主な Issue は、bot に頼まない。本文の冒頭に `> [!IMPORTANT]` の注記を置き、次の行を `> この Issue は bot に頼まず、人が対応する。` で始める（`/aidd:issue-start --issue-only` が書く）。この行のある Issue では、bot は動かずに、理由を Issue にコメントする。人が手元で対応する（`/aidd:issue-start --implement-only` など）
+- 上の bot に変えさせないファイル（`.github/workflows/`）の変更が主な Issue は、bot に頼まない。本文の冒頭に `> [!IMPORTANT]` の注記を置き、次の行を `> この Issue は bot に頼まず、人が対応する。` で始める（`/aidd:issue-start --issue-only` が書く）。この行のある Issue では、bot は動かずに、理由を Issue にコメントする。人が手元で対応する（`/aidd:issue-start --implement-only` など）
 - PR を作れなかったときは、理由が Issue にコメントされる
 - 動くのは `main` にあるワークフローのため、ワークフローを変えたら、リリースするまで反映されない
 - 手元の Claude は、`@claude` を含むコメントを書かない。deny とフック（`.claude/hooks/guard-claude-mention.sh`）で止めている
