@@ -54,6 +54,7 @@ bot に任せるのは、作業ブランチへのコミット・push と PR の�
 | **Actions** に実行が出ない | ワークフローが `main` に無い。コメントに `@claude` が無い（`@claude-bot` のように語が続くものは別の名前として扱われる）。PR へのコメントで頼んだ（Issue のコメントでだけ動く）。コメントした人が、所有者・メンバー・共同作業者ではない（読み取りだけの人のコメントでは、ジョブを始めない） |
 | bot の push が「変えてはいけないファイル」で止まる | `.github/workflows/`・`.github/scripts/`・`.claude/hooks/`・`.claude/settings.json` を変えようとした。意図した変更なら、bot ではなく人が当てる。PR の本文に diff があれば、それを使う |
 | PR に「変えてはいけないファイルの変更が入っている」と書かれ、下書きのまま残る | 上と同じファイルが PR に入っている。差分を確かめ、不要ならコミットを外す。必要なら、人が確かめてから、PR を手でレビュー待ちにする |
+| ログに `which is a sensitive file` と出て、編集が拒否される | Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）を、スキルの雛形（`plugins/project/skills/<スキル>/files/`）の外で直そうとした。雛形の中は、ワークフローのフック（`.github/scripts/allow-template-edits.sh`）が許可する。ただし `files/.claude/settings.json`・`files/.claude/hooks/` は許可しない。範囲の外の変更は、PR の本文の diff を人が当てる |
 | Issue に「トークンが空か空白だけです」とコメントされる | secret が登録されていないか、名前が違う。準備の 6 |
 | 実行が environment の保護ルールで失敗する | environment の **Deployment branches** に `main` が無い。準備の 4 |
 | Issue に「PR を作れませんでした」とコメントされる | コメントの「理由」と実行のログを見る。認証のエラーなら、トークンの期限切れ（下の「トークンを更新する」）か、App が入っていない（準備の 2） |

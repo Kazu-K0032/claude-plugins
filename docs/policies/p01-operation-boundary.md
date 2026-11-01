@@ -3,7 +3,7 @@
 | 区分 | 内容 |
 | --- | --- |
 | 対象 | すべてのプラグイン |
-| 例外 | GitHub Actions で動く Claude App（このリポジトリでは `.github/workflows/claude-issue-to-pr.yml`）には、作業ブランチへのコミット・push と PR の作成を任せる。Issue を書いた人がコメントで頼んで動き、結果を PR で人が確かめる仕組みのため。PR のマージ・承認と、リリースは人が行う。deny は、ワークフローがランナーの中だけで外し、リポジトリの設定は変えない |
+| 例外 | GitHub Actions で動く Claude App（このリポジトリでは `.github/workflows/claude-issue-to-pr.yml`）には、作業ブランチへのコミット・push と PR の作成を任せる。Issue を書いた人がコメントで頼んで動き、結果を PR で人が確かめる仕組みのため。PR のマージ・承認と、リリースは人が行う。deny は、ワークフローがランナーの中だけで外し、リポジトリの設定は変えない。Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）の編集は、スキルの雛形（`plugins/project/skills/<スキル>/files/`、ただし `files/.claude/settings.json`・`files/.claude/hooks/` を除く）の中に限り、ワークフローの中だけで `PermissionRequest` フックが許可する。雛形は配る前の文で、bot が従う規約や設定を変えないため |
 | 価値 | [V3](../values/v03-human-judgment.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
 Claude が実行してよい操作と、人が行う操作の線引きを決める。新しい操作が出てきたら、下の「判断の順番」に当てて決める。
