@@ -26,7 +26,8 @@ jobs:
       && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
     permissions:
       contents: read
-    uses: ./.github/workflows/plugin-checks.yml
+    # zizmor の self-repository は、書き方の勧め（$/ の形）で安全の問題ではない。リリースを手元で試せない書き方に変えないため、この行だけ無視する
+    uses: ./.github/workflows/plugin-checks.yml # zizmor: ignore[self-repository]
     with:
       ref: develop
       base_ref: main
@@ -47,6 +48,8 @@ jobs:
           # main との差分と、既存のタグを見るため
           fetch-depth: 0
           fetch-tags: true
+          # 後の step で release ブランチを git push するため、認証情報を残す
+          persist-credentials: true
 
       - name: 版を読む
         id: meta
