@@ -41,7 +41,7 @@
 bot を使えるようにする準備（App・environment・secret）、確かめ方、トークンの更新、止め方は [docs/claude-bot.md](docs/claude-bot.md) にある。
 
 - Issue のコメントに `@claude` と書くと、GitHub Actions の Claude が Issue を実装し、`develop` 向けの PR を作る（[.github/workflows/claude-issue-to-pr.yml](.github/workflows/claude-issue-to-pr.yml)。手順は [.claude/skills/issue-to-pr/SKILL.md](.claude/skills/issue-to-pr/SKILL.md)）。頼めるのは、リポジトリの所有者・メンバー・共同作業者だけ（それ以外の人のコメントでは動かない）
-- bot は Issue の本文とコメントを読んで動く。Issue を作ったら、`/aidd:issue-start <Issue番号> --issue-only` で本文とラベルを実装できる詳しさに整えてから、`@claude` とコメントする。決めたこと・変えるファイル・確かめ方が詳しいほど、意図どおりに動きやすい
+- bot は Issue の本文とコメントを読んで動く。Issue を作ったら、`/aidd:issue-start <Issue番号> --issue-only` で本文を実装できる詳しさに整えてから、`@claude` とコメントする。決めたこと・変えるファイル・確かめ方が詳しいほど、意図どおりに動きやすい
 - bot のブランチ名は `issues/<Issue番号>-claude-<日時>` になる。上の「ブランチを作る場合」の `<説明>`（英語 2〜4 語）の例外で、action が自動で付けるため。`issues/<Issue番号>-` で始まるので、Issue 番号はこの名前から取れる
 - bot は、まず下書きの PR を作る。CI が落ちたら、bot がログを読んで直す（最大 3 回）
 - CI が通ると PR はレビュー待ちになり、セキュリティレビュー（`/security-review`）・コードレビュー（公式の code-review）・文書の追従の点検（docs-sync）が動く。直すべき指摘があれば bot が 1 回だけ直し、もう一度 CI が通るまで直す（最大 3 回）

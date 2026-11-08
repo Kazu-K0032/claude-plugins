@@ -134,7 +134,7 @@ export function parseInstalls(json: string, cwd: string): Record<string, Install
 }
 
 /**
- * スキルの SKILL.md へのリンクを作る。リンク先は、入れた版のタグ（v1.1.0）。リリースの workflow が、main への取り込みのたびに版のタグを作るため
+ * スキルの SKILL.md へのリンクを作る。リンク先は、入れた版のタグ（v1.1.0）。タグはリリースの PR のマージで作られ、hotfix は手で作る
  * @param name - スキルの名前（aidd:commit）
  * @param installs - parseInstalls で読んだ版と置き場所
  * @returns このマーケットプレイスのスキルで、版が分かるときだけリンク。それ以外は null
