@@ -120,6 +120,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | clasp の認証情報（`.clasprc.json`）の deny と、`clasp push`・`login` などの検出 | GAS を使うリポジトリにだけ要る。`/project:gas` が `settings.json` に deny を足し、`guard-clasp.sh` で止める |
 | 言語別の Lint・整形のツールの設定（ESLint・stylelint など） | 使うツールはプロジェクトで決める。Skill が既存の設定を探して `lefthook.yml` に足すか、技術スタック別の Skill が足す |
 | 整形のツールの拡張子の改行の指定（`.gitattributes` の `*.js text eol=lf` など） | 拡張子は技術に依る。整形のツールが LF を求めるとき、Skill が `claude-edit` の整形の `glob` と同じ拡張子の行を提案する |
+| PowerShell 版のフック（`.claude/hooks/*.ps1`） | 同じ守りを 2 つの版で保守すると、片方だけが直されて守りがずれる。フックは bash の形だけを配り、Windows では Git for Windows（Git Bash）を入れる。Skill が導入時に使う環境を聞き、要る道具を示す（[setup-questions.md](setup-questions.md) の「想定する環境」。#273） |
 | `docker compose down -v` の検出 | Docker のローカル環境を配るのは `/project:wordpress` だけ。そのスキルが `guard-destructive.sh` に足す |
 
 ## なぜ Skill として配るのか
