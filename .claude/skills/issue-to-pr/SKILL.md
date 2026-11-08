@@ -71,7 +71,7 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 
 `plugins/aidd/skills/pr-create/pr-body-guide.md` に従い、`.github/PULL_REQUEST_TEMPLATE.md` の節を埋めて、本文を `pr-body.md` に書く。`node <trusted>/body_length.js <本文のファイル>` で概要（最初の節）の長さを数え、300 文字を超えたら縮める。本文の「関連 Issue」には `Closes #<番号>` を書く。人がマージしたとき、`close-linked-issues.yml` が Issue を閉じるため。
 
-`gh pr create --draft --base develop --title "<タイトル>" --body-file <本文のファイル>` で、下書きの PR を作る。タイトルは Issue のタイトルと同じ文字列にする。Issue のタイトルが `[Bug]` などの分類で始まっていなければ、`plugins/aidd/skills/issue-pr-sync/title-and-sidebar.md` の「タイトル」の表で分類を選び、頭に付ける。Release の説明は PR のタイトルの一覧のため、分類で種類を見分けられるようにする。リンクを書くだけにしない。レビュー待ちへの切り替えは、ワークフローが CI の通過を確かめてから行う。
+`gh pr create --draft --base develop --title "<タイトル>" --body-file <本文のファイル>` で、下書きの PR を作る。タイトルは Issue のタイトルと同じ文字列にする。Issue のタイトルが `【Bug】` などの分類で始まっていなければ、`plugins/aidd/skills/issue-pr-sync/title-and-sidebar.md` の「タイトル」の表で分類を選び、頭に付ける。Release の説明は PR のタイトルの一覧のため、分類で種類を見分けられるようにする。リンクを書くだけにしない。レビュー待ちへの切り替えは、ワークフローが CI の通過を確かめてから行う。
 
 ### 8. PR を作れないときは理由を返す
 
@@ -102,4 +102,4 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 - 公式の code-review は、下書きの PR と、Claude がコメント済みの PR を飛ばす。そのため、ワークフローはレビューの前にレビュー待ちにし、記録のコメントはレビューの後に書く
 - `aidd` の `commit`・`pr-create`・`docs-sync`・`issue-pr-sync` と `marketplace-update` は `disable-model-invocation: true` のため、bot からはスキルとして呼べない。そのため、決まりのファイルを直接読ませている。ファイルの場所が変わったら、手順 5〜7・`finish-checks.md`・ワークフローの docs-sync の段を直す
 - `report.md` と `pr-body.md` の置き場所を変えるときは、ワークフローの `dir` も直す
-- コミット・push と Issue・PR の更新を任せる範囲を変えるときは、P1 の「例外」と `docs/policies/permissions.md` も直す
+- 任せる範囲（コミット・push・Issue・PR の更新）を変えるときは、P1 の「例外」と `skill-permission-map.md` も直す

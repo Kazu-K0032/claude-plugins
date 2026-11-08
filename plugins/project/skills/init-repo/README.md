@@ -44,7 +44,6 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | --- | --- | --- |
 | `files/.claude/settings.json` | 権限（秘匿ファイル・コミット / push・削除・権限の変更・深刻な外部操作の deny と、`*.example` の allow）・フックの設定と、Python のキャッシュを作らない環境変数（`PYTHONDONTWRITEBYTECODE`） | 秘匿ファイルの deny パスをプロジェクトに合わせる |
 | `files/.claude/hooks/guard-destructive.sh` | 破壊的コマンドを検出して承認へエスカレーションする PreToolUse フック | `patterns` にプロジェクト固有の破壊的操作を追記する |
-| `files/.claude/hooks/guard-git-write.sh` | `git commit` / `git push` / `gh` 書き込みを Claude に実行させないガード（既定では未配線） | 使う場合は settings.json の PreToolUse（`matcher` は `Bash\|PowerShell\|Monitor`）に追加する |
 | `files/.claude/hooks/post-edit-lint.sh` | 編集後に `lefthook.yml` の Lint・整形を動かし、失敗した結果を Claude へ返す PostToolUse フック（非ブロッキング） | 検査の対象を絞るときは冒頭の `TARGET_PREFIX` を直す |
 | `files/.claude/rules/comment.md` | インラインコメントの規約（なぜを書く・読み手を選ばない言葉）。言語を問わないため、常に読み込まれる | そのまま使える |
 | `files/.claude/rules/env.md` | 環境変数と `*.example` の追従ルール | 変数の種類と追記先の表 |
@@ -55,11 +54,11 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/.claude/rules/branch.md` | ブランチ名を `issues/<Issue番号>-<説明>` にし、スキルの引数などに要る Issue 番号をブランチ名から取る規約 | 名前の形が違うリポジトリでは書き換える |
 | `files/.claude/rules/tmp-output.md` | `tmp/<ブランチ名>/` の置き方の規約。スキルの出力と、Claude の作業ファイル（`work/<目的>/`）を分け、Python は `-B` で実行する | そのまま使える |
 | `files/.claude/rules/ai-docs.md` | `SKILL.md`・規約・`CLAUDE.md` など AI が読む文書を、人も読み切れる形で書く規約（`SKILL.md`・規約の骨組み・本筋と細部を分ける・本文 5,000 文字以内） | そのまま使える |
-| `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / 文書 / リファクタ / リリース / 調査 / その他 / AIDD 振り返り）。タイトルは `[Bug]` などの分類で始まり、分類に合うラベルが付く。先頭に、概要の上限（300 文字）と詳しく書く欄を示す | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[after-install.md](after-install.md)） |
+| `files/.github/ISSUE_TEMPLATE/` | Issue フォーム（機能要求 / 不具合 / 文書 / リファクタ / リリース / 調査 / その他 / AIDD 振り返り）。タイトルは `【Bug】` などの分類で始まり、分類に合うラベルが付く。先頭に、概要の上限（300 文字）と詳しく書く欄を示す | `config.yml` の検証環境リンク、`release.yml` の事前確認とリリース手順（デプロイの方式に合わせる。[after-install.md](after-install.md)） |
 | `files/.github/PULL_REQUEST_TEMPLATE.md` | PR テンプレート（AI 有無で分けたチェックリスト）。概要の上限（300 文字）をコメントで示す | ローカル確認 URL・チェック項目 |
 | `files/.github/dependabot.yml` | GitHub Actions の依存更新（月次・1 PR にまとめる・公開から 7 日たった版だけ） | そのまま使える |
 | `files/.github/labels.yml` | ラベル定義（`sync-labels.yml` が GitHub へ同期） | ラベルの追加・削除 |
-| `files/.github/workflows/label-pr-by-title.yml` | PR のタイトルの `[Bug]` などの分類から、分類のラベルを付け直す（fork の PR でも動くよう `pull_request_target` で動かし、PR のコードは checkout しない。分類で始まらないタイトルでは何もせず、無いラベルは作らない） | 分類やラベルの名前を変えたら、`case` と `managed` を合わせる |
+| `files/.github/workflows/label-pr-by-title.yml` | PR のタイトルの `【Bug】` などの分類（前の書式の `[Bug]` も）から、分類のラベルを付け直す（fork の PR でも動くよう `pull_request_target` で動かし、PR のコードは checkout しない。分類で始まらないタイトルでは何もせず、無いラベルは作らない） | 分類やラベルの名前を変えたら、`case` と `managed` を合わせる |
 | `files/.github/workflows/pr-checks.yml` | PR 差分のシークレットスキャン（gitleaks）、リポジトリ全体のスペルチェック（cspell）、ワークフローの検査（zizmor と `check-workflows.sh`。`github-actions.md` の【必須】を確かめる） | `branches`（既定は `main`）を保護ブランチに合わせる |
 | `files/.github/scripts/check-workflows.sh` | ワークフローのトップレベルの `permissions: {}` と、全ジョブの `timeout-minutes` を確かめる（zizmor が見ない【必須】。`pr-checks.yml` が呼ぶ） | そのまま使える |
 | `files/.github/workflows/sync-labels.yml` | `labels.yml` を GitHub のラベルへ同期（`labels.yml` に無いラベルは消さない） | 消したいときは、`labels.yml` をそろえてから `skip-delete` を `false` にする |
@@ -83,18 +82,17 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 
 ## 前提と制約
 
-- フックは `bash` と [`jq`](https://jqlang.org/) を使う。`bash` が無い環境ではフックが動かない。`jq` が無いときは、ガードは止める側に倒れる（`guard-destructive.sh` は当たったコマンドを承認に回し、`guard-clasp.sh`・`guard-terraform.sh`・`guard-git-write.sh` は当たったコマンドを止める）。フックが 2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。`onFailure: "block"` は使わない。フックが起動できない環境（Git Bash の無い Windows）で、すべてのコマンドが止まるため
+- フックは `bash` と [`jq`](https://jqlang.org/) を使う。`bash` が無い環境ではフックが動かない。`jq` が無いときは、ガードは止める側に倒れる（`guard-destructive.sh` は当たったコマンドを承認に回し、`guard-clasp.sh`・`guard-terraform.sh` は当たったコマンドを止める）。フックが 2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。`onFailure: "block"` は使わない。フックが起動できない環境（Git Bash の無い Windows）で、すべてのコマンドが止まるため
 - PreToolUse のフックの `matcher` は `Bash|PowerShell|Monitor` にする。`Monitor`（コマンドを裏で動かし続けるツール）も Bash と同じシェルで動くため。deny の `Bash(...)` の規則は `Monitor` にも効くが、フックは `matcher` に無いツールでは動かない
 - 編集後の Lint・整形は [lefthook](https://lefthook.dev/)（1.6.11 以降）を使う。lefthook が無いか、`lefthook.yml` に `claude-edit` が無いときは、フックは何もしない。`lefthook run` は既定で `.git/` の下を書き換えるため、フックは `--no-auto-install` を付けて呼ぶ
 - Claude が npm で lefthook を入れるときは、`--ignore-scripts` を付ける。npm 版は、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため（[P1](../../../../docs/policies/p01-operation-boundary.md)）。人のコミットにも検査をかけるときは、人が `lefthook install` を実行する
-- `settings.json` の `permissions.deny` は、ルールの形に当たるコマンドしか止めない。`git -C`・`git -c` を付けたコミット・push と、`gh api` でのマージと DELETE は個別に止めている。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
+- `settings.json` の `permissions.deny` は、ルールの形に当たるコマンドしか止めない。`git -C`・`git -c` を付けたコミット・push と、`gh api` でのマージと DELETE は個別に止めている。ラッパースクリプト経由の実行は止まらない
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
 - `permissions.defaultMode` とモデルは指定していない。ユーザー設定または `/config` の値が使われる
-- deny は、コミット・push・削除・権限の変更と、間違えたときに深刻な外部操作（マージ・承認・リリース・ワークフローの実行など）を塞いでいる。線引きは [P1](../../../../docs/policies/p01-operation-boundary.md)。利用先には、線引きと理由を `.claude/rules/permissions.md` で配る。Issue・PR の作成・コメント・更新・クローズと、Issue に紐づくブランチの作成は Claude に任せる前提で塞いでいない。塞ぎたい場合は deny に足す。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る
+- deny は、コミット・push・削除・権限の変更と、間違えたときに深刻な外部操作（マージ・承認・リリース・ワークフローの実行など）を塞いでいる。線引きは [P1](../../../../docs/policies/p01-operation-boundary.md)。利用先には、線引きと理由を `.claude/rules/permissions.md` で配る。Issue・PR の作成・コメント・更新・クローズと、Issue に紐づくブランチの作成は Claude に任せる前提で塞いでいない。塞ぎたい場合は deny に足す。スキルごとの影響は [permissions.md](../../../../docs/policies/skill-permission-map.md) の対応表を見る
 - ファイル・ブランチ・タグ・stash の削除（`rm`・`git branch -d`・PowerShell の `Remove-Item` など）も deny で塞いでいる。作業用の一時ファイルは `tmp/<ブランチ名>/work/<目的>/` に置き、消さずに済むようにする。消すときは人が行う
 - `settings.json` の `env` に `PYTHONDONTWRITEBYTECODE=1` を入れ、Python のキャッシュ（`__pycache__`）を作らない。理由は [P4](../../../../docs/policies/p04-tmp-output.md)、Python 専用の設定を配る理由は [P6](../../../../docs/policies/p06-common-template.md) を見る。既存の `settings.json` は上書きしない。衝突したときに「手でマージ」を選ぶと、Skill が `env` も足す。それ以外は `env` に手で足す。足さなくても、`tmp-output.md` が `python -B` での実行を Claude に伝える
-- `guard-git-write.sh` を配線すると、上記の Issue・PR の作成・更新・クローズ（`create` / `edit` / `close`）も止まる。`develop` と `comment` は止まらない。スキルごとの影響は [permissions.md](../../../../docs/policies/permissions.md) の対応表を見る。配線するのは、Issue・PR の操作を人が行うと決めたリポジトリだけにする
 - 既存の `README.md` に本文がある場合、Skill は本文を `docs/` 配下へ移して README を案内板に作り替えることを提案する。移動先は承認を得てから決め、本文は要約・削除しない
 - `.gitignore`・`.vscode/`・`cspell.json`・`.claude/settings.json`・`lefthook.yml` が既にある場合は上書きせず、足りない行・キーだけを追記する方針で手でマージする
 - スペルチェックの除外語は `cspell.json` に置く。`.vscode/settings.json` の `cSpell.words` は VS Code の拡張機能しか読まず、CI の cspell には効かない

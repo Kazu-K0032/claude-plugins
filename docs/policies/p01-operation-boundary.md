@@ -3,7 +3,7 @@
 | 区分 | 内容 |
 | --- | --- |
 | 対象 | すべてのプラグイン |
-| 例外 | GitHub Actions で動く Claude App（このリポジトリでは `.github/workflows/claude-issue-to-pr.yml`）には、作業ブランチへのコミット・push と PR の作成を任せる。Issue を書いた人がコメントで頼んで動き、結果を PR で人が確かめる仕組みのため。あわせて、`issue-pr-sync` の決まりで承認の要らない Issue・PR の更新（本文への追記・チェック・番号の直しなど）も任せる。承認が要る変更（既存の記述を消すなど）は反映せず、案を PR の記録に書いて人に残す。PR のマージ・承認と、リリースは人が行う。deny は、ワークフローが設定の写しの中だけで外し、リポジトリの設定は変えない。Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）の編集は、リポジトリの中（`.git/` を除く）なら、ワークフローの中だけで `PermissionRequest` フックが許可する。代わりに、bot のどの段も `develop` から取り分けた設定・フック・手順の写しで動かし、bot が書き換えた設定やフックを同じ実行の中で動かさない。権限・実行・bot の振る舞いに関わるファイルを変えた PR には、本文の先頭に注意書きを置き、マージの前に人が確かめる。`.github/workflows/` は、App に書き込み権限が無いため、bot に変えさせず、diff を PR の本文に書かせる |
+| 例外 | GitHub Actions で動く Claude App（このリポジトリでは `.github/workflows/claude-issue-to-pr.yml`）には、ワークフローを任せる。人が介入する `aidd` などのスキルと違い、すべてを AI が行う前提の仕組みのため。任せる範囲は、Q&A の「GitHub Actions の Claude に、どこまで任せる？」 |
 | 価値 | [V3](../values/v03-human-judgment.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
 Claude が実行してよい操作と、人が行う操作の線引きを決める。新しい操作が出てきたら、下の「判断の順番」に当てて決める。
@@ -18,11 +18,11 @@ Claude が実行してよい操作と、人が行う操作の線引きを決め�
 
 ## 理由
 
-- 【削除系】消したものは履歴を追えず、Claude に任せて席を外していると、消えたことに気づけないから
-- 【権限変更系】間違えると、ほかの人やほかのサービスにまで影響が広がるから
-- 【コミット】履歴に残す内容は、人が最後に確かめて決めたいから（`aidd:commit` がメッセージを `tmp.md` に書き出すのもこのため）。また、Claude Code がコミットすると、設定によっては共同作成者の行（`Co-Authored-By`）が付き、push した後は履歴を書き換えないと消せないから
-- 【push】ほかの人へ共有するタイミングは、人が決めたいから
-- 【それ以外】Issue・PR・コメント・ブランチは、意図しない内容ができても、消せば戻せるから。止めると、スキルが動かなくなるから
+- 削除は、消したものの履歴を追えず、Claude に任せて席を外していると、消えたことに気づけないから
+- 権限の変更は、間違えると、ほかの人やほかのサービスにまで影響が広がるから
+- コミットは、履歴に残す内容を人が最後に確かめて決めたいから（`aidd:commit` がメッセージを `tmp.md` に書き出すのもこのため）。また、Claude Code がコミットすると、設定によっては共同作成者の行（`Co-Authored-By`）が付き、push した後は履歴を書き換えないと消せないから
+- push は、ほかの人へ共有するタイミングを人が決めたいから
+- それ以外の Issue・PR・コメント・ブランチは、意図しない内容ができても、消せば戻せるから。止めると、スキルが動かなくなるから
 
 ## 許可する操作と禁止する操作
 
@@ -36,9 +36,33 @@ Claude が実行してよい操作と、人が行う操作の線引きを決め�
 | データベース | 手元の開発用の DB の読み書き | 共有・本番の DB への書き込み |
 | MCP のツール | 読み取り | 秘密の読み出し（ブラウザの保存領域・ログイン状態を保存したファイルなど） |
 
-`init-repo` は、この表の禁止のうち、外部ツール・データベース・MCP のツール以外を deny で配る。線引きと理由は、利用先で読めるよう `.claude/rules/permissions.md` で配る。この方針を変えたら、そちらも直す。外部ツールの禁止は、技術スタック別のスキル（`gas` など）の禁止事項で止める。利用先の Claude にも守らせたいものは、そのスキルがフックを配って止めてよい（`terraform` の `guard-terraform.sh`、`gas` の `guard-clasp.sh`）。技術に依る秘匿ファイル（`*.tfstate`・`.clasprc.json` など）の読み取りの deny も、そのスキルが承認を得て足す。スキルの操作との対応は [permissions.md](permissions.md)。`Bash(...)` の規則は PowerShell のツールには効かないため、`git`・`gh` の deny は `PowerShell(...)` の形でも置く（削除は別名の `rm`・`del`・`rmdir`・`rd`・`ri`・`erase` も置く）。`Monitor`（コマンドを裏で動かし続けるツール）には `Bash(...)` の規則が効く。ただしフックは `matcher` に無いツールでは動かないため、コマンドを見るフック（`guard-destructive.sh` など）は `matcher` を `Bash|PowerShell|Monitor` にする。フックは `bash` で動くため、Git Bash の無い Windows では動かない。フックが 2 以外の終了コードで失敗すると操作はそのまま進むため、ガードは判定できないとき（`jq` が無いなど）に止める側へ倒す。`onFailure: "block"` は、フックが起動できない環境ですべてのコマンドを止めるため使わない。コメントで動くワークフローの起動語・秘密を読める MCP のツールの deny と、共有・本番の DB への接続の既定を読み取り専用にする設定は、リポジトリごとに違うため利用先で足す。deny は、ルールの形に当たるコマンドしか止められない。`bash -c 'rm …'` や、`gh api` での権限の変更は止まらない。抜けやすい形のうち、`gh api` でのマージと DELETE、`git -C`・`git -c` を付けたコミット・push は個別に止めている。deny で止まらない操作も、この線引きに従う。
+`init-repo` は、この表の禁止のうち、外部ツール・データベース・MCP のツール以外を deny で配る。deny で止まらない操作も、この線引きに従う。
 
-`git remote` は、変更だけでなく読み取り（`git remote -v` など）も deny で止める。変更系のサブコマンドを並べると、抜けが出やすいため。リモートの URL は `gh repo view` で確かめる。`gh release`・`gh ssh-key`・`gh gpg-key` も、同じ理由で読み取り（`view`・`list`）まで止める。別名（`gh release new`）や、オプションを前に置く形（`gh release -R <リポジトリ> create`）で抜けが出やすいため。読み取りは `gh api` で行う（例：`gh api repos/{owner}/{repo}/releases/latest`・`gh api user/keys`）。
+- 線引きと理由は、利用先で読めるよう `.claude/rules/permissions.md` で配る。この方針を変えたら、そちらも直す
+- スキルの操作との対応は [skill-permission-map.md](skill-permission-map.md) にまとめる
+- 外部ツールの禁止は、技術スタック別のスキル（`gas` など）の禁止事項で止める。利用先の Claude にも守らせたいものは、そのスキルがフックを配って止めてよい（`terraform` の `guard-terraform.sh`、`gas` の `guard-clasp.sh`）
+- 技術に依る秘匿ファイル（`*.tfstate`・`.clasprc.json` など）の読み取りの deny も、そのスキルが承認を得て足す
+- コメントで動くワークフローの起動語と、秘密を読める MCP のツールの deny は、利用先で足す。共有・本番の DB への接続の既定を読み取り専用にする設定も同じ。どれもリポジトリごとに違うため
+
+deny は、ルールの形に当たるコマンドしか止められない。そのため、ツールや書き方の違いで抜けないように置く。
+
+- `Bash(...)` の規則は、PowerShell のツールには効かない。そのため、`git`・`gh` の deny は `PowerShell(...)` の形でも置く。削除は、別名の `rm`・`del`・`rmdir`・`rd`・`ri`・`erase` も置く
+- `Monitor`（コマンドを裏で動かし続けるツール）には、`Bash(...)` の規則が効く
+- 抜けやすい形のうち、`gh api` でのマージと DELETE、`git -C`・`git -c` を付けたコミット・push は個別に止めている
+- `bash -c 'rm …'` や、`gh api` での権限の変更は止まらない
+
+コマンドを見るフック（`guard-destructive.sh` など）は、フックが動かない場面に合わせて作る。
+
+- フックは、`matcher` に無いツールでは動かない。そのため、`matcher` を `Bash|PowerShell|Monitor` にする
+- フックが 2 以外の終了コードで失敗すると、操作はそのまま進む。そのため、ガードは判定できないとき（`jq` が無いなど）に止める側へ倒す
+- `onFailure: "block"` は使わない。フックが起動できない環境で、すべてのコマンドを止めるため
+- フックは `bash` で動くため、Git Bash の無い Windows では動かない
+
+`git remote` と、`gh release`・`gh ssh-key`・`gh gpg-key` は、変更だけでなく読み取りも deny で止める。変更系のサブコマンドだけを並べると、抜けが出やすいため。
+
+- `git remote` は、読み取り（`git remote -v` など）も止める。リモートの URL は `gh repo view` で確かめる
+- `gh release`・`gh ssh-key`・`gh gpg-key` は、読み取り（`view`・`list`）まで止める。別名（`gh release new`）や、オプションを前に置く形（`gh release -R <リポジトリ> create`）で抜けが出やすいため
+- これらの読み取りは `gh api` で行う（例：`gh api repos/{owner}/{repo}/releases/latest`・`gh api user/keys`）
 
 あわせて、`settings.json` の `attribution` の `commit`・`pr` を空文字にし、コミットに共同作成者の行を、PR の本文に生成元の行を付けない。コミットの禁止が外れても、Claude の名前が履歴に残らないようにするため。
 
@@ -68,14 +92,31 @@ Claude が実行してよい操作と、人が行う操作の線引きを決め�
 
 スキルの `allowed-tools`（許可を聞かずに実行してよい操作の一覧）には、読み取りと、書き込み先が `tmp/` の下か `tmp.md` に決まっているものだけを入れる。書き込み先が決まらない操作、`gh` の書き込み、同梱スクリプトの実行は入れない。確認なしで任せる範囲を、取り返しのつく所に限るため。
 
-読み取りのコマンドでも、書き込み・実行のオプションを持つもの（`git diff`・`git log` の `--output`、`git grep` の `-O`、`gh api` の `-X`、`git apply --check` の後ろの `--apply` など）は、前方一致（`Bash(git diff:*)`）で入れない。許可の規則はオプションを見ないため、前方一致ではそのオプションを除けないから。入れるのは、完全一致で読み取りだけに絞れるもの（`Bash(git branch --show-current)` など）だけにする。前方一致が入っていないかは、`/marketplace-update` の機械チェック（`check.py` の `allowed-prefix`）が見る。
+読み取りのコマンドでも、書き込み・実行のオプションを持つものは、前方一致（`Bash(git diff:*)`）で入れない。許可の規則はオプションを見ないため、前方一致ではそのオプションを除けないから。
+
+- 当たるオプションの例：`git diff`・`git log` の `--output`、`git grep` の `-O`、`gh api` の `-X`、`git apply --check` の後ろの `--apply`
+- 入れるのは、完全一致で読み取りだけに絞れるもの（`Bash(git branch --show-current)` など）だけにする
+- 前方一致が入っていないかは、`/marketplace-update` の機械チェック（`check.py` の `allowed-prefix`）が見る
 
 ## 変えたいとき
 
-- deny から外すと、Claude もその操作をできる。外す・足す前に、止まるスキルを [permissions.md](permissions.md) で確かめる
+- deny から外すと、Claude もその操作をできる。外す・足す前に、止まるスキルを [skill-permission-map.md](skill-permission-map.md) で確かめる
 - 許可プロンプトを減らしたいときは、自分の `settings.json` の `permissions.allow` に足す
 
 ## Q&A
+
+### Q. GitHub Actions の Claude に、どこまで任せる？
+
+冒頭の表の「例外」のとおり、ワークフローを任せる。ただし、人が決める操作は残す。
+
+- 任せるのは、作業ブランチへのコミット・push と PR の作成。あわせて、`issue-pr-sync` の決まりで承認の要らない Issue・PR の更新（本文への追記・チェック・番号の直しなど）も任せる
+- 承認が要る変更（既存の記述を消すなど）は反映せず、案を PR の記録に書いて人に残す
+- PR のマージ・承認と、リリースは人が行う
+- deny は、ワークフローが設定の写しの中だけで外し、リポジトリの設定は変えない
+- Claude Code の protected paths（`.claude/`・`.vscode/`・`lefthook.yml` など）の編集は、リポジトリの中（`.git/` を除く）なら、ワークフローの中だけで `PermissionRequest` フックが許可する
+- bot のどの段も `develop` から取り分けた設定・フック・手順の写しで動かし、bot が書き換えた設定やフックを同じ実行の中で動かさない
+- 権限・実行・bot の振る舞いに関わるファイルを変えた PR には、本文の先頭に注意書きを置き、マージの前に人が確かめる
+- `.github/workflows/` は、App に書き込み権限が無いため、bot に変えさせず、diff を PR の本文に書かせる
 
 ### Q. 新しい操作が、許可か禁止か迷う
 

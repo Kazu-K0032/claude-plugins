@@ -1,6 +1,6 @@
 name: "調査"
 description: "実装の前に、調べて決める"
-title: "[Research] "
+title: "【Research】"
 labels: ["research"]
 body:
   - type: markdown

@@ -38,7 +38,7 @@ paths:
 | `.claude/rules/ai-docs.md` | `plugins/project/skills/init-repo/files/.claude/rules/ai-docs.md` | AI が読む文書の書き方の規約（[P9](../../docs/policies/p09-readable-ai-docs.md)） | なし |
 | `.gitattributes` | `plugins/project/skills/init-repo/files/.gitattributes` | `*.sh` を LF に固定する指定 | なし |
 | `.claude/hooks/guard-destructive.sh` | `plugins/project/skills/init-repo/files/.claude/hooks/guard-destructive.sh` | 破壊的なコマンドを承認に回すフック | なし |
-| `.github/workflows/label-pr-by-title.yml` | `plugins/project/skills/init-repo/files/.github/workflows/label-pr-by-title.yml` | PR のタイトルの分類からラベルを付け直すワークフロー | なし |
+| `.github/workflows/label-pr-by-title.yml` | `plugins/project/skills/init-repo/files/.github/workflows/label-pr-by-title.yml` | PR のタイトルの【分類】から、分類のラベルを付け直すワークフロー | なし |
 
 ## 同じ値を書く箇所
 

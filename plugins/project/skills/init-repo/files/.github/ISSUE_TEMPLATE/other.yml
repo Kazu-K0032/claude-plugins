@@ -1,6 +1,6 @@
 name: "その他"
 description: "ほかのフォームに当たらない作業（版を上げる・依存を更新するなど）"
-title: "[Other] "
+title: "【Other】"
 labels: ["other"]
 body:
   - type: markdown

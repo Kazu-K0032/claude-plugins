@@ -2,9 +2,9 @@
 
 | 区分 | 内容 |
 | --- | --- |
-| 対象 | Issue・PR の本文とコメントを書くスキル（`aidd` の `pr-create`・`issue-start`・`issue-pr-sync`、`config:plugin-feedback`）。`project:init-repo` の PR・Issue のテンプレート。`config:mod-output-customize` の mod の「文書を簡潔に」 |
+| 対象 | Issue・PR の本文とコメントを書くスキル（`aidd` の `pr-create`・`issue-start`・`issue-pr-sync`、`config:plugin-feedback`）。`project:init-repo` の PR・Issue のテンプレート |
 | 例外 | 検証コメント（`pr-verify`）は、上限を持たない。項目の数が差分で決まるため |
-| 価値 | [V2](../values/v02-understand-before-accept.md)・[V4](../values/v04-record-reasons.md)・[V5](../values/v05-mechanisms-over-habits.md) |
+| 価値 | [V2](../values/v02-understand-before-accept.md)・[V4](../values/v04-decision-records.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
 リポジトリに本文の長さ・書き方の決まりが無ければ、冒頭の概要（最初の節）を 300 文字以内にし、概要より後の節には上限を置かない。Issue は、タスクの種類で詳しく書く節を変える。どの種類でも、書かないものを決めておく。スキルが読む写しは [references/short-body.md](../../plugins/aidd/references/short-body.md)（`config:plugin-feedback` にも同じもの）。
 
@@ -17,16 +17,15 @@
 
 ## 理由
 
-- 【読み手】長い本文の全体は読まれなくても、冒頭は読まれる。概要を短く保てば、人がそこで判断し、中身を分からないまま通すことを防げるから
-- 【詳しく書く情報】全体の長さで切ると、再現手順・エラーメッセージ・要件のように、人や bot（Issue を読んで実装する Claude）が作業に使う情報まで削られるから
-- 【種類の違い】詳しく書くべき量は、タスクの種類で違う。バグは再現と根拠、新機能は要件が要り、文書や版の更新はほとんど要らないから
-- 【判断の記録】判断の理由まで削ると、あとでたどれなくなるから
-- 【名前のリンク】名前がただの文字やコードスパンだと、読み手がクリックで中身を確かめられないから。リンクは初出だけにする。同じリンクが並ぶと本文が読みにくくなるため。書き込む先のリポジトリのファイルは、PR の「Files changed」で見られるため、コードスパンにとどめる
-- 【数える仕組み】AI は文字数を正確に数えられず、目で見て削るだけでは上限を超えるから。数えるのは、機械で決められる概要だけにする
+- 長い本文の全体は読まれなくても、冒頭は読まれる。概要を短く保てば、人がそこで判断し、中身を分からないまま通すことを防げるから
+- 全体の長さで切ると、再現手順・エラーメッセージ・要件のように、人や bot（Issue を読んで実装する Claude）が作業に使う情報まで削られるから
+- 詳しく書くべき量は、タスクの種類で違う。バグは再現と根拠、新機能は要件が要り、文書や版の更新はほとんど要らないから
+- 判断の理由まで削ると、あとでたどれなくなるから
+- 名前がただの文字やコードスパンだと、読み手がクリックで中身を確かめられないから。リンクは初出だけにする。同じリンクが並ぶと本文が読みにくくなるため。書き込む先のリポジトリのファイルは、PR の「Files changed」で見られるため、コードスパンにとどめる
+- AI は文字数を正確に数えられず、目で見て削るだけでは上限を超えるから。数えるのは、機械で決められる概要だけにする
 
 ## 変えたいとき
 
-- mod の指示は、「文書を簡潔に」のボタンで OFF にできる
 - 概要の上限の数は、下の「Q. 上限の数を変えたい」の場所をすべて直す
 
 ## Q&A
@@ -45,7 +44,7 @@
 
 ### Q. 利用先に、本文の長さや書き方の決まりがある
 
-利用先の決まりに従い、この方針の上限と書き分けは当てない。決まりに無い項目（書かないものなど）だけを、この方針で補う（[P6](p06-common-template.md) の「同梱の決まりの扱い」）。上限が違うため、スクリプトでは数えない。どれに従ったかを、承認の画面か結果に書く。`config:plugin-feedback` は、書き込む先がこのリポジトリに決まっているため、探さない。
+利用先の決まりに従い、この方針の上限と書き分けは当てない。決まりに無い項目（書かないものなど）だけを、この方針で補う（[P6](p06-common-template.md) の「同梱の決まりは既定」）。上限が違うため、スクリプトでは数えない。どれに従ったかを、承認の画面か結果に書く。`config:plugin-feedback` は、書き込む先がこのリポジトリに決まっているため、探さない。
 
 ### Q. テンプレートのチェックリストだけで長い
 
@@ -53,7 +52,7 @@
 
 ### Q. Issue の種類が分からない
 
-タイトルの分類（`[Bug]` など）と中身から一番近い種類を選び、計画や承認の画面で、どれに合わせたかを示す。リファクタリングや調査も、一番近い種類に合わせる。
+タイトルの分類（`【Bug】` など）と中身から一番近い種類を選び、計画や承認の画面で、どれに合わせたかを示す。リファクタリングや調査も、一番近い種類に合わせる。
 
 ### Q. PR も種類で書き分けたい
 
@@ -66,7 +65,6 @@
 - 決まりとスクリプト：`references/short-body.md` と、`body_length.js` の `SUMMARY_LIMIT`（`aidd` と `config:plugin-feedback` に 1 つずつ）
 - `aidd`：`pr-create` の `pr-body-guide.md`、`issue-start` の `issue-update.md`・`requirements-tree.md`・`comment-template.md`、`issue-pr-sync` の `SKILL.md`・`approval-rules.md`・`body-policy.md`・`errors.md`、`README.md`、`references/harness-principles.md`（監査の物差し）
 - `config:plugin-feedback`：`references/issue-format.md`
-- mod：`hooks/register.tsx` の `DOC_CONCISE_TEXT` と、`tests/emphasis.test.tsx`
 - テンプレート：`init-repo` の PR テンプレートと Issue フォーム 8 つ、このリポジトリの `.github/PULL_REQUEST_TEMPLATE.md`。`init-repo` の `README.md`（収録物の表の説明）
 - このリポジトリの `.claude/skills/issue-to-pr/SKILL.md`（bot が PR 本文を数える手順）
 - この方針のファイル

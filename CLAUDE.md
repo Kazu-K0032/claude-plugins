@@ -24,6 +24,15 @@
 
 ## 方針と価値
 
-- `docs/policies/`：プラグインが何をして何をしないかと、その理由（P1〜P12）。理由を書く唯一の場所。一覧は `docs/policies/README.md`
+- `docs/policies/`：プラグインが何をして何をしないかと、その理由（P1〜P13）。理由を書く唯一の場所。一覧は `docs/policies/README.md`
 - `docs/values/`：方針の土台になる AI 駆動開発の価値（V1〜V5）
 - `CONTRIBUTING.md`：ブランチと PR の決まり。`docs/release.md`：リリースの手順
+
+## 文書の層
+
+上の層が下の層の土台になる。上の層を変えたら、下の層を直す（[.claude/rules/plugin-changes.md](.claude/rules/plugin-changes.md)）。
+
+1. 価値（`docs/values/`）：AI駆動開発で大事にすること。足す・変えるのは利用者が決める
+1. 方針（`docs/policies/`）：価値を実現するための決めごとと理由。方針から価値を指し、価値は方針を指さない
+1. 規約（`.claude/rules/`）：方針を守るために、このリポジトリで Claude が従う手順と、方針を探す索引（`plugin-policies.md`）
+1. プラグイン（`plugins/`）：方針に沿って作る配布物。`init-repo` は、規約の写しを利用先に配る

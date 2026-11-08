@@ -5,6 +5,9 @@ import { calledSkillName, parseInstalls, skillLink, typedSkillName } from '../ho
 
 const SURFACES = ['terminal', 'desktop'] as const
 
+/** aidd を入れたコミット */
+const SHA = '0123456789abcdef0123456789abcdef01234567'
+
 const RESEARCH = 'https://github.com/Kazu-K0032/claude-plugins/blob/v1.1.0/plugins/aidd/skills/research/SKILL.md'
 const COMMIT = 'https://github.com/Kazu-K0032/claude-plugins/blob/v1.1.0/plugins/aidd/skills/commit/SKILL.md'
 
@@ -15,9 +18,11 @@ const AIDD_PATH = 'C:\\Users\\tester\\.claude\\plugins\\cache\\kazu\\aidd\\1.1.0
 const INSTALLED = JSON.stringify({
   version: 2,
   plugins: {
-    'aidd@kazu': [{ scope: 'user', installPath: AIDD_PATH, version: '1.1.0' }],
+    'aidd@kazu': [{ scope: 'user', installPath: AIDD_PATH, version: '1.1.0', gitCommitSha: SHA }],
     'config@kazu': [{ scope: 'user', installPath: 'C:\\config', version: '1.1.0' }],
     'project@kazu': [{ scope: 'user', version: '1.1.0' }],
+    // 前の名前（my-plugins）の記録は、読まない
+    'aidd@my-plugins': [{ scope: 'user', installPath: 'C:\\old', version: '1.0.0' }],
     'other@elsewhere': [{ scope: 'user', installPath: 'C:\\other', version: '9.9.9' }],
   },
 })
@@ -70,8 +75,8 @@ function typed(text: string) {
 
 test('版の記録から、このマーケットプレイスのプラグインの版と置き場所だけを読む', () => {
   expect(parseInstalls(INSTALLED, CWD)).toEqual({
-    aidd: { version: '1.1.0', path: AIDD_PATH },
-    config: { version: '1.1.0', path: 'C:\\config' },
+    aidd: { version: '1.1.0', path: AIDD_PATH, ref: 'v1.1.0' },
+    config: { version: '1.1.0', path: 'C:\\config', ref: 'v1.1.0' },
   })
   expect(parseInstalls('{}', CWD)).toEqual({})
 })
@@ -108,6 +113,16 @@ test('このマーケットプレイスのスキルで、版が分かるとき�
     url: COMMIT,
     file: `${AIDD_PATH}/skills/commit/SKILL.md`,
   })
+  // 入れたコミットが記録に無くても、版のタグを指す
+  expect(skillLink('config:setup-global', installs)?.url).toBe(
+    'https://github.com/Kazu-K0032/claude-plugins/blob/v1.1.0/plugins/config/skills/setup-global/SKILL.md',
+  )
+  const refOf = (record: object) =>
+    parseInstalls(JSON.stringify({ plugins: { 'aidd@kazu': [{ scope: 'user', installPath: 'C:\\a', ...record }] } }), CWD).aidd?.ref
+  // 版の形でなければ、入れたコミットを指す
+  expect(refOf({ version: 'unknown', gitCommitSha: SHA })).toBe(SHA)
+  // 版もコミットも形が違えば、リンクに入れずに main にする
+  expect(refOf({ version: '../x', gitCommitSha: '../x' })).toBe('main')
   for (const name of ['project:init-repo', 'other:thing', 'commit', 'aidd:../x', 'aidd:Commit', undefined]) {
     expect(skillLink(name, installs)).toBe(null)
   }
