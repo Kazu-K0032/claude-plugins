@@ -25,5 +25,9 @@
 
 - 利用先では、`.claude/rules/ai-docs.md` を書き換えるか、外す
 - このリポジトリの上限超えは WARN のため、CI は止まらない
-- 上限の数を変えるときは、`check.py` の `DOC_LIMIT` と、`git grep -n "5,000 文字"` で出る箇所をすべて同じ数に直す
+- 上限の数を変えるときは、次をすべて同じ数に直す。直したら、上限を超えた既存の文書も新しい上限に合わせて縮める。漏れは `git grep -n "5,000 文字"` で確かめる
+  - 検査：`.claude/skills/marketplace-update/scripts/check.py` の `DOC_LIMIT` と、同じスキルの `ng-warn.md` の `doc-length` の説明
+  - 規約：`.claude/rules/ai-docs.md` と、`init-repo` の `files/.claude/rules/ai-docs.md`・`README.md`（収録物の表）
+  - 監査の物差し：`plugins/aidd/references/harness-principles.md`
+  - この方針のファイル
 - 人向け・AI 向けの区分（`docs-type`）は使わない。AI だけが読む区分を認めると、人が読めない文書が残るため

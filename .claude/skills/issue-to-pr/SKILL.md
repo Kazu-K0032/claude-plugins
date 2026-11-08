@@ -102,4 +102,4 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 - 公式の code-review は、下書きの PR と、Claude がコメント済みの PR を飛ばす。そのため、ワークフローはレビューの前にレビュー待ちにし、記録のコメントはレビューの後に書く
 - `aidd` の `commit`・`pr-create`・`docs-sync`・`issue-pr-sync` と `marketplace-update` は `disable-model-invocation: true` のため、bot からはスキルとして呼べない。そのため、決まりのファイルを直接読ませている。ファイルの場所が変わったら、手順 5〜7・`finish-checks.md`・ワークフローの docs-sync の段を直す
 - `report.md` と `pr-body.md` の置き場所を変えるときは、ワークフローの `dir` も直す
-- 任せる範囲（コミット・push・Issue・PR の更新）を変えるときは、P1 の「例外」と `skill-permission-map.md` も直す
+- 任せる範囲（コミット・push・Issue・PR の更新）を変えるときは、P1 の「例外」と Q&A、`skill-permission-map.md` も直す

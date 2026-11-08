@@ -1,4 +1,4 @@
-# P12 動きはオプションで切り替え、自然な言葉の補足は承認の前に示すこと
+# P11 動きはオプションで切り替え、自然な言葉の補足は承認の前に示すこと
 
 | 区分 | 内容 |
 | --- | --- |
@@ -10,7 +10,9 @@
 
 ## 理由
 
-- オプションで動きを切り替える形は、Anthropic の公式マーケットプレイスでよく使われている。慣習に合わせれば、利用者はほかのマーケットプレイスと同じ感覚で使える。例えば、`code-review` は `--comment` を付けたときだけ PR にコメントし、`code-modernization` の `modernize-assess` は `--portfolio` で調べる範囲を切り替える（[code-review.md](https://github.com/anthropics/claude-plugins-official/blob/fa4eb54397ee2faccb6940512a19c017cb1337f3/plugins/code-review/commands/code-review.md)・[modernize-assess.md](https://github.com/anthropics/claude-plugins-official/blob/fa4eb54397ee2faccb6940512a19c017cb1337f3/plugins/code-modernization/commands/modernize-assess.md)）
+- オプションで動きを切り替える形は、Anthropic の公式マーケットプレイスでよく使われている。慣習に合わせれば、利用者はほかのマーケットプレイスと同じ感覚で使える
+- 例：`code-review` は、`--comment` を付けたときだけ PR にコメントする（[code-review.md](https://github.com/anthropics/claude-plugins-official/blob/fa4eb54397ee2faccb6940512a19c017cb1337f3/plugins/code-review/commands/code-review.md)）
+- 例：`code-modernization` の `modernize-assess` は、`--portfolio` で調べる範囲を切り替える（[modernize-assess.md](https://github.com/anthropics/claude-plugins-official/blob/fa4eb54397ee2faccb6940512a19c017cb1337f3/plugins/code-modernization/commands/modernize-assess.md)）
 - 自然な言葉で動きを指定すると、どの動きに当たるかを Claude がその都度判断し、結果がぶれることがある。オプションなら、同じ指定は同じ手順を通る
 
 ## 決まり

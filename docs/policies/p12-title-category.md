@@ -1,8 +1,8 @@
-# P13 Issue・PR のタイトルで、変更の種類が一目で分かるようにすること
+# P12 Issue・PR のタイトルで、変更の種類が一目で分かるようにすること
 
 | 区分 | 内容 |
 | --- | --- |
-| 対象 | Issue・PR のタイトルを決めるスキル（`aidd` の `issue-pr-sync`・`pr-create`、`config:plugin-feedback`）。`project:init-repo` の Issue フォームと `labels.yml`。このリポジトリの bot（`issue-to-pr`）とリリースの仕組み。タイトルから PR のラベルを付け直すワークフロー（このリポジトリと `init-repo` の `label-pr-by-title.yml`） |
+| 対象 | Issue・PR のタイトルを決める `aidd` の `issue-pr-sync`・`pr-create`、`config:plugin-feedback`。`init-repo` の Issue フォームと `labels.yml`。このリポジトリの bot（`issue-to-pr`）・リリースの仕組み・`label-pr-by-title.yml`（`init-repo` にも同じ物） |
 | 例外 | 振り返りのフォーム（`【Retro】`）は、作業の分類に入れない。作業の Issue ではなく、対象の Issue に貼る記録のため。dependabot など、ツールが自動で作る PR のタイトルは変えない |
 | 価値 | [V2](../values/v02-understand-before-accept.md)・[V5](../values/v05-mechanisms-over-habits.md) |
 
@@ -32,7 +32,11 @@
 
 ## 変えたいとき
 
-- 分類を足す・変えるときは、この方針の表、`title-and-sidebar.md` の表、`init-repo` の Issue フォームと `labels.yml`、`plugin-feedback` の `issue-format.md`、このリポジトリのリリースノートの見出し（`.github/release.yml`）、PR のラベルを付け直すワークフローの対応表（`.github/workflows/label-pr-by-title.yml` と `init-repo` の同じファイルの `case`・`managed`）をすべて直す
+- 分類を足す・変えるときは、次をすべて直す
+  - この方針の表と、`title-and-sidebar.md` の表
+  - `init-repo` の Issue フォームと `labels.yml`、`plugin-feedback` の `issue-format.md`
+  - このリポジトリのリリースノートの見出し（`.github/release.yml`）
+  - PR のラベルを付け直すワークフローの対応表（`.github/workflows/label-pr-by-title.yml` と、`init-repo` の同じファイルの `case`・`managed`）
 - 利用先で別の書式を使うときは、`CONTRIBUTING.md`・`.claude/rules/` などにタイトルの決まりを書くか、Issue フォームの `title` を書き換える。スキルは、決まりがあればそちらに従い、この方針の書式を当てない
 
 ## Q&A
@@ -51,11 +55,19 @@ Issue の分類がそろえば、その分類にする。違えば、主な変�
 
 ### Q. 利用先に、タイトルの書き方の決まりがある
 
-利用先の決まりに従い、この方針の書式（`【分類】本文`）は当てない。この方針は、決まりが無いリポジトリでの既定のため。決まりは `CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`・`docs/` と、Issue フォームの `title` から探し、どれに従ったかを承認の画面と結果に書く。両方を当てると、`【Bug】fix: 〜` のように 2 つの形が混ざるため。ラベルは、分類の表を使ってよい。
+利用先の決まりに従い、この方針の書式（`【分類】本文`）は当てない。この方針は、決まりが無いリポジトリでの既定のため。
+
+- 決まりは `CLAUDE.md`・`.claude/rules/`・`CONTRIBUTING.md`・`docs/` と、Issue フォームの `title` から探し、どれに従ったかを承認の画面と結果に書く
+- 両方を当てると、`【Bug】fix: 〜` のように 2 つの形が混ざる
+- ラベルは、分類の表を使ってよい
 
 ### Q. 文書に決まりは無いが、題名の形が慣習でそろっている
 
-直近の Issue・PR の題名（それぞれ 20 件）を読み、合わせて 10 件以上のうち半分以上が同じ形の接頭辞で始まっていれば、慣習とみなす。慣習があれば、`【分類】` を当てる前に、「慣習に合わせる・既定の分類を付ける・タイトルを変えない」から利用者に選んでもらう。慣習は題名の並びからの推測で、たまたま似ているだけのこともあるため、決め打ちしない（[V3](../values/v03-human-judgment.md)）。慣習に合わせたときは、その形を `CONTRIBUTING.md` などに書くよう勧める。書けば次から決まりとして見つかり、毎回聞かずに済むため（[V5](../values/v05-mechanisms-over-habits.md)）。質問できない bot は、慣習があればタイトルを変えない。
+直近の Issue・PR の題名（それぞれ 20 件）を読み、合わせて 10 件以上のうち半分以上が同じ形の接頭辞で始まっていれば、慣習とみなす。慣習があれば、`【分類】` を当てる前に、「慣習に合わせる・既定の分類を付ける・タイトルを変えない」から利用者に選んでもらう。
+
+- 慣習は題名の並びからの推測で、たまたま似ているだけのこともあるため、決め打ちしない（[V3](../values/v03-human-judgment.md)）
+- 慣習に合わせたときは、その形を `CONTRIBUTING.md` などに書くよう勧める。書けば次から決まりとして見つかり、毎回聞かずに済むため（[V5](../values/v05-mechanisms-over-habits.md)）
+- 質問できない bot は、慣習があればタイトルを変えない
 
 ### Q. 前の書式の `[分類] 本文`（`[Bug] 〜` など）で始まるタイトルがある
 

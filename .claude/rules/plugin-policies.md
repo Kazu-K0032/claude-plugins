@@ -14,7 +14,7 @@
 | --- | --- |
 | 新しいスキルを `plugins/<プラグイン>/skills/` に足す | [P2](../../docs/policies/p02-settings-scope.md) |
 | `SKILL.md` の `allowed-tools` | [P1](../../docs/policies/p01-operation-boundary.md) の「確認なしで任せる操作」 |
-| `SKILL.md` の手順で、`AskUserQuestion` で利用者に聞く | [P11](../../docs/policies/p11-ask-only-for-judgment.md) |
+| `SKILL.md` の手順で、`AskUserQuestion` で利用者に聞く | [P13](../../docs/policies/p13-ask-only-for-judgment.md) |
 | `SKILL.md` の手順で、コマンドを実行する・ファイルを書き出す・GitHub に書き込む | [P1](../../docs/policies/p01-operation-boundary.md)、[P4](../../docs/policies/p04-tmp-output.md)、[対応表](../../docs/policies/skill-permission-map.md) |
 | `init-repo` の `files/.claude/settings.json`・`files/.claude/hooks/`・`files/.claude/rules/permissions.md`・`files/.gitignore` | [P1](../../docs/policies/p01-operation-boundary.md)、[対応表](../../docs/policies/skill-permission-map.md)、`plugins/aidd/references/harness-principles.md` の「土台の仕組み」 |
 | `plugins/project/skills/*/files/` にテンプレートを足す、技術別のスキルが土台のファイルに足す手順を書く | [P6](../../docs/policies/p06-common-template.md)、そのスキルの README の「除外したもの」 |
@@ -24,8 +24,8 @@
 | ADR など、置き場所がプロジェクトで決まるファイルを作る手順 | [P3](../../docs/policies/p03-check-placement.md) |
 | `init-repo` の `README.md`・`docs/README.md`・`.claude/rules/readme.md`、README を作る手順 | [P7](../../docs/policies/p07-readme-guide.md) |
 | Issue・PR の本文やコメントを書く手順、`init-repo` の PR・Issue のテンプレート | [P8](../../docs/policies/p08-short-body.md) |
-| Issue・PR のタイトルやラベルを決める手順、`init-repo` の Issue フォームの `title`・`labels`・`labels.yml` | [P13](../../docs/policies/p13-title-category.md) |
-| `SKILL.md` の「想定している引数」・`argument-hint` | [P12](../../docs/policies/p12-options-and-supplements.md)、`.claude/rules/argument-hint.md` |
+| Issue・PR のタイトルやラベルを決める手順、`init-repo` の Issue フォームの `title`・`labels`・`labels.yml` | [P12](../../docs/policies/p12-title-category.md) |
+| `SKILL.md` の「想定している引数」・`argument-hint` | [P11](../../docs/policies/p11-options-and-supplements.md)、`.claude/rules/argument-hint.md` |
 | `SKILL.md`・同梱の参照ファイル・規約（`.claude/rules/`・`files/.claude/rules/`）の本文 | [P9](../../docs/policies/p09-readable-ai-docs.md)、`.claude/rules/ai-docs.md` |
 | `plugins/aidd/references/harness-principles.md`（`harness-audit` の物差し） | [docs/values/](../../docs/values/README.md)、[P1](../../docs/policies/p01-operation-boundary.md)・[P3](../../docs/policies/p03-check-placement.md)・[P4](../../docs/policies/p04-tmp-output.md)・[P7](../../docs/policies/p07-readme-guide.md)・[P8](../../docs/policies/p08-short-body.md)・[P9](../../docs/policies/p09-readable-ai-docs.md)、`init-repo` の README の「収録物」 |
 
@@ -43,6 +43,6 @@
 | [P8](../../docs/policies/p08-short-body.md) | Issue・PR の本文は、人が読み切れる形にすること | Issue・PR の本文やコメントを書く手順・テンプレートを直すとき |
 | [P9](../../docs/policies/p09-readable-ai-docs.md) | AI が読む文書も、人が読んで判断に使える形にすること | `SKILL.md`・参照ファイル・規約を書く・直すとき |
 | [P10](../../docs/policies/p10-template-lifecycle.md) | 雛形は、実物を作ったら削除を提案し、削除は人が行うこと | `init-repo` の `docs/` に雛形を足す・直すとき |
-| [P11](../../docs/policies/p11-ask-only-for-judgment.md) | 選択肢で聞くのは、人の判断が要る場面だけにすること | スキルの手順で、`AskUserQuestion` を使うか決めるとき |
-| [P12](../../docs/policies/p12-options-and-supplements.md) | 動きはオプションで切り替え、自然な言葉の補足は承認の前に示すこと | スキルの引数（「想定している引数」・`argument-hint`）を足す・直すとき |
-| [P13](../../docs/policies/p13-title-category.md) | Issue・PR のタイトルで、変更の種類が一目で分かるようにすること | Issue・PR のタイトルを決める手順、Issue フォーム・ラベルを直すとき |
+| [P11](../../docs/policies/p11-options-and-supplements.md) | 動きはオプションで切り替え、自然な言葉の補足は承認の前に示すこと | スキルの引数（「想定している引数」・`argument-hint`）を足す・直すとき |
+| [P12](../../docs/policies/p12-title-category.md) | Issue・PR のタイトルで、変更の種類が一目で分かるようにすること | Issue・PR のタイトルを決める手順、Issue フォーム・ラベルを直すとき |
+| [P13](../../docs/policies/p13-ask-only-for-judgment.md) | 選択肢で聞くのは、人の判断が要る場面だけにすること | スキルの手順で、`AskUserQuestion` を使うか決めるとき |
