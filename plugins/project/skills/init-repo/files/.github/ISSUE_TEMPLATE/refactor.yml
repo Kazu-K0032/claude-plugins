@@ -1,6 +1,6 @@
 name: "リファクタリング"
 description: "外部から見た振る舞いを基本変えずにコードの構造・可読性・保守性を改善する"
-title: "[Refactor] "
+title: "【Refactor】"
 labels: ["refactor"]
 body:
   - type: markdown

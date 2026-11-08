@@ -1,6 +1,6 @@
 ---
 name: mod-output-customize
-description: config に同梱した mod（サイドバーのボタンで、応答の書き方・外に書き出す文書の書き方・読み取り専用のチャットモードを切り替える。スキルの実行時に SKILL.md へのリンクを出す）を ~/.claude/mods/ にコピーし、~/.claude/settings.json の CLAUDE_CODE_PLUGIN_DIRS に足して読み込ませる。mod を使い始める時、mod を更新したい時、または外したい時に使用する
+description: config に同梱した mod（サイドバーのボタンで、応答の書き方・読み取り専用のチャットモードを切り替える。スキルの実行時に SKILL.md へのリンクを出す）を ~/.claude/mods/ にコピーし、~/.claude/settings.json の CLAUDE_CODE_PLUGIN_DIRS に足して読み込ませる。mod を使い始める時、mod を更新したい時、または外したい時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Bash(diff:*), Bash(claude plugin validate:*)
 argument-hint: "[--uninstall（任意。省略時は導入・更新。付けると外す）]"

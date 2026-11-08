@@ -1,6 +1,6 @@
 name: "機能要求・仕様変更"
 description: "新機能の追加、または要件変更による既存機能の変更"
-title: "[Feature] "
+title: "【Feature】"
 labels: ["feature"]
 body:
   - type: markdown

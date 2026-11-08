@@ -18,7 +18,6 @@
 | `.claude/hooks/guard-destructive.sh` | 破壊的コマンドの承認エスカレーション | `settings.json` を入れる | 既存の PreToolUse フック |
 | `.claude/hooks/post-edit-lint.sh` | 編集後の Lint・整形（推論と機械の検査の分担） | ソースコードがある | 既存の PostToolUse フック |
 | `lefthook.yml` | Lint・整形のツールの定義（`post-edit-lint.sh` が使う）と、commitlint を呼ぶ `commit-msg` | `post-edit-lint.sh` を入れる | `lefthook.yml`・`lefthook.yaml`・`.lefthook.yml`・`.lefthook.yaml`（`claude-edit` を足す） |
-| `.claude/hooks/guard-git-write.sh` | ラッパー経由まで含めた git / gh 書き込みの遮断 | 要件に明記がある場合のみ（既定では未配線） | 同等の PreToolUse フック |
 | `.claude/rules/comment.md` | コメントの書き方の規約 | ソースコードがある | `CLAUDE.md`・`.claude/rules/` 内のコメント規約 |
 | `.claude/rules/env.md` | 環境変数と `*.example` の追従 | `.env*` / `*.example` を使う | `CLAUDE.md` 等の環境変数の規約 |
 | `.claude/rules/github-actions.md` | ワークフローの安全な書き方 | `.github/workflows/` がある、または入れる | 同等の規約 |
@@ -73,6 +72,13 @@
 - `docs/README.md` の表は、`docs/specs/`・`docs/architecture/` の `README.md` へリンクする。`CLAUDE.md` は、SSOT 一覧・ディレクトリの図・参照ドキュメント（`@` の行）で、2 つのフォルダの実物を指す。フォルダごと入れないときは、これらの行も外す。残すと、リンクが切れ、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
 - 雛形のあるフォルダの `README.md` の一覧は、雛形（`*.template.*`）へリンクする。雛形だけを入れないときは、一覧の雛形の行も外す（壊れたリンクになるため）
 - `CLAUDE.md` の「SSOT 一覧」は、`docs/strategies/` の 3 つの文書（`ai-driven-development.md`・`development.md`・`test-strategy.md`）を指す。入れないときは、一覧のその行も外す。残すと、一覧が実在しない文書を指し、`/aidd:docs-sync` の SSOT 一覧の検査で落ちる
+- `docs/` のフォルダ（`specs/`・`architecture/`・`strategies/`・`adr/`・`runbook/`）をフォルダごと入れないときは、どのフォルダでも、`docs/README.md` の表の行と、「書き方」の最初から置くフォルダの項目、`CLAUDE.md` のディレクトリの図の行も外す
+- `docs/runbook/` は雛形を配らないが、`docs/README.md` の表の行、`CLAUDE.md` の「SSOT 一覧」の 3 行（コマンド一覧・環境構築・デプロイ手順）とディレクトリの図、`docs/strategies/test-strategy.md` の「テストの層」の `docs/runbook/` の例が指す。入れないと決めたときは、これらも外す。`test-strategy.md` の例は、「使うツールは、ツールの手順を書く文書に書き」のように、置き場所を言わない形に直す
+- `docs/strategies/ai-driven-development.md`・`development.md` は、`docs/specs/`・`docs/adr/`・`.github/` を指す。指す先を入れず、導入先にも無いときは、次の記述も外す。導入の時点で外すため、`ai-driven-development.md` の冒頭の「変えるときは ADR に理由を残す」には当たらない
+  - `docs/specs/`：`ai-driven-development.md` の「文書で AI の向かう先をそろえる場合」の表の「何を作るか」の行、`development.md` の「進め方」の順 2 の「残す先」の `docs/specs/`
+  - `docs/adr/`：`ai-driven-development.md` の冒頭の「ADR（`docs/adr/`）に理由を残してから変える」と、同じ表の「なぜその選択をしたか」の行、`development.md` の順 2 の「残す先」の `docs/adr/`。冒頭の文は、「変えるときは、理由を残してから変える」のように、置き場所を言わない形に直す
+  - `.github/`（`.github/workflows/` を入れず、既存のワークフローも無いとき）：`ai-driven-development.md` の冒頭の `・.github/` と、「三者の分担」の「機械」の行の `・.github/workflows/`
+  - 並べたうちの 1 つだけを外すときは、残りの語でつながるように直す。`development.md` の順 2 の「残す先」が空になったら、「なし」にする
 - `.github/workflows/pr-checks.yml` のワークフローの検査は `.github/scripts/check-workflows.sh` を呼ぶ。片方だけ入れると、検査が落ちるか、【必須】の 2 つが確かめられないまま残る
 - `.github/workflows/pr-checks.yml` のスペルチェックは `cspell.json`（除外語・検査対象）を読む。無いと、テンプレート自身の語（`aidd`・`ssot` 等）も誤字として出て、PR のチェックが落ちる
 - Issue テンプレートの `labels:` は `labels.yml` のラベルを前提にしている

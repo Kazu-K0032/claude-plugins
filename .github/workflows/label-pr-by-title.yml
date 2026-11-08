@@ -1,6 +1,6 @@
 name: PR のタイトルからラベルを付け直す
 
-# PR のタイトルの [分類]（[Bug] など）から、分類のラベルを付け直す。タイトルを唯一の正にし、人が気をつけなくてもラベルがそろうようにするため
+# PR のタイトルの【分類】（【Bug】など）から、分類のラベルを付け直す。前の書式の [分類]（[Bug] など）も同じ分類として扱う。前の版の Issue フォームで作ったタイトルが残るため。タイトルを唯一の正にし、人が気をつけなくてもラベルがそろうようにするため
 # リリースノートを PR のラベルで見出しに分けるとき、付け忘れや食い違いがあると、違う見出しに入るのを防ぐ
 # pull_request_target で動かすのは、fork からの PR でもラベルを付けるため。pull_request では、fork の PR のトークンが読み取り専用になる
 # pull_request_target は書き込みの権限で動くため、PR のコードは checkout せず、タイトルは run に埋め込まず env で渡す
@@ -39,16 +39,16 @@ jobs:
           echo "# PR #${PR_NUMBER} のラベル" >> "$GITHUB_STEP_SUMMARY"
 
           # 分類のラベル。ここに無いラベル（duplicate など）は触らない
-          # [Release] と release ラベルは、リリースの仕組みが付けるため扱わない
+          # 【Release】と release ラベルは、リリースの仕組みが付けるため扱わない
           managed="bug feature enhancement docs documentation refactor research other"
           # 分類ごとに、付けるラベルの候補。前にあるものから、リポジトリにあるものを使う
           case "$PR_TITLE" in
-            "[Bug]"*)      candidates="bug" ;;
-            "[Feature]"*)  candidates="feature enhancement" ;;
-            "[Docs]"*)     candidates="docs documentation" ;;
-            "[Refactor]"*) candidates="refactor" ;;
-            "[Research]"*) candidates="research" ;;
-            "[Other]"*)    candidates="other" ;;
+            "【Bug】"*|"[Bug]"*)           candidates="bug" ;;
+            "【Feature】"*|"[Feature]"*)   candidates="feature enhancement" ;;
+            "【Docs】"*|"[Docs]"*)         candidates="docs documentation" ;;
+            "【Refactor】"*|"[Refactor]"*) candidates="refactor" ;;
+            "【Research】"*|"[Research]"*) candidates="research" ;;
+            "【Other】"*|"[Other]"*)       candidates="other" ;;
             *)
               # dependabot など、ツールが作る PR のタイトルは分類で始まらない。タイトルの決まりが違うリポジトリでも、何もしない
               echo "タイトルが分類で始まらないため、ラベルを変えません" | tee -a "$GITHUB_STEP_SUMMARY"

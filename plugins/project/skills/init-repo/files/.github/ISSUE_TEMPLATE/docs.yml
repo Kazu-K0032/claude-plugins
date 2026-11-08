@@ -1,6 +1,6 @@
 name: "文書"
 description: "README・docs などの文書だけを足す・直す"
-title: "[Docs] "
+title: "【Docs】"
 labels: ["docs"]
 body:
   - type: markdown

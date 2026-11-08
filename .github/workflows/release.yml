@@ -91,7 +91,7 @@ jobs:
           pr_url=$(gh pr create \
             --base main \
             --head "release/${VERSION}" \
-            --title "[Release] ${VERSION} をリリース" \
+            --title "【Release】${VERSION} をリリース" \
             --label release \
             --body-file "$body")
           gh issue comment "${ISSUE_NUMBER}" --body "リリースの PR を作りました: ${pr_url}"

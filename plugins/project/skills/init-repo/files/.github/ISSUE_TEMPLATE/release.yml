@@ -1,6 +1,6 @@
 name: "リリース"
 description: "本番環境へのリリース作業"
-title: "[Release] "
+title: "【Release】"
 labels: ["release"]
 body:
   - type: markdown

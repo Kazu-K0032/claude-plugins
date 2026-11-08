@@ -33,7 +33,7 @@ Issue を読んで実装する bot（GitHub Actions の Claude など）があ�
 
 ### 手順 8 で判定する
 
-1. リポジトリの決まり（`CONTRIBUTING.md` の bot の節、`docs/` の bot の文書など）を探す。bot に変えさせないファイルや、頼まない Issue の決まりがあれば、それに従って判定する（P6 の「同梱の決まりの扱い」）
+1. リポジトリの決まり（`CONTRIBUTING.md` の bot の節、`docs/` の bot の文書など）を探す。bot に変えさせないファイルや、頼まない Issue の決まりがあれば、それに従って判定する（P6 の「同梱の決まりは既定」）
 1. 決まりが無ければ、`.github/workflows/` を `anthropics/claude-code-action` で Grep し、bot があるかだけを見る。bot が無ければ、注記は書かない
 1. bot はあるが決まりが無ければ、範囲を超えるかを手順 8 の問いで利用者に聞く。推測で決めないため
 

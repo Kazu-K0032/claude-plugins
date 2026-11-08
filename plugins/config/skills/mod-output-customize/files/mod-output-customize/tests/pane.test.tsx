@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
 /** 並ぶボタンの key */
-const BUTTON_KEYS = ['toggle-chat-mode', 'toggle-customized', 'toggle-doc-concise']
+const BUTTON_KEYS = ['toggle-chat-mode', 'toggle-customized']
 
 const SURFACES = ['terminal', 'desktop'] as const
 
@@ -59,7 +59,7 @@ test('サイドバーにボタンを縦に並べ、クリックで on/off を切
   }
 })
 
-test('session.start が来なくても、保存した応答カスタムと文書を簡潔にの OFF を読み直して描く', async ($, on) => {
+test('session.start が来なくても、保存した応答カスタムの OFF を読み直して描く', async ($, on) => {
   // /clear などで $.state が既定値に戻った後と同じく、session.start を通さずに描く
   on('store.get', () => ({ value: false }))
 
@@ -71,26 +71,7 @@ test('session.start が来なくても、保存した応答カスタムと文書
     props: DOCKED_PANE_PROPS,
   })
   const labels = await pane.findAll({ type: 'Text', text: / O(N|FF)$/ })
-  expect(labels.map(label => label.text.endsWith(' OFF'))).toEqual([true, true, true])
-
-  await pane.unmount()
-})
-
-test('session.start が来ないまま片方のボタンを押しても、もう片方は保存した値のまま描く', async ($, on) => {
-  on('store.get', (_$, e) => ({ value: e.key === 'isDocConcise' ? false : undefined }))
-  on('store.set', () => ({ value: undefined }))
-
-  const pane = await $.ui.mount({
-    plugin: 'mod-output-customize',
-    surface: 'terminal',
-    component: 'Pane',
-    requestId: PANE_ID,
-    props: DOCKED_PANE_PROPS,
-  })
-  await pane.press({ key: 'toggle-customized' })
-  const labels = await pane.findAll({ type: 'Text', text: / O(N|FF)$/ })
-  // チャットモード・応答カスタム（押して OFF）・文書を簡潔に（保存した OFF）の順
-  expect(labels.map(label => label.text.endsWith(' OFF'))).toEqual([true, true, true])
+  expect(labels.map(label => label.text.endsWith(' OFF'))).toEqual([true, true])
 
   await pane.unmount()
 })

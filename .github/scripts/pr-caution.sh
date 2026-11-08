@@ -12,7 +12,7 @@
 
 set -uo pipefail
 
-# 重要なファイル。変えるときは、CONTRIBUTING.md の bot の節・docs/claude-bot.md・docs/policies/permissions.md・
+# 重要なファイル。変えるときは、CONTRIBUTING.md の bot の節・docs/claude-bot.md・docs/policies/skill-permission-map.md・
 # .claude/skills/issue-to-pr/unchangeable-paths.md も直す
 #   - リポジトリのルートと、利用先に配る雛形（files/ の下）の .github/・.claude/・.mcp.json・.vscode/・lefthook.yml
 #   - どの階層の CLAUDE.md も（Claude が読み込む規約のため）
