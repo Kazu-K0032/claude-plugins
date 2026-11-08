@@ -1,6 +1,6 @@
 name: "AIDD 振り返り"
 description: "AI 駆動開発のプロセスを振り返り、改善点を記録する。記入後は対象 Issue にコメントとして貼り付ける"
-title: "[Retro] "
+title: "【Retro】"
 body:
   - type: markdown
     attributes:

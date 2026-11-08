@@ -13,14 +13,29 @@ const SKILL_NAME = /^([a-z0-9][a-z0-9-]*):([a-z0-9][a-z0-9-]*)$/
 /** 打った行の先頭のスキル（/aidd:commit …） */
 const TYPED_SKILL = /^\s*\/([a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9-]*)(?=\s|$)/
 
-/** 入れたプラグインの版と、置き場所 */
-export type Install = { version: string; path: string }
+/** 入れた版（version）の形。この形の版だけを、タグ（v1.1.0）にしてリンクに使う */
+const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
+
+/** 入れたコミット（gitCommitSha）の形。40 桁の 16 進数だけを、リンクに使う */
+const COMMIT_SHA = /^[0-9a-f]{40}$/
+
+/** 版もコミットも使えないときに、リンク先にするブランチ */
+const FALLBACK_REF = 'main'
+
+/** 入れたプラグインの版と、置き場所と、リンク先にするタグかコミットかブランチ */
+export type Install = { version: string; path: string; ref: string }
 
 /** スキルの名前と、その SKILL.md への GitHub のリンクと、手元の SKILL.md のパス */
 export type SkillLink = { name: string; url: string; file: string }
 
-/** installed_plugins.json の、1 つの入れ方の記録。projectPath は公式の文書に無いため、あれば使う */
-type InstallRecord = { scope?: unknown; installPath?: unknown; version?: unknown; projectPath?: unknown }
+/** installed_plugins.json の、1 つの入れ方の記録。projectPath・gitCommitSha は公式の文書に無いため、あれば使う */
+type InstallRecord = {
+  scope?: unknown
+  installPath?: unknown
+  version?: unknown
+  projectPath?: unknown
+  gitCommitSha?: unknown
+}
 
 /**
  * パスを比べられる形にする。区切りを / にそろえ、末尾の / を外し、Windows のドライブ付きの名前は小文字にする
@@ -53,15 +68,30 @@ function appliesTo(record: InstallRecord, cwd: string): boolean {
 }
 
 /**
+ * リンク先にする ref を決める。入れた版のタグ（v1.1.0）を優先し、版の形でなければ入れたコミット、それも無ければ main にする
+ * @param version - 入れた版
+ * @param gitCommitSha - 入れたコミット
+ * @returns タグ・コミット・ブランチのどれか
+ */
+function linkRef(version: string, gitCommitSha: unknown): string {
+  if (VERSION.test(version)) {
+    return `v${version}`
+  }
+
+  return typeof gitCommitSha === 'string' && COMMIT_SHA.test(gitCommitSha) ? gitCommitSha : FALLBACK_REF
+}
+
+/**
  * 記録を、版と置き場所が同じものを 1 つにまとめた一覧にする
  * @param records - 入れ方の記録
- * @returns 版と置き場所が読める記録を、重ねずに並べた一覧
+ * @returns 版と置き場所が読める記録を、重ねずに並べた一覧。リンク先は linkRef で決める
  */
 function distinctInstalls(records: readonly InstallRecord[]): Install[] {
   const found = new Map<string, Install>()
-  for (const { version, installPath } of records) {
+  for (const { version, installPath, gitCommitSha } of records) {
     if (typeof version === 'string' && typeof installPath === 'string') {
-      found.set(`${version}\n${installPath}`, { version, path: installPath })
+      const ref = linkRef(version, gitCommitSha)
+      found.set(`${version}\n${installPath}\n${ref}`, { version, path: installPath, ref })
     }
   }
 
@@ -104,7 +134,7 @@ export function parseInstalls(json: string, cwd: string): Record<string, Install
 }
 
 /**
- * スキルの SKILL.md へのリンクを作る。リンク先は、入れている版のタグ（v1.1.0 など）
+ * スキルの SKILL.md へのリンクを作る。リンク先は、入れた版のタグ（v1.1.0）。タグはリリースの PR のマージで作られ、hotfix は手で作る
  * @param name - スキルの名前（aidd:commit）
  * @param installs - parseInstalls で読んだ版と置き場所
  * @returns このマーケットプレイスのスキルで、版が分かるときだけリンク。それ以外は null
@@ -119,7 +149,7 @@ export function skillLink(name: string | undefined, installs: Record<string, Ins
 
   return {
     name: `${plugin}:${skill}`,
-    url: `${REPO_URL}/blob/v${install.version}/plugins/${plugin}/skills/${skill}/SKILL.md`,
+    url: `${REPO_URL}/blob/${install.ref}/plugins/${plugin}/skills/${skill}/SKILL.md`,
     file: `${install.path}/skills/${skill}/SKILL.md`,
   }
 }

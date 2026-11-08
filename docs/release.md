@@ -35,7 +35,7 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
 1. `release.yml` が次を行う。終わると、Issue に PR の URL がコメントされる
    - `plugin-checks.yml` と同じ検査を `develop` で動かす
    - `develop` から `release/v<version>` を作る
-   - `main` へ PR（タイトル：`[Release] v<version> をリリース`）を作る。本文には Issue の本文と `Closes #<Issue番号>` が入る
+   - `main` へ PR（タイトル：`【Release】v<version> をリリース`）を作る。本文には Issue の本文と `Closes #<Issue番号>` が入る
 1. PR の中身を確かめ、マージする。Issue を作った後に `develop` へ入った変更は、このリリースに入らない
 1. `release.yml` が、マージした `main` のコミットにタグ `v<version>` と GitHub Release を作り、PR と Issue にコメントする
 
@@ -82,7 +82,7 @@ hotfix で、手で Release を作るときの手順。通常のリリースで�
 
 - タグ名は `v<version>`（例：`v1.1.0`）
 - 変更点は Release の説明だけに書き、CHANGELOG は持たない。説明は、前のタグから入った PR のタイトルの一覧で、PR のラベルごとに「機能」「不具合の修正」などの見出しに分かれる。見出しとラベルの対応は `.github/release.yml` にある
-- PR のラベルは、`.github/workflows/label-pr-by-title.yml` がタイトルの `[分類]` から付け直す。PR が違う見出しに入りそうなら、ラベルでなくタイトルを直す。説明はリリースのときに一度だけ作られるため、後で直しても並びは変わらない
+- PR のラベルは、`.github/workflows/label-pr-by-title.yml` がタイトルの分類（`【Bug】` など）から付け直す。PR が違う見出しに入りそうなら、ラベルでなくタイトルを直す。説明はリリースのときに一度だけ作られるため、後で直しても並びは変わらない
 - リリースの PR（`release` ラベル）は、`.github/release.yml` で説明の一覧から外す。中身の PR と重なるため
 
 ## 準備（一度だけ）

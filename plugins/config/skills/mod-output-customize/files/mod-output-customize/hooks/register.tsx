@@ -32,9 +32,6 @@ const LINK_COLOR = '#3b82f6'
 /** 応答のカスタマイズの on/off を次のセッションへ持ち越すための $.store のキー */
 const CUSTOMIZED_STORE_KEY = 'isCustomized'
 
-/** 文書の書き方の指定の on/off を次のセッションへ持ち越すための $.store のキー */
-const DOC_CONCISE_STORE_KEY = 'isDocConcise'
-
 /** チャットモード中に、画面下のモード表示へ足す文字 */
 const CHAT_MODE_LABEL = 'チャット'
 
@@ -46,9 +43,6 @@ const isChatMode = atom({ plugin: 'mod-output-customize', key: 'isChatMode' } as
 
 /** 応答を mod の形式（簡潔版・概要の見出しと色分けの記法）で書かせるか */
 const isCustomized = atom({ plugin: 'mod-output-customize', key: 'isCustomized' } as const, true)
-
-/** Issue・PR の本文やコメントなど、外に書き出す文書を簡潔に書かせるか */
-const isDocConcise = atom({ plugin: 'mod-output-customize', key: 'isDocConcise' } as const, true)
 
 /** 保存した on/off を $.state に読み込んだか。/clear・/resume・/branch で $.state が既定値に戻ると false に戻る */
 const hasLoadedToggles = atom({ plugin: 'mod-output-customize', key: 'hasLoadedToggles' } as const, false)
@@ -102,13 +96,6 @@ const CUSTOMIZED_TOGGLE: Toggle = {
   onColor: EMPHASIS_COLOR,
 }
 
-/** 文書の書き方の指定を切り替えるボタン */
-const DOC_CONCISE_TOGGLE: Toggle = {
-  key: 'toggle-doc-concise',
-  label: '文書を簡潔に',
-  onColor: 'suggestion',
-}
-
 /** チャットモードで、読み取り用でないツール（ファイルの編集・PowerShell など）を止めたとき、モデルに返す理由 */
 const TOOL_DENY_REASON = [
   'チャットモード（読み取り専用）のため、このツールは使えません。',
@@ -134,16 +121,12 @@ const MCP_DENY_REASON = [
 ].join('')
 
 /**
- * 前のセッションで保存した、応答のカスタマイズと文書の書き方の指定の on/off を $.state に読み込む
+ * 前のセッションで保存した、応答のカスタマイズの on/off を $.state に読み込む
  * @param $ - フックが受け取った engine のインターフェース
  */
 async function loadSavedToggles($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<void> {
-  const [savedCustomized, savedDocConcise] = await Promise.all([
-    $.store.get(CUSTOMIZED_STORE_KEY),
-    $.store.get(DOC_CONCISE_STORE_KEY),
-  ])
+  const savedCustomized = await $.store.get(CUSTOMIZED_STORE_KEY)
   await update($, isCustomized, () => savedCustomized !== false)
-  await update($, isDocConcise, () => savedDocConcise !== false)
   await update($, hasLoadedToggles, () => true)
 }
 
@@ -162,28 +145,12 @@ async function readCustomized($: Pick<CoreEngineInterface, 'state' | 'store'>): 
 }
 
 /**
- * 文書の書き方の指定の on/off を読む。読み方は readCustomized と同じ
- * @param $ - フックが受け取った engine のインターフェース
- * @returns 外に書き出す文書を簡潔に書かせるか
- */
-async function readDocConcise($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<boolean> {
-  if (await read($, hasLoadedToggles)) {
-    return read($, isDocConcise)
-  }
-  return (await $.store.get(DOC_CONCISE_STORE_KEY)) !== false
-}
-
-/**
  * on/off のボタンの今の状態と、押したときの処理を読む。サイドバーと入力欄の上の帯で同じものを使う
  * @param $ - フックが受け取った engine のインターフェース
- * @returns チャットモード・応答カスタム・文書を簡潔にの順の状態
+ * @returns チャットモード・応答カスタムの順の状態
  */
 async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>): Promise<ToggleState[]> {
-  const [chatMode, customized, docConcise] = await Promise.all([
-    read($, isChatMode),
-    readCustomized($),
-    readDocConcise($),
-  ])
+  const [chatMode, customized] = await Promise.all([read($, isChatMode), readCustomized($)])
 
   return [
     {
@@ -197,20 +164,10 @@ async function readToggleStates($: Pick<CoreEngineInterface, 'state' | 'store'>)
       toggle: CUSTOMIZED_TOGGLE,
       isOn: customized,
       onPress: async () => {
-        // $.state が既定値に戻った後は保存した値を描いているため、先に 2 つとも読み込んでから切り替える。
-        // 片方だけ読み込むと、読み込み済みの印が立ち、もう片方が既定値で描かれてしまう
+        // $.state が既定値に戻った後は保存した値を描いているため、先に読み込んでから切り替える
         await loadSavedToggles($)
         const value = await update($, isCustomized, isOnNow => !isOnNow)
         await $.store.set(CUSTOMIZED_STORE_KEY, value)
-      },
-    },
-    {
-      toggle: DOC_CONCISE_TOGGLE,
-      isOn: docConcise,
-      onPress: async () => {
-        await loadSavedToggles($)
-        const value = await update($, isDocConcise, isOnNow => !isOnNow)
-        await $.store.set(DOC_CONCISE_STORE_KEY, value)
       },
     },
   ]
@@ -342,33 +299,6 @@ const PLAIN_TEXT = [
   'これまでの応答で使っていても、今回は通常の形式で書く。',
 ].join('\n')
 
-/** 文書の書き方の指定が ON のときに添える文 */
-const DOC_CONCISE_TEXT = [
-  '# 文書の書き方',
-  'Issue・PR・Discussion の本文やコメント、レビューコメント、リポジトリ内の文書（README・docs・ADR など）、Notion・Slack・メールなど外部サービスへの投稿を書くときは、次の書き方にする。新しく書くときも、既存の文書を更新するときも同じ。コミットメッセージとコード内のコメントは対象外。',
-  '- 一番大事なのは、読み手が判断できること。冒頭の概要は短く保ち、概要より後の節は、再現手順・エラー文・要件のように作業に使う情報を削らない。長い文章は読み手の集中力を下げるため、書き終えたら、削っても意味が変わらない語や文がないか見直して削る',
-  '- 難しい言葉・専門用語・カタカナ語はできるだけ使わず、誰が読んでも分かる言葉で書く。専門用語が避けられないときは、初めて出すときに短い言い換えを添える',
-  '- 冒頭の 1〜2 文で、目的か結論（何をするか・何が起きたか、なぜか）を書く',
-  '- 1 文に 1 つの事柄だけを書く。箇条書きと短い見出しで区切る。コメントは 1〜3 文を目安にする',
-  '- Issue・PR の本文とコメントは、冒頭の概要（最初の節）を 300 文字以内にする。見出し・記号も数え、HTML コメント・リンクの URL・チェックリストと関連 Issue の節は数えない。既存の本文の概要が超えているときは、縮める案を示して承認を取る',
-  '- 概要より後の節は上限を置かない。Issue は種類で書き分ける。バグ修正は再現手順・エラーメッセージ（そのまま引用）・原因の根拠を、新機能は決めた要件（どこに・何を・どんな形で）を詳しく書き、文書や版の更新は概要とタスクだけにする',
-  '- 処理の流れを平易に書く。技術的な内容は、引用かリンクで示す。判断の理由は残す',
-  '- ツール・ほかのリポジトリ・外部の文書・ほかのリポジトリのファイルの名前は、初めて出すときに名前をリンクテキストにし、2 回目からは名前だけを書く。書き込む先のリポジトリのファイルは、リンクにせずコードスパンで書く',
-  '- 読み手が判断や作業をするのに必要なことだけを書く。調べた経緯、同じ内容の繰り返し、前置きやあいさつは書かない',
-  '- 「いい感じに」「適宜」のようなあいまいな語を避け、数値・ファイル名・手順で具体的に書く',
-  '- 既存の文書を更新するときは、足す・直す部分をこの書き方にする。書き足すより書き換えを優先し、変更で古くなった記述や重複は消す。頼まれていない部分は書き直さない',
-  '- リポジトリにテンプレート（.github/PULL_REQUEST_TEMPLATE.md など）や文書の規約があれば、そちらを優先する',
-  '- チャット用の形式（「### 簡潔版」「### 概要」「### 変えた設定」の見出し、✅ / ❌ / ==語句== / {{仕様}} の記法）は使わない',
-].join('\n')
-
-/**
- * 文書の書き方の指定が OFF のときに添える文。それまでのプロンプトで指定していても、今回は解除する
- */
-const DOC_PLAIN_TEXT = [
-  '# 文書の書き方',
-  '文書（Issue・PR の本文やコメント、リポジトリ内の文書など）の書き方の指定は解除した。これまでのプロンプトでの指定に関係なく、通常どおりに書く。',
-].join('\n')
-
 /** チャットモードのときに添える文 */
 const CHAT_MODE_TEXT = [
   '# チャットモード（読み取り専用）',
@@ -424,16 +354,8 @@ export const register: Register = on => {
       typedLink = await lookUpSkillLink($, lookup, e.command?.name ?? typedSkillName(e.text))
     }
 
-    const [chatMode, customized, docConcise] = await Promise.all([
-      read($, isChatMode),
-      readCustomized($),
-      readDocConcise($),
-    ])
-    const added = [
-      customized ? GUIDE_TEXT : PLAIN_TEXT,
-      docConcise ? DOC_CONCISE_TEXT : DOC_PLAIN_TEXT,
-      ...(chatMode ? [CHAT_MODE_TEXT] : []),
-    ]
+    const [chatMode, customized] = await Promise.all([read($, isChatMode), readCustomized($)])
+    const added = [customized ? GUIDE_TEXT : PLAIN_TEXT, ...(chatMode ? [CHAT_MODE_TEXT] : [])]
 
     return next({ ...e, context: [...(e.context ?? []), ...added] })
   })
@@ -465,7 +387,7 @@ export const register: Register = on => {
     if (surfaces.length > 0) {
       await $.command.register({
         name: PANE_COMMAND,
-        description: '出力の設定（チャットモード・応答カスタム・文書を簡潔に）のボタンをサイドバーに開く',
+        description: '出力の設定（チャットモード・応答カスタム）のボタンをサイドバーに開く',
       })
       // 頼まれずに開くサイドバーは、端末の幅が足りるまで描かれない。その間は帯にボタンを出す
       void openPane($)

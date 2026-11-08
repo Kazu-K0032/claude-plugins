@@ -16,10 +16,6 @@
 1. 既存のワークフローがあれば、`pr-checks.yml` の「ワークフローの検査」に通るよう直す（SHA の固定・`permissions: {}`・`timeout-minutes` など。規約は `.claude/rules/github-actions.md`）。直さないと、導入の直後の PR で検査が落ちる。手元では `pipx run zizmor==<版> .` と `bash .github/scripts/check-workflows.sh` で同じ検査を流せる
 1. `pr-checks.yml` の `pull_request` の `branches`（既定は `main`）を、保護ブランチに合わせる（例：`develop` に PR を溜めるなら `[main, develop]`）。合わせないと、そのブランチへの PR で検査が動かない
 1. `sync-labels.yml` は、`labels.yml` に無いラベルを消さない（`skip-delete: true`）。消して `labels.yml` にそろえたいときは、使っているラベルを `labels.yml` に足してから `false` にする。消したラベルは Issue・PR からも外れ、戻せない
-1. `label-pr-by-title.yml` は、PR のタイトルが `[Bug]` などの分類で始まるときだけ、分類のラベルを付け直す。手で付けた分類のラベルも、タイトルに合わなければ外れる。タイトルの決まりが違うリポジトリでは何もしない。公開リポジトリでは、GitHub が 2026-12-02 から `pull_request_target` を既定で止めるため、Actions のイベントポリシーで許可する。リポジトリの設定の変更のため、人が行う（[pull_request_target の安全な使い方](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target)）。このワークフローは既定のブランチにある版で動くため、既定のブランチに入るまでは動かない
+1. `label-pr-by-title.yml` は、PR のタイトルが `【Bug】` などの分類（前の書式の `[Bug]` も）で始まるときだけ、分類のラベルを付け直す。手で付けた分類のラベルも、タイトルに合わなければ外れる。タイトルの決まりが違うリポジトリでは何もしない。公開リポジトリでは、GitHub が 2026-12-02 から `pull_request_target` を既定で止めるため、Actions のイベントポリシーで許可する。リポジトリの設定の変更のため、人が行う（[pull_request_target の安全な使い方](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target)）。このワークフローは既定のブランチにある版で動くため、既定のブランチに入るまでは動かない
 1. Issue テンプレートを入れたら、`.github/ISSUE_TEMPLATE/release.yml` の「事前確認」と「リリース手順」を、このリポジトリのデプロイの方式に合わせる。テンプレートは、検証環境があり、リリース用ブランチへのマージでデプロイワークフローが動く構成を前提にしている（例：`main` へのマージでホスティングが自動でデプロイするなら、リリース用ブランチとデプロイワークフローの行をその方式の手順に置き換える）
 1. 既存の `.sh` と、手順 5 で `.gitattributes` に足した拡張子のファイルが CRLF でコミットされているときは、`.gitattributes` を入れた後に `git add --renormalize .` で LF にそろえる。LF にそろえる差分が出るため、内容を確かめてから人がコミットする。CRLF のままだと、Linux の bash でそのフックが動かず、整形のツールの検査も通らない
-
-## 配線していないフック
-
-`guard-git-write.sh` は配線していない。`git commit` / `git push` をラッパースクリプト経由まで含めて塞ぎたい場合のみ、`settings.json` の `PreToolUse` の `"matcher": "Bash|PowerShell|Monitor"` に追加するよう案内する。

@@ -1,6 +1,6 @@
 name: "不具合"
 description: "期待と違う動き・エラーの報告"
-title: "[Bug] "
+title: "【Bug】"
 labels: ["bug"]
 body:
   - type: markdown

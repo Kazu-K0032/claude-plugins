@@ -17,6 +17,7 @@
 | --- | --- | --- |
 | `.claude/hooks/session-start.sh` と、その配線（v2.1.0 まで。#132） | `.claude/hooks/session-start.sh` がある。`.claude/settings.json` の `hooks.SessionStart` に、`bash .claude/hooks/session-start.sh` を呼ぶ項目がある | 配線は、その項目だけを外す。ほかの `SessionStart` の項目は残し、空になったら `SessionStart` ごと外す。ファイルは `rm .claude/hooks/session-start.sh` を示す。`settings.json` を上書きした利用先では、ファイルだけが残る |
 | `docs/log/` の案内板と雛形（v2.2.0 まで。#197） | `docs/log/README.md`・`docs/log/YYYY-MM-DD-作業の対象.template.md` がある。`docs/README.md` の表に `log/` の行、`CLAUDE.md` のディレクトリの図に `log/` の行がある | 案内板と雛形だけなら、フォルダごと外す案にする（`rm -r docs/log` を示し、`docs/README.md`・`CLAUDE.md` の `log/` の行を外す）。作業ログがあれば、配らなくなったことだけを伝え、雛形だけを外す案にする（`rm` を示す）。案内板と `log/` の行は、ログを読むのに使うため残す |
+| `.claude/hooks/guard-git-write.sh`（複製元の v2.6.0 まで） | `.claude/hooks/guard-git-write.sh` がある | `.claude/settings.json` の `hooks` から呼ばれていなければ、`rm .claude/hooks/guard-git-write.sh` を示す。呼ばれていれば、Issue・PR の操作を人が行うと決めたリポジトリのため、配らなくなったことだけを伝えて残す |
 | `CLAUDE.md` の `docs-type` の節（v2.0.0 まで） | `CLAUDE.md` に「`.claude/` ファイルのメタデータ規約」の節があり、frontmatter に `docs-type` を求めている | 節を外す。AI 向けの文書は人が読めなくてよいとしており、`.claude/rules/ai-docs.md` と食い違うため |
 
 ## ファイル別の方針

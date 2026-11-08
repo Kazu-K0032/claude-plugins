@@ -20,5 +20,5 @@
 
 ## 保守
 
-- bot が編集できる protected paths の範囲は、`.github/scripts/allow-protected-edits.sh` が正典。変えるときは、この節と `CONTRIBUTING.md`・`docs/claude-bot.md`・`docs/policies/permissions.md` も直す
-- 注意書きに並ぶファイルは、`.github/scripts/pr-caution.sh` の `important` が正典。変えるときは、この節と `CONTRIBUTING.md`・`docs/claude-bot.md`・`docs/policies/permissions.md` も直す
+- bot が編集できる protected paths の範囲は、`.github/scripts/allow-protected-edits.sh` が正典。変えるときは、この節と `CONTRIBUTING.md`・`docs/claude-bot.md`・`docs/policies/skill-permission-map.md` も直す
+- 注意書きに並ぶファイルは、`.github/scripts/pr-caution.sh` の `important` が正典。変えるときは、この節と `CONTRIBUTING.md`・`docs/claude-bot.md`・`docs/policies/skill-permission-map.md` も直す
