@@ -69,6 +69,12 @@ claude-edit:
       run: 'command -v npx >/dev/null || exit 0; npx --yes eslint@<版> --max-warnings 0 {staged_files}'
 ```
 
+`run` の形は、手順 2 で選ばれたパッケージマネージャー（`setup-questions.md`）で決める。
+
+- npm・pnpm と、Yarn の PnP でないもの（`nodeLinker: node-modules` など）は、`node_modules/.bin/<ツール>` を指す上の形にする
+- Yarn 2 以降の PnP は `node_modules` を作らないため、`yarn run <ツール>` の形にする（[yarn run](https://yarnpkg.com/cli/run)）。例：`'command -v yarn >/dev/null || exit 0; yarn run oxlint --deny-warnings {staged_files}'`。ツールが devDependencies に無いと失敗し、その出力が Claude に返るため、ツールを入れてから書く
+- `npx` の形は、パッケージマネージャーに関係なく使える。`npx` は npm に含まれ、Node と一緒に入るため
+
 ### 時間切れの目安（timeout）
 
 `settings.json` の PostToolUse の `timeout` は、既定で 60 秒にしてある。時間切れで打ち切られると、Lint の結果は Claude に返らず、Claude も利用者もその場で気づけないため、`claude-edit` が 1 回の編集で終わる時間より十分に長くする。
@@ -95,19 +101,31 @@ lefthook と、上の節で決めたツールは、手順 2 で選んでもら�
 
 | 導入先 | lefthook | Lint・整形のツール |
 | --- | --- | --- |
-| `package.json` がある | npm の devDependencies | npm の devDependencies |
+| `package.json` がある | 選ばれたパッケージマネージャーの devDependencies。Yarn の PnP では、下の `package.json` が無い行の入れ方 | 選ばれたパッケージマネージャーの devDependencies |
 | `package.json` が無い（Windows） | `winget install evilmartians.lefthook` | ツールの公式の文書にある入れ方 |
 | `package.json` が無い（macOS） | `brew install lefthook` | ツールの公式の文書にある入れ方 |
 | `package.json` が無い（Linux） | Homebrew があれば `brew install lefthook`。無ければ人が入れる | ツールの公式の文書にある入れ方 |
 
-- `package.json` があれば npm にする。devDependencies に入るため、チームで同じ版がそろう
+- `package.json` があれば、パッケージマネージャー（npm・yarn・pnpm）を `setup-questions.md` の「パッケージマネージャー」で選んでもらう。devDependencies に入るため、チームで同じ版がそろう
+- Yarn 2 以降の既定（`nodeLinker` が `pnp`）では、`node_modules` が作られない。lefthook もツールも `node_modules/.bin/` の下に置かれず、フックが lefthook を見つけられないため、lefthook は OS のパッケージ管理で入れる
 - ほかの入れ方は [導入の方法](https://lefthook.dev/install/) にある。表に無い入れ方を選ばれたら、それに従う
 
 ### Claude が入れるとき
 
-- npm で lefthook を入れるときは、`npm install --save-dev --ignore-scripts lefthook` にする。npm 版は、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため。`.git/` の書き換えは人が行う。`LEFTHOOK=0` では止まらない
-- Lint・整形のツールは、lefthook と別のコマンドで入れる。`--ignore-scripts` は、同じコマンドで入れる全部のパッケージに効くため
-- 同意や管理者の権限を求められて止まったら、入れずに「自分で入れる」の流れに切り替え、手順 6 で伝える。同意するかは人が決めるため
+lefthook の npm のパッケージは、入れたときに `postinstall` で `lefthook install` を動かし、`.git/hooks` を書き換える。`.git/` の書き換えは人が行うため、lefthook はスクリプトを動かさない形で入れる。`LEFTHOOK=0` では止まらない。
+
+| パッケージマネージャー | lefthook | Lint・整形のツール |
+| --- | --- | --- |
+| npm | `npm install --save-dev --ignore-scripts lefthook` | `npm install --save-dev <パッケージ>` |
+| pnpm | `pnpm add -D --ignore-scripts lefthook` | `pnpm add -D <パッケージ>` |
+| Yarn 2 以降（`node-modules` など PnP でないもの） | `yarn add --dev --mode=skip-build lefthook` | `yarn add --dev <パッケージ>` |
+| Yarn 2 以降（PnP） | OS のパッケージ管理で入れる（上の「入れ方を決める」） | `yarn add --dev <パッケージ>` |
+| Yarn 1 | Claude は入れず、「自分で入れる」に切り替える | `yarn add --dev <パッケージ>` |
+
+- Yarn 2 以降の `yarn add` には `--ignore-scripts` が無く、`--mode=skip-build` でビルドのスクリプトを止める（[yarn add](https://yarnpkg.com/cli/add)）
+- Yarn 1 は、`yarn add` の文書に `--ignore-scripts` が無い（[yarn add](https://classic.yarnpkg.com/en/docs/cli/add)）。`.git/hooks` を書き換えずに入れられるかを確かめられないため、lefthook は人が入れる
+- Lint・整形のツールは、lefthook と別のコマンドで入れる。スクリプトを止める指定は、同じコマンドで入れる全部のパッケージに効くため
+- 同意や管理者の権限を求められて止まったら、入れずに「自分で入れる」の流れに切り替え、手順 6 で伝える。pnpm が依存のビルドのスクリプトの承認（`pnpm approve-builds` など）を求めたときも同じにする。同意するかは人が決めるため
 - 入れたら、`package.json` の差分を示す
 
 ### 動くかを確かめる

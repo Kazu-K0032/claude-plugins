@@ -20,7 +20,7 @@
 /project:init-repo
 ```
 
-衝突状況と前の版の残り物の確認 → 計画の提示（Lint と整形のツールを自分で入れるか Claude が入れるかも聞く） → 承認 → コピー → エディタ設定・Lint と整形のツール・スペルチェックの除外語の調整（Claude が入れると選んだら、ツールを入れて動くかを確かめる） → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
+衝突状況と前の版の残り物の確認 → 計画の提示（想定する環境・入れる `docs/` のフォルダ・テスト戦略・パッケージマネージャーと、Lint と整形のツールを自分で入れるか Claude が入れるかも聞く） → 承認 → コピー（選んだ答えに合わせて、入れないフォルダの参照を外し、テストの層の表を差し替える） → エディタ設定・Lint と整形のツール・スペルチェックの除外語の調整（Claude が入れると選んだら、ツールを入れて動くかを確かめる） → 続けて使う技術スタック別の Skill の確認、の順に進む。引数で範囲と既存ファイルの扱いを指定できる。
 
 | 引数の例 | 動き |
 | --- | --- |
@@ -28,6 +28,7 @@
 | `--needed-only`（「必要なものだけ」なども同じ） | プロジェクトの構成から、要るテンプレートだけを選ぶ |
 | `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルを置き換えず、パスが違っても同じ役割のものがあればそのテンプレートは入れない。`.gitignore` の不足行の追記と、前の版の残り物を外す案は示す |
 | `docs/spec.md の要件を満たす最小限` / `<URL> の要求を満たすものは最低限` | 参照先の要件を読み、満たすのに要るテンプレートだけを入れる |
+| `環境は Windows と macOS` / `pnpm を使う` / `テストはトロフィー` | 導入時の問い（[setup-questions.md](setup-questions.md)）に先に答える。その問いは聞かない |
 
 判定の基準（各テンプレートの役割・入れる条件・依存関係）は [template-inventory.md](template-inventory.md) にある。既存ファイルは承認なしに上書きされない。手順の詳細は [SKILL.md](SKILL.md) を参照。
 
@@ -72,7 +73,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | `files/docs/strategies/README.md` | 開発・テストの方針の案内板 | 文書を足したら表に行を足す |
 | `files/docs/strategies/ai-driven-development.md` | AI 駆動開発の戦略（AI・機械・人の分担と振り分け方、文書で AI の向かう先をそろえる方法）。ハーネスの考え方そのもの | そのまま使える（変えるときは ADR を残す） |
 | `files/docs/strategies/development.md` | 開発の流れ（1 つの変更を進める順と担い手、aidd のスキルとの対応） | 「このプロジェクトでの決まり」の `TODO:` |
-| `files/docs/strategies/test-strategy.md` | テスト戦略の雛形（目的・テストの層・機械と人の分担・いつ動かすか・AI が書いたテストの扱い・テストデータと環境・完了の基準） | `TODO:` 行を実態に書き換える |
+| `files/docs/strategies/test-strategy.md` | テスト戦略の雛形（目的・テストの層・機械と人の分担・いつ動かすか・AI が書いたテストの扱い・テストデータと環境・完了の基準）。導入時にテスト戦略（ピラミッド・トロフィー・ハニカム）を選ぶと、Skill が「テストの層」の表を差し替える | `TODO:` 行を実態に書き換える |
 | `files/CLAUDE.md` | Claude Code 向けガイドの骨組み（禁止事項・手順ルール・SSOT 一覧・ディレクトリ） | `TODO:` 行を実態に書き換える |
 | `files/README.md` | README の骨組み（案内板。文書は `docs/README.md` だけを案内する） | `TODO:` 行を実態に書き換える |
 | `files/commitlint.config.mjs` | Conventional Commits の検証設定（日本語の件名前提） | 許可する type |
@@ -83,10 +84,10 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 
 ## 前提と制約
 
-- フックは `bash` と [`jq`](https://jqlang.org/) を使う。`bash` が無い環境ではフックが動かない。`jq` が無いときは、ガードは止める側に倒れる（`guard-destructive.sh` は当たったコマンドを承認に回し、`guard-clasp.sh`・`guard-terraform.sh`・`guard-git-write.sh` は当たったコマンドを止める）。フックが 2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。`onFailure: "block"` は使わない。フックが起動できない環境（Git Bash の無い Windows）で、すべてのコマンドが止まるため
+- フックは `bash` と [`jq`](https://jqlang.org/) を使い、PowerShell 版は配らない（#273）。`bash` が無い環境ではフックが動かない。Windows の Claude Code は、Git Bash が無いとフックを PowerShell で動かすため（[フック](https://code.claude.com/docs/en/hooks) の `shell`）、`bash .claude/hooks/...` が起動できない。Skill は導入時に想定する環境を聞き、要る道具（Windows では Git for Windows と jq）を計画に示す。`jq` が無いときは、ガードは止める側に倒れる（`guard-destructive.sh` は当たったコマンドを承認に回し、`guard-clasp.sh`・`guard-terraform.sh`・`guard-git-write.sh` は当たったコマンドを止める）。フックが 2 以外の終了コードで失敗すると、Claude Code は操作をそのまま進めるため。`onFailure: "block"` は使わない。フックが起動できない環境（Git Bash の無い Windows）で、すべてのコマンドが止まるため
 - PreToolUse のフックの `matcher` は `Bash|PowerShell|Monitor` にする。`Monitor`（コマンドを裏で動かし続けるツール）も Bash と同じシェルで動くため。deny の `Bash(...)` の規則は `Monitor` にも効くが、フックは `matcher` に無いツールでは動かない
 - 編集後の Lint・整形は [lefthook](https://lefthook.dev/)（1.6.11 以降）を使う。lefthook が無いか、`lefthook.yml` に `claude-edit` が無いときは、フックは何もしない。`lefthook run` は既定で `.git/` の下を書き換えるため、フックは `--no-auto-install` を付けて呼ぶ
-- Claude が npm で lefthook を入れるときは、`--ignore-scripts` を付ける。npm 版は、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため（[P1](../../../../docs/policies/p01-operation-boundary.md)）。人のコミットにも検査をかけるときは、人が `lefthook install` を実行する
+- Claude が npm・pnpm で lefthook を入れるときは `--ignore-scripts` を、Yarn 2 以降では `--mode=skip-build` を付ける。npm のパッケージは、入れたときに `lefthook install` を動かして `.git/hooks` を書き換えるため（[P1](../../../../docs/policies/p01-operation-boundary.md)）。Yarn 1 は、スクリプトを止めて入れられるかを文書で確かめられないため、lefthook は人が入れる。Yarn の PnP は `node_modules` を作らず、フックが lefthook を見つけられないため、lefthook は OS のパッケージ管理で入れる（[tooling.md](tooling.md) の「ツールを入れる」）。人のコミットにも検査をかけるときは、人が `lefthook install` を実行する
 - `settings.json` の `permissions.deny` は、ルールの形に当たるコマンドしか止めない。`git -C`・`git -c` を付けたコミット・push と、`gh api` でのマージと DELETE は個別に止めている。ラッパースクリプト経由の実行まで塞ぐなら `guard-git-write.sh` を配線する
 - `attribution` を空文字にしているため、コミットメッセージと PR 本文に Claude の署名行が付かない。署名を残したい場合はこのキーごと削除する
 - `permissions.allow` で `*.example`（`.env.example` 等）の読み書きを明示的に許可している。秘匿ファイルの deny は実体（`.env` 等）だけを対象にしており、example は含まない。書き込みの許可は `Edit()` で書く（`Write()` のパス規則は権限判定に使われない）
@@ -119,6 +120,7 @@ bash <plugin>/scripts/install.sh --skill init-repo --apply  # 未存在のファ
 | clasp の認証情報（`.clasprc.json`）の deny と、`clasp push`・`login` などの検出 | GAS を使うリポジトリにだけ要る。`/project:gas` が `settings.json` に deny を足し、`guard-clasp.sh` で止める |
 | 言語別の Lint・整形のツールの設定（ESLint・stylelint など） | 使うツールはプロジェクトで決める。Skill が既存の設定を探して `lefthook.yml` に足すか、技術スタック別の Skill が足す |
 | 整形のツールの拡張子の改行の指定（`.gitattributes` の `*.js text eol=lf` など） | 拡張子は技術に依る。整形のツールが LF を求めるとき、Skill が `claude-edit` の整形の `glob` と同じ拡張子の行を提案する |
+| PowerShell 版のフック（`.claude/hooks/*.ps1`） | 同じ守りを 2 つの版で保守すると、片方だけが直されて守りがずれる。フックは bash の形だけを配り、Windows では Git for Windows（Git Bash）を入れる。Skill が導入時に使う環境を聞き、要る道具を示す（[setup-questions.md](setup-questions.md) の「想定する環境」。#273） |
 | `docker compose down -v` の検出 | Docker のローカル環境を配るのは `/project:wordpress` だけ。そのスキルが `guard-destructive.sh` に足す |
 
 ## なぜ Skill として配るのか

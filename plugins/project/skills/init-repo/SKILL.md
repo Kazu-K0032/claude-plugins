@@ -2,15 +2,15 @@
 name: init-repo
 description: リポジトリに Claude Code のハーネス設定（.claude/settings.json・hooks・rules）と GitHub の定型ファイル（.github/）、エディタ設定（.vscode/）・スペルチェックの設定（cspell.json）・Lint と整形のツールの定義（lefthook.yml）・.gitignore・.gitattributes、CLAUDE.md / README.md の骨組みを導入する。新しいリポジトリを立ち上げる時、または既存リポジトリへ規約一式を後から入れる時に使用する
 disable-model-invocation: true
-allowed-tools: Read, Glob, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(gh issue view:*), Bash(gh pr view:*)
-argument-hint: "[--needed-only（任意。省略時はテンプレート全体。付けると要るものだけ）] [--keep-existing（任意。省略時は既存ファイルを 1 件ずつ聞く。付けると置き換えない）] [範囲・ツールの指定（任意。省略時はツールを既存の設定から探し、無ければ聞く。例: .github だけ / 整形は oxfmt）]"
+allowed-tools: Read, Glob, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(bash --version), Bash(jq --version), Bash(yarn --version)
+argument-hint: "[--needed-only（任意。省略時はテンプレート全体。付けると要るものだけ）] [--keep-existing（任意。省略時は既存ファイルを 1 件ずつ聞く。付けると置き換えない）] [範囲・ツール・導入時の問いへの答え（任意。省略時はツールを既存の設定から探し、無ければ聞く。環境などは聞く。例: .github だけ / 整形は oxfmt / pnpm を使う）]"
 ---
 
 # リポジトリ初期セットアップ（init-repo）
 
 同梱テンプレート（`${CLAUDE_PLUGIN_ROOT}/skills/init-repo/files/`）を実行中のリポジトリのルートへコピーし、エディタ設定・Lint と整形のツール・スペルチェックの除外語をプロジェクトに合わせる。**既存ファイルは承認なしに上書きしない**。
 
-- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.gitattributes`・`.vscode/`・`cspell.json`・`lefthook.yml` など）。承認を得て前の版の残り物を外す書き込み（`.claude/settings.json`・`docs/README.md`・`CLAUDE.md`。ファイルの削除は人）。Claude が入れると選ばれたときは、ツールの導入（`package.json`・`node_modules`、または OS のパッケージ管理）
+- 外へ書き込むもの：リポジトリのルートへのテンプレートのコピーと、承認を得たマージ・追記（`CLAUDE.md`・`README.md`・`.gitignore`・`.gitattributes`・`.vscode/`・`cspell.json`・`lefthook.yml` など）。承認を得て前の版の残り物を外す書き込み（`.claude/settings.json`・`docs/README.md`・`CLAUDE.md`。ファイルの削除は人）。手順 2 の答えに合わせたコピー後の書き換え（入れない `docs/` のフォルダの参照・`test-strategy.md` の表）。Claude が入れると選ばれたときは、ツールの導入（`package.json`・`node_modules`、または OS のパッケージ管理）
 - 人がすること：導入計画と書き込みの承認、`DIFF` の扱いの選択、ツールを自分で入れるかの選択、コミット、導入後の作業（手順 6）。フックは `jq` を使い、無いとガードは止める側に倒れる（`README.md` の「前提と制約」）。編集後の Lint・整形は lefthook で動かし（最低の版は `README.md` の「前提と制約」）、無いとフックは何もしない
 
 ## 参照ファイル
@@ -18,10 +18,12 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 | ファイル | いつ読むか |
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/references/install-flow.md` | 手順 1〜4 で、状態の確認・計画の提示・コピー・衝突の片付けをするとき |
-| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/template-inventory.md` | 引数で範囲を絞るとき・同じ役割の既存物を探すとき・手順 2 で入れないものを決めるとき（ほかの commitlint の設定や lefthook の別名の設定が既にあるかを、この一覧で確かめる） |
+| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/template-inventory.md` | 引数で範囲を絞るとき・同じ役割の既存物を探すとき・手順 2 で入れないものを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/merge-policy.md` | 手順 1 で前の版の残り物と突き合わせるとき・手順 4 で `DIFF` のファイルがあるとき（選択肢を示す前から）・既存の `CLAUDE.md` があるとき |
+| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/setup-questions.md` | 手順 2 で導入時の問いを聞くとき・手順 3 で答えを当てるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/tooling.md` | 手順 2 でツールの入れ方を示すとき・手順 5 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/after-install.md` | 手順 6 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/next-skills.md` | 手順 7 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/init-repo/README.md` | 収録物・除外したもの・導入後の調整を確かめるとき。手順 6 で、lefthook の最低の版を伝えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | Markdown を書く・直すとき。その規約に従う |
 
@@ -38,6 +40,7 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 | 既存物 | `--keep-existing`（「既存は置き換えない」なども同じ） | `DIFF` はすべて据え置き、手順 4 を飛ばす。同じ役割の既存物があるテンプレートも外す（`template-inventory.md`） |
 | 既存物 | `README は据え置き` | 指定のファイルだけ据え置き（`DIFF` でもマージしない） |
 | ツール | `整形は oxfmt` | Lint・整形に使うツール。手順 5 で使う |
+| 導入時の問い | `環境は Windows と macOS` / `pnpm を使う` / `テストはトロフィー` | `setup-questions.md` の問いへの答え。その問いは聞かない |
 
 ## 手順
 
@@ -53,11 +56,12 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 - `CLAUDE.md` / `README.md` が既にあれば、ほぼ確実に `DIFF` になる。**テンプレートで上書きすると既存の記述が失われる**ことを明示してから承認を求める
 - `NEW` でも入れないもの（ほかの commitlint の設定・lefthook の別名の設定があるとき）を、`template-inventory.md` の「NEW でも入れないもの」で決める
 - 手順 1 で見つけた前の版の残り物を、外す案と一緒に示す。`--keep-existing` や範囲の指定があっても示す
+- `setup-questions.md` に従い、想定する環境・入れる `docs/` のフォルダ・テスト戦略・パッケージマネージャーを聞く
 - lefthook と入れ方（`tooling.md` の「ツールを入れる」）を示し、「自分で入れる / Claude が入れる」を選んでもらう。手順 5 で決めるツールにも、同じ選択を当てる
 
 ### 3. コピーする
 
-`install-flow.md` の「コピーする」に従う。範囲を絞った場合・手順 2 で入れないものを決めた場合・利用者が一部だけを希望した場合は、`--only` に `NEW` のファイルだけを並べる。`DIFF` のファイルは手順 4 で扱う。雛形だけ・フォルダごとに外したときの後始末は、`template-inventory.md` の「依存関係」に従う。
+`install-flow.md` の「コピーする」に従う。範囲を絞った場合・手順 2 で入れないものを決めた場合・利用者が一部だけを希望した場合は、`--only` に `NEW` のファイルだけを並べる。`DIFF` のファイルは手順 4 で扱う。雛形だけ・フォルダごとに外したときの後始末は、`template-inventory.md` の「依存関係」に従う。手順 2 で選んだテスト戦略は、`setup-questions.md` に従って当てる。
 
 ### 4. 衝突したファイルを片付ける
 
@@ -75,21 +79,18 @@ argument-hint: "[--needed-only（任意。省略時はテンプレート全体�
 
 ここまでは技術に依らない土台である。言語・インフラの構成と規約は、技術スタック別のスキル（このプラグインの `init-repo` 以外）が入れるため、続けて使うスキルを聞く。引数がパス指定（`.github だけ` など）のときは、土台の一部を足す実行のため、聞かずに終える。
 
-1. `${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md` を Glob し、`init-repo` 以外の frontmatter の `name`・`description` を読む
-1. `description` が対象にする技術と、リポジトリのファイル（例：`*.tf`・`.clasp.json`・`wp-content/`）から、当てはまるスキルを判定する
-1. `AskUserQuestion`（`multiSelect: true`）で聞く。選択肢はスキルと「使わない」にし、当てはまるスキルを先頭に置いてラベルに「（推奨）」を付ける。1 問の選択肢は 4 つまでのため、スキルが 3 つを超えたら問いを分ける
-1. 選ばれたスキルのコマンド（`/project:<name>`）を、貼れる形で並べて示す。技術スタック別のスキルは手動でのみ呼ぶ設計（`disable-model-invocation: true`）のため、Claude は実行しない
+`next-skills.md` に従って聞き、選ばれたスキルのコマンドを示す。Claude は実行しない。
 
 ## 禁止事項
 
 - `--only` の明示指定なしに既存ファイルを上書きしない
 - テンプレートに含まれないディレクトリを承認なしに作らない（README の本文を `docs/` 配下へ移す場合も、移動先を承認してもらってから作る）
 - コピー結果をコミットしない（コミットは人が行う）
-- npm で lefthook を入れるときに、`--ignore-scripts` を外さない（`.git/hooks` が書き換わる）
+- lefthook を入れるときに、スクリプトを止める指定（`--ignore-scripts` など）を外さない（`.git/hooks` が書き換わる）
 
 ## 保守
 
-- 手順 7 に、スキルの一覧を書かない。スキルが増えても古くならないようにするため
+- 手順 7 と `next-skills.md` に、スキルの一覧を書かない。スキルが増えても古くならないようにするため
 - `allowed-tools` の `gh issue view`・`gh pr view` は、要件からの逆算で Issue・PR を読むためのもの
 - lefthook の最低の版は、`README.md` の「前提と制約」だけに書く。ほかの文書には書かず、README を指す
 - cspell の版は、`files/.github/workflows/pr-checks.yml` と `tooling.md` のコマンドの 2 か所に書く。コマンドに版が要るため、上げるときは両方をそろえる
