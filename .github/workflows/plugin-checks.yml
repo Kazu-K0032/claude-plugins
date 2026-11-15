@@ -69,6 +69,10 @@ jobs:
       - name: mod のテスト
         run: npx --yes "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" plugin test "$MOD_DIR"
 
+      - name: gas のひな形のテスト
+        # 利用先に配るテスト（node --test tests/*.test.js）が、配るコードで通ることを確かめる
+        run: node --test plugins/project/skills/gas/files/tests/*.test.js
+
   workflow-check:
     name: ワークフローの検査
     runs-on: ubuntu-latest

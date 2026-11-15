@@ -6,8 +6,9 @@
 | --- | --- |
 | `src/appsscript.json` | 既存を正とする。`oauthScopes`・`dependencies`・`webapp` などの既存のキーは消さない。`timeZone`・`runtimeVersion` が違う場合は、変えるかを確認するだけにする |
 | `.clasp.json` | 既存を正とする。`scriptId` は残し、`rootDir` は手順 3 で直した値（方針 A）か既存の値（方針 B。手順 1 で絶対パスを直すことにした場合は直した値）にする |
-| `src/*.js` | 既存のコードを捨てない。上書きせず、手順 6 の振り分けで扱う |
-| `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` | 既存の規約に足りない項目だけを足す |
+| `src/*.js` | 既存のコードを捨てない。上書きせず、手順 6 の振り分けで扱う。`trigger.js` に足りない `onOpen`・`TRIGGERS` の `description` は、足す案を示す。`menu.js` が使うため |
+| `tests/*.js` | 既存を正とする。同じ名前のテストがあれば、上書きしない |
+| `.claude/rules/gas.md`・`.claude/rules/gas-file-name.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` | 既存の規約に足りない項目だけを足す |
 | `.claude/hooks/guard-clasp.sh` | 既存を正とする。止めるコマンドが足りなければ、`deny_patterns` に足すことを提案する |
 
 ## 古い 1 ファイル版
