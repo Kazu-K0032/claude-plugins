@@ -1,9 +1,9 @@
 ---
 name: gas
-description: Google Apps Script（GAS）のリポジトリに、clasp で push する src/ 配下の構成と .clasp.json、ファイルの書き分けと GAS 特有の注意点をまとめた規約（.claude/rules/gas.md・gas-runtime.md・gas-sheet-style.md）、Claude による clasp push・pull・login などを止めるフック（.claude/hooks/guard-clasp.sh）を導入する。GAS のプロジェクトを立ち上げる時、または既存の GAS リポジトリへ構成と規約を後から入れる時に使用する
+description: Google Apps Script（GAS）のリポジトリに、clasp で push する src/ 配下の構成と .clasp.json、ファイルの書き分けと GAS 特有の注意点をまとめた規約（.claude/rules/gas.md・gas-file-name.md・gas-runtime.md・gas-sheet-style.md）、Claude による clasp push・pull・login などを止めるフック（.claude/hooks/guard-clasp.sh）を導入する。GAS のプロジェクトを立ち上げる時、または既存の GAS リポジトリへ構成と規約を後から入れる時に使用する
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), Bash(git status:*), Bash(diff:*)
-argument-hint: "[--rules-only | --hooks-only | --src-only（任意。省略時はテンプレート全体。付けると規約だけ・フックだけ・src だけ）] [--keep-existing（任意。省略時は既存ファイルを 1 件ずつ聞く。付けると置き換えない）]"
+argument-hint: "[--rules-only | --hooks-only | --src-only（任意。省略時はテンプレート全体。付けると規約だけ・フックだけ・src と tests だけ）] [--keep-existing（任意。省略時は既存ファイルを 1 件ずつ聞く。付けると置き換えない）]"
 ---
 
 # GAS プロジェクトのセットアップ（gas）
@@ -21,7 +21,7 @@ argument-hint: "[--rules-only | --hooks-only | --src-only（任意。省略時�
 | `${CLAUDE_PLUGIN_ROOT}/references/install-flow.md` | 手順 1・2・4・5 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/existing-layout.md` | 既存のコードがあり、`rootDir` が `src` 以外のとき（手順 1・3・4） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/merge-policy.md` | 手順 5 で `DIFF` のファイルがあるとき（選択肢を示す前から） |
-| `${CLAUDE_PLUGIN_ROOT}/skills/gas/existing-code.md` | 手順 6 |
+| `${CLAUDE_PLUGIN_ROOT}/skills/gas/existing-code.md` | 手順 4 で既存の `src/main.js` があるとき、手順 6 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/files/.claude/rules/gas.md` | 手順 6 で、振り分けの基準（ファイルの書き分け・関数の命名）を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/settings-additions.md` | 手順 8 |
 | `${CLAUDE_PLUGIN_ROOT}/skills/gas/after-install.md` | 手順 10 |
@@ -34,9 +34,9 @@ argument-hint: "[--rules-only | --hooks-only | --src-only（任意。省略時�
 
 | 引数 | 対象・扱い |
 | --- | --- |
-| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/gas.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` だけ |
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/` の 4 つの規約（`gas.md`・`gas-file-name.md`・`gas-runtime.md`・`gas-sheet-style.md`）だけ |
 | `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-clasp.sh` だけ（手順 8 の登録も対象） |
-| `--src-only`（「src だけ」なども同じ） | `src/` 配下だけ |
+| `--src-only`（「src だけ」なども同じ） | `src/` 配下と `tests/` だけ |
 | `--keep-existing`（「既存は置き換えない」なども同じ） | `DIFF` はすべて据え置き、手順 5 を飛ばす |
 
 表に無い指定（入れないファイルなど）は補足として、手順 2 の導入計画に、どう読んだかを書く。知らない `--` のオプションは、推測せずに聞く。
@@ -63,7 +63,7 @@ argument-hint: "[--rules-only | --hooks-only | --src-only（任意。省略時�
 
 ### 4. コピーする
 
-`install-flow.md` の「コピーする」に従う。方針 B では規約だけをコピーし、`existing-layout.md` の「方針 B」に従って `paths` を今の `rootDir` に合わせる。
+`install-flow.md` の「コピーする」に従う。既存の `src/main.js` があれば、`src/_main.js` をコピーの対象から外し、`existing-code.md` の「入口のファイルを改名する」に従う。そのままコピーすると、`main` が 2 つのファイルで定義されるため。方針 B では規約だけをコピーし、`existing-layout.md` の「方針 B」に従って `paths` を今の `rootDir` に合わせる。
 
 ### 5. 衝突したファイルを片付ける
 
