@@ -80,12 +80,14 @@ WARN を 1 件ずつ直す。直し方と、残してよい場合は、`ng-warn.
 
 ### 6. マニフェストを検証し、テストを動かす
 
-マーケットプレイスと、スキルが同梱する mod を検証し、mod のテストを動かす。mod はマーケットプレイスのプラグインではなく `claude plugin validate .` では読まれないため、mod のフォルダを直接渡す。
+マーケットプレイスと、スキルが同梱する mod を検証し、mod と `gas` のひな形のテストを動かす。mod はマーケットプレイスのプラグインではなく `claude plugin validate .` では読まれないため、mod のフォルダを直接渡す。
 
 ```bash
+MOD=plugins/config/skills/mod-output-customize/files/mod-output-customize
 claude plugin validate --strict .
-claude plugin validate plugins/config/skills/mod-output-customize/files/mod-output-customize
-claude plugin test plugins/config/skills/mod-output-customize/files/mod-output-customize
+claude plugin validate "$MOD"
+claude plugin test "$MOD"
+node --test plugins/project/skills/gas/files/tests/*.test.js
 ```
 
 ### 7. コミットを利用者に任せる
