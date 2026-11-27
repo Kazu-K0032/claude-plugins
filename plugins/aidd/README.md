@@ -83,7 +83,7 @@ aidd/
 └── references/          # Skill が実行時に読む共通規約
     ├── ai-check-lines.md # PR 本文の「AI を使った確認」の欄
     ├── base-branch.md   # マージ先（比べるブランチ）の決め方
-    ├── pr-template.md   # PR テンプレートの探し方（pr-create・issue-pr-sync）
+    ├── pr-template.md   # PR テンプレートの探し方と、規約が求める節（pr-create・issue-pr-sync）
     ├── repo-rules.md    # リポジトリの決まりの探し方（同梱の規約より優先する）
     ├── report-format.md # 点検レポート（docs-sync・pr-review・harness-audit）の構成
     ├── markdown.md      # markdownlint 準拠の書式

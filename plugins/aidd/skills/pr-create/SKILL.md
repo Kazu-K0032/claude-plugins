@@ -19,7 +19,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show
 | --- | --- |
 | `${CLAUDE_PLUGIN_ROOT}/references/tmp-ignore.md` | 手順 1 の前に、`tmp/` の除外を確かめるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 5 で、比べるブランチを決めるとき |
-| `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | 手順 7 で、PR テンプレートを探すとき（探す順と、無いときの節） |
+| `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | 手順 7 で、PR テンプレートを探すとき（探す順・無いときの節・規約が求める節） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/pr-body-guide.md` | 手順 7 で、PR 本文を書くとき（節ごとの書き方） |
 | `${CLAUDE_PLUGIN_ROOT}/references/repo-rules.md` | 手順 7 で、リポジトリの規約が PR 本文に求める節を探すとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 7 で、PR テンプレートに「AI を使った確認」の欄があるとき |
