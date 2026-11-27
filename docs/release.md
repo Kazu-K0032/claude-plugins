@@ -31,7 +31,7 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
    - `/claude-security scan changes --base origin/main`：セキュリティの問題を見る。MAJOR では effort を `high` にする。コミット済みの変更だけを見る。レポートはリポジトリの直下の `CLAUDE-SECURITY-<日時>/` に出る。`.gitignore` で外してある
 
    前のタグ（例：`v2.1.0`）は `main` 側にあり、`develop` の履歴に無い。分岐点がタグと同じため、`origin/main` と比べる
-1. Issue フォームの「リリース」で、リリースの Issue を作る。`release` ラベルが付く。書き込み権限のある人が作った Issue だけで動き、ほかの人の Issue では何も起きない
+1. Issue フォームの「リリース」で、リリースの Issue を作る。`release` ラベルが付く。書き込み権限のある人が作った Issue だけで動き、ほかの人の Issue では何も起きない。`release.yml` は、Issue ができたときか `release` ラベルが付いたときに動く。フォームのラベルは Issue を作った後に付くことがあるため、ラベルが付いたときも受けている
 1. `release.yml` が次を行う。終わると、Issue に PR の URL がコメントされる
    - `plugin-checks.yml` と同じ検査を `develop` で動かす
    - `develop` から `release/v<version>` を作る
@@ -40,6 +40,10 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
 1. `release.yml` が、マージした `main` のコミットにタグ `v<version>` と GitHub Release を作り、PR と Issue にコメントする
 
 `main` から `develop` へ戻す PR は要らない。版は `develop` で上げてあるため。
+
+手順 5 の `release.yml` は、同じ Issue では 1 度だけ動く。Issue に `release.yml` の「リリースの PR を作りました」のコメントがあると、ラベルを付け直しても何もしない。`release` ラベルが付いたのに動かなかったときは、ラベルを外して付け直すと、もう一度動く。
+
+Issue のイベントで動く `release.yml` は、既定のブランチ（`main`）にある版で動く。ラベルが付いたときも動く変更は、それを含むリリースが `main` に入るまで効かない。それまでは、Issue を作る時点で `release` ラベルが付いている必要がある（例：`gh issue create --label release`）。
 
 手順 5 で失敗すると、Issue に Actions のログの URL がコメントされる。原因を直したら、Actions の画面でその実行を再実行する（**Re-run jobs**）。再実行では、検査も release ブランチも、その時点の `develop` から作り直される。ただし、`release/v<version>` を作った後に失敗したときは、そのブランチを消してから再実行する。
 

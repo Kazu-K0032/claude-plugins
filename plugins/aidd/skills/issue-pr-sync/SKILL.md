@@ -3,14 +3,14 @@ name: issue-pr-sync
 description: 指定した Issue（省くとブランチ名の番号）と PR（省くと今のブランチの PR）を、現在のブランチ差分とレビュー対応を踏まえて最新の内容に更新する。本文（PR 本文が空なら新規作成）・タイトル（対応内容とずれていれば直し、PR は Issue に揃える。閉じる Issue が複数なら、全てが伝わる案を出す）・ラベル等のサイドバーを直接反映する（既存の記述を消すなどの重要な変更だけ、反映前に承認を取る）。追加対応やレビュー対応で Issue / PR の記述が実態とずれた時、または PR を作った直後に本文を埋めたい時に使用する
 argument-hint: "[Issue番号|URL（任意。省略時はブランチ名の issues/・hotfix/ の後ろの番号。取れなければ質問する）] [PR番号|URL（任意。省略時は今のブランチの PR）]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view:*), Bash(gh issue list:*), Bash(gh pr view:*), Bash(gh pr list:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Read, Glob, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
+allowed-tools: Bash(gh issue view:*), Bash(gh issue list:*), Bash(gh pr view:*), Bash(gh pr list:*), Bash(gh pr diff:*), Bash(gh label list:*), Bash(git branch --show-current), Bash(git check-ignore:*), Bash(date:*), Read, Glob, Grep, AskUserQuestion, Edit(tmp/*/issue-pr-sync/*.md)
 ---
 
 # Issue / PR の同期更新
 
 既存の Issue と PR の**根幹（背景・目的・解決方針）は正しい**前提で、着手後の追加対応やレビュー対応で増えた差分に、本文・タイトル・サイドバーを追従させて直接反映する。PR 本文が空なら、Issue と差分から新しく作る。
 
-- 外へ書き込むもの：Issue・PR の本文・タイトル・サイドバー（`gh` で直接反映する）。反映する本文と反映前の本文を `tmp/<ブランチ名>/issue-pr-sync/` に書く
+- 外へ書き込むもの：Issue・PR の本文・タイトル・サイドバー（`gh` で反映）。反映する本文と反映前の本文を `tmp/<ブランチ名>/issue-pr-sync/` に書く
 - 人がすること：既存の記述を消すなどの重要な変更（承認を取る変更）を承認する。PR 本文の「AI を使った確認」で、この会話で確かめていないコマンドの行にチェックを入れる
 
 ## 参照ファイル
@@ -21,8 +21,8 @@ allowed-tools: Bash(gh issue view:*), Bash(gh issue list:*), Bash(gh pr view:*),
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/body-policy.md` | 手順 3 で、本文の更新後の全文を作るとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/title-and-sidebar.md` | 手順 3 でタイトル・サイドバーの変更案を作るとき、手順 5 でサイドバーを反映するとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 3 で、PR 本文に「AI を使った確認」の欄があるとき |
-| `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | 手順 3 で、PR 本文を新しく作るとき（節の構成） |
-| `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 手順 3 で、本文を書くとき（markdown の書式） |
+| `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md`・`${CLAUDE_PLUGIN_ROOT}/references/repo-rules.md` | 手順 3 で、PR 本文を新しく作るとき（節の構成・規約の節） |
+| `${CLAUDE_PLUGIN_ROOT}/references/markdown.md` | 手順 3 で、本文を書くとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md`・`${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js` | 手順 3 で、本文を書く・数えるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/approval-rules.md` | 手順 3・4 で、変更が承認を取るものかを決めるとき・承認を求めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/issue-pr-sync/result-format.md` | 手順 6 で、結果を伝えるとき |
@@ -38,7 +38,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh issue list:*), Bash(gh pr view:*),
 
 ## 出力先
 
-`tmp/<ブランチ名>/issue-pr-sync/` に書く。1 回の実行で 4 個まで書くため、スキル名のフォルダにまとめる。ブランチ名の `/` は `-` に置き換える（規約は `aidd` の `README.md` の「ブランチ名の `/` は `-` に置き換える」）。`<ts>` は手順 1 の `date` で取る。
+`tmp/<ブランチ名>/issue-pr-sync/` に書く。1 回の実行で 4 個まで書くため、スキル名のフォルダにまとめる。ブランチ名の `/` は `-` に置き換える（規約は `aidd` の `README.md`）。`<ts>` は手順 1 の `date` で取る。
 
 - `<ts>_issue.md`・`<ts>_pr.md`：反映する本文
 - `<ts>_issue_before.md`・`<ts>_pr_before.md`：反映前の本文。承認なしで反映した変更も、ここから戻せるようにするため

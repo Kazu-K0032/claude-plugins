@@ -20,7 +20,7 @@
 - このスキルは `Skill` では呼ばれない。frontmatter の `allowed-tools`・`hooks` や `!` のコマンドを足しても効かない。使えるコマンドは、ワークフローの `--allowedTools` で決まる
 - このスキルの参照ファイルも、写しの版を読む。bot が書き換えた手順に、同じ実行の後の段が従わないようにするため
 - `CLAUDE.md`・規約・ほかのスキルの決まり（`commit-rule.md` など）は、作業ツリーの版を読む。写していないため。bot がこれらを変えた PR は、マージの前に人が差分を確かめる
-- `claude plugin test` は流さない。mod のテストは mod の本体も動かすため、PR の CI（`plugin-checks.yml`。トークンは `read`、secret なし）に任せる
+- `claude plugin test` と、`gas` のひな形のテスト（`node --test`）は流さない。どちらも作業ツリーのコード（mod の本体・`gas` の `src/`）を動かすため、PR の CI（`plugin-checks.yml`。トークンは `read`、secret なし）に任せる
 - 作業ツリーの検査のスクリプト（`verify.sh`・`check.py`・`body_length.js`）は流さない。bot が書き換えた版を、トークンを持つ段で動かさないため
 - bot が変えた設定・フック・スクリプトは、同じ実行の中では効かない。動かして確かめられないため、PR の本文に、確かめていないことを書く
 

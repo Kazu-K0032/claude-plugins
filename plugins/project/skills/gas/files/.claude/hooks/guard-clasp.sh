@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse hook: GAS の実行の決まり（.claude/rules/gas.md の「clasp で反映する場合」）を守らせる。
+# PreToolUse hook: GAS の実行の決まり（.claude/rules/gas-clasp.md の「clasp で反映する場合」）を守らせる。
 # Claude が実行してよいのは、状態を見るだけのコマンド（status・list・logs・open など）まで。
 # Apps Script 側へ反映する・取り込む・認証するコマンドは、人が実行する。
 # settings.json の deny はルールの形に当たるコマンドしか止めず、npx 経由や -P（--project）を挟んだ実行、bash -c 経由の実行が抜けるため、フックで検出する。
