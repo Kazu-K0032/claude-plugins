@@ -61,7 +61,7 @@ GitHub Actions の Claude が、Issue のとおりに実装し、作業ブラン
 
 ### 5. 検査する
 
-`verify.sh`（`marketplace-update` の手順 2 を含む）を流し、`結果: NG` なら直して流し直す。続けて、`marketplace-update` の `SKILL.md` の手順 3〜6（`claude plugin test` を除く）を流す。直せない NG は、PR の本文に理由を書く。流した結果（OK・NG と直したこと）を、`report.md` の「## 確かめたこと」に書く。push の前に CI と同じ検査で落としておくと、CI の直しの回数（最大 3 回）を使わずに済むため。
+`verify.sh`（`marketplace-update` の手順 2 を含む）を流し、`結果: NG` なら直して流し直す。続けて、`marketplace-update` の手順 3〜6（`claude plugin test` と `node --test` を除く）を流す。直せない NG は、PR の本文に理由を書く。流した結果（OK・NG と直したこと）を、`report.md` の「## 確かめたこと」に書く。push の前に CI と同じ検査で落としておくと、CI の直しの回数（最大 3 回）を使わずに済むため。
 
 ### 6. コミットして push する
 

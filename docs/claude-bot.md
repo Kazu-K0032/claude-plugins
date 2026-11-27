@@ -12,7 +12,7 @@ bot に任せるのは、作業ブランチへのコミット・push と PR の�
 flowchart TD
   start([人：Issue に起動語でコメントする]) --> gate{本文に人が対応する注記}
   gate -- ある --> stop[理由を Issue にコメントして止める<br/>Claude は動かない]
-  gate -- 無い --> impl[実装して下書きの PR を作る<br/>issue-to-pr の手順 1〜8<br/>marketplace-update の手順 2〜6 を含む<br/>claude plugin test は CI に任せる]
+  gate -- 無い --> impl[実装して下書きの PR を作る<br/>issue-to-pr の手順 1〜8<br/>marketplace-update の手順 2〜6 を含む<br/>claude plugin test と gas のテストは CI に任せる]
   impl --> ci1{CI}
   ci1 -- 失敗 --> fix1[CI を直す<br/>最大 3 回] --> ci1
   ci1 -- 通過 --> ready[レビュー待ちにする]

@@ -16,10 +16,10 @@ Google Apps Script（GAS）のリポジトリへ「clasp で push する `src/` 
 
 | 引数 | 動き |
 | --- | --- |
-| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/` の 4 つの規約（`gas.md`・`gas-file-name.md`・`gas-runtime.md`・`gas-sheet-style.md`）だけを入れる |
+| `--rules-only`（「規約だけ」なども同じ） | `.claude/rules/` の 5 つの規約（`gas.md`・`gas-file-name.md`・`gas-runtime.md`・`gas-sheet-style.md`・`gas-clasp.md`）だけを入れる |
 | `--hooks-only`（「フックだけ」なども同じ） | `.claude/hooks/guard-clasp.sh` だけを入れ、`.claude/settings.json` にフックと deny を登録する |
 | `--src-only`（「src だけ」なども同じ） | `src/` 配下と `tests/` だけを入れる |
-| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルに触らない |
+| `--keep-existing`（「既存は置き換えない」なども同じ） | 既存ファイルに触らない。ただし、既存の `trigger.js` に `onOpen` か `TRIGGERS` の `description` が無ければ、足す案だけは示す |
 
 既存の GAS コードがある場合は、規約に沿って関数をどのファイルへ移すかの案を出す。トリガー・カスタムメニュー・エディタの実行メニューから名前で呼ばれている関数は改名しない。コードが `src/` 以外にある場合は、先に `src/` へ移すか、今の場所のまま規約だけを入れるかを選ぶ。手順の詳細は [SKILL.md](SKILL.md) を参照。
 
@@ -37,15 +37,16 @@ bash <plugin>/scripts/install.sh --skill gas --apply  # 未存在のファイル
 | `files/src/constants.js` | 複数の機能が使う定数とスクリプトプロパティのキー名 | `TODO:` を埋める |
 | `files/src/_main.js` | 中心となる業務フローの入口（`main`）。エディタのファイルの一覧で先頭に並べるため、名前の先頭に `_` を付ける | 業務フローの手順を書く。独立した機能が並ぶプロジェクトでは消し、`trigger.js` の `onDailySchedule` と `menu.js` の `runMainFromMenu` の呼び出し先も直す |
 | `files/src/utils.js` | 複数の機能が使う関数（日時の整形・スクリプトプロパティの取得） | そのまま使える |
-| `files/src/trigger.js` | 登録するトリガーの一覧（`TRIGGERS`）、実行したアカウントのトリガーをすべて消して一覧の分だけ作り直す登録（`setupTriggers`）・すべての削除（`deleteTriggers`）、毎日決まった時刻に呼ばれる入口（`onDailySchedule`）と、ファイルを開いたときにメニューを足す入口（`onOpen`） | 一覧と入口を直して、動かす時刻・間隔と説明（`description`）を変える。定期実行を使わないなら消す |
-| `files/src/menu.js` | スプレッドシートのメニュー（今すぐ実行・定期実行の設置と解除・定期実行の説明）と、メニューから呼ぶ関数 | メニューの名前（`MENU_TITLE`）を決める。スプレッドシートなどに紐づかない単独のスクリプトでは、`trigger.js` の `onOpen` と一緒に消す |
+| `files/src/trigger.js` | 登録するトリガーの一覧（`TRIGGERS`）、実行したアカウントのトリガーをすべて消して一覧の分だけ作り直す登録（`setupTriggers`）・すべての削除（`deleteTriggers`）、毎日決まった時刻に呼ばれる入口（`onDailySchedule`）と、ファイルを開いたときにメニューを足す入口（`onOpen`） | 一覧と入口を直して、動かす時刻・間隔と説明（`description`）を変える。定期実行を使わないなら、`onOpen` を残して定期実行の部分を消す（`after-install.md` の残作業） |
+| `files/src/menu.js` | スプレッドシートのメニュー（今すぐ実行・定期実行の設置と解除・定期実行の説明）と、メニューから呼ぶ関数 | メニューの名前（`MENU_TITLE`）を決める。スプレッドシートなどに紐づかない単独のスクリプトでは、`trigger.js` の `onOpen`・`tests/menu.test.js` と一緒に消す |
 | `files/tests/load-gas.js`・`files/tests/menu.test.js` | `src/` のファイルを手元の Node.js で読み込む補助と、メニューの説明の文・`TRIGGERS` のテスト。リポジトリのルートで `node --test tests/*.test.js` を実行する。`package.json` は要らない | 計算だけの関数を足したら、テストを足す |
 | `files/src/appsscript.json` | マニフェスト（タイムゾーン `Asia/Tokyo`・V8 ランタイム） | 使うサービス・権限に応じて追記する |
 | `files/.clasp.json` | clasp の設定（`rootDir` を `src` にする） | `scriptId` を書き込む |
-| `files/.claude/rules/gas.md` | ファイルの書き分け（使う範囲で置き場所を決める）・関数の命名・関数と定数の説明の書き方（JSDoc）・GAS 特有の注意点（グローバル空間・秘匿値）・clasp の運用 | そのまま使える |
+| `files/.claude/rules/gas.md` | ファイルの書き分け（使う範囲で置き場所を決める）・関数の命名・関数と定数の説明の書き方（JSDoc）・GAS 特有の注意点（グローバル空間・秘匿値） | そのまま使える |
 | `files/.claude/rules/gas-file-name.md` | 入口のファイルだけ、名前の先頭に `_` を付ける決まり。`gas.md` と同じファイルを開いたときに読み込まれる | そのまま使える |
-| `files/.claude/rules/gas-runtime.md` | 実行時間の上限を前提にした処理の作り方と、トリガーの登録（`TRIGGERS`・`setupTriggers`）、メニューからの実行の決まり。`gas.md` と同じファイルを開いたときに読み込まれる | そのまま使える |
+| `files/.claude/rules/gas-runtime.md` | 実行時間の上限を前提にした処理の作り方と、トリガーの登録（`TRIGGERS`・`setupTriggers`）、メニューからの実行、同じ処理の同時実行を防ぐ排他（`LockService`）の決まり。`gas.md` と同じファイルを開いたときに読み込まれる | そのまま使える |
 | `files/.claude/rules/gas-sheet-style.md` | 利用先に見た目の決まりが無いときの、シートの標準の書式（フォント・見出し行・枠線）と、列の配置・列の定義（`SHEETS`）・見出しのメモ・プルダウンと配色・余白の列・案内のシートの決まり。`gas.md` と同じファイルを開いたときに読み込まれる | 利用先に見た目の決まりがあれば、それに合わせて書き換える。プルダウンの配色の、意味と色の系統の対応を決めて書く |
+| `files/.claude/rules/gas-clasp.md` | clasp で反映する対象・`.clasp.json` をコミットすること・`push` などを人が行うことの決まり。`gas.md` と同じファイルを開いたときに読み込まれる | そのまま使える |
 | `files/.claude/hooks/guard-clasp.sh` | Claude が Apps Script 側へ反映・取り込み・認証をするコマンド（`push`・`pull`・`login`・`deploy`・`run` など）を止める PreToolUse フック。`status`・`logs` などの読み取りは止めない | 止めるコマンドを足すときは `deny_patterns` に追記する |
 
 ## 前提と制約
