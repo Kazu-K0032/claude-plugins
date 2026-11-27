@@ -99,7 +99,7 @@ jobs:
       # 直しの step で bot に許すコマンド。issue-to-pr スキルの手順 9 で使うものだけにする。手順にコマンドを足したら、ここにも足す
       # 写し（$RUNNER_TEMP）のパスを使うコマンドと git push は、「直しの許可を決める」の step で足す。job の env では runner の文脈を使えず、
       # git push は送り先を絞らないと、--force や develop への push も通るため
-      # claude plugin test は許さない。mod のテストは mod の本体も動かすため、PR の CI（plugin-checks.yml。トークンは read）に任せる
+      # claude plugin test と gas のひな形のテスト（node --test）は許さない。mod の本体と gas の src/ を動かすため、PR の CI（plugin-checks.yml。トークンは read）に任せる
       FIX_TOOLS_BASE: "Read,Glob,Grep,Bash(gh issue view:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(git status:*),Bash(git add:*),Bash(git commit:*),Bash(git show:*),Bash(git log:*),Bash(claude plugin validate:*)"
     steps:
       # issue_comment では既定ブランチ（main）を取るため、develop を渡す。設定・フック・手順の写しを、作業の起点と同じ版で作るため
