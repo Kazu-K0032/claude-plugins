@@ -21,6 +21,7 @@ allowed-tools: Bash(gh issue view:*), Bash(gh pr view:*), Bash(git branch --show
 | `${CLAUDE_PLUGIN_ROOT}/references/base-branch.md` | 手順 5 で、比べるブランチを決めるとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/pr-template.md` | 手順 7 で、PR テンプレートを探すとき（探す順と、無いときの節） |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/pr-body-guide.md` | 手順 7 で、PR 本文を書くとき（節ごとの書き方） |
+| `${CLAUDE_PLUGIN_ROOT}/references/repo-rules.md` | 手順 7 で、リポジトリの規約が PR 本文に求める節を探すとき |
 | `${CLAUDE_PLUGIN_ROOT}/references/ai-check-lines.md` | 手順 7 で、PR テンプレートに「AI を使った確認」の欄があるとき |
 | `${CLAUDE_PLUGIN_ROOT}/skills/pr-create/verify-comment-template.md` | 手順 8・9 で、チェック項目を洗い出し、検証コメントを書くとき（方針・洗い出しの表・出力の形） |
 | `${CLAUDE_PLUGIN_ROOT}/references/short-body.md` | 手順 7・9 で書くとき、手順 11 で数えるとき（長さの上限・数え方・書き方） |
@@ -91,7 +92,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/pr-cre
 
 ### 12. 報告する
 
-2 つの出力パスと、数えた結果（数えられなかったときは、その理由）を伝える。パスの前後は、半角スペースか改行で区切る（規約は `aidd` の `README.md` の「出力先のパスは、前後を区切って伝える」）。別に、PR タイトルの案も伝える。Issue が 1 つなら、タイトルの案は Issue のタイトルと同じ文字列にする。`/aidd:issue-pr-sync` の基準とそろえるため。Issue のタイトルが `【Bug】` などの分類で始まっていなければ、PR を作った後に `/aidd:issue-pr-sync` で分類を足すよう添える（リポジトリにタイトルの決まりや慣習があれば、`issue-pr-sync` がそちらに合わせるか聞く）。Issue が複数なら、全ての Issue の中身が伝わる案にし、PR を作るときに人が決めるよう添える。Release の説明は PR のタイトルの一覧のため、1 つの Issue のタイトルではほかの変更が載らない。
+2 つの出力パスと、数えた結果（数えられなかったときは、その理由）を伝える。リポジトリの規約が求める節を足したときは、その節と、根拠にした規約のファイルも伝える。テンプレートに無い節のため、人が根拠を確かめられるようにする。パスの前後は、半角スペースか改行で区切る（規約は `aidd` の `README.md` の「出力先のパスは、前後を区切って伝える」）。別に、PR タイトルの案も伝える。Issue が 1 つなら、タイトルの案は Issue のタイトルと同じ文字列にする。`/aidd:issue-pr-sync` の基準とそろえるため。Issue のタイトルが `【Bug】` などの分類で始まっていなければ、PR を作った後に `/aidd:issue-pr-sync` で分類を足すよう添える（リポジトリにタイトルの決まりや慣習があれば、`issue-pr-sync` がそちらに合わせるか聞く）。Issue が複数なら、全ての Issue の中身が伝わる案にし、PR を作るときに人が決めるよう添える。Release の説明は PR のタイトルの一覧のため、1 つの Issue のタイトルではほかの変更が載らない。
 
 ## 禁止事項
 
@@ -100,7 +101,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/body_length.js" tmp/<ブランチ名>/pr-cre
 - ❌ PR 本文の説明文をそのまま再掲すること（チェック項目は「確かめる操作と結果」で書く）
 - ❌ マージ後にしか確認できない項目を書くこと
 - ❌ CI の必須ジョブが検証済みのことを項目にすること（PR で自動的に落ちるため確認が重複する）
-- ❌ テンプレートに無いセクションを足すこと
+- ❌ テンプレートにもリポジトリの規約にも無いセクションを足すこと
 - ❌ ガード節・条件分岐を触った差分で「そうでない場合」の項目が無いまま出力すること
 - ❌ チェックボックスを埋めた状態で出力すること（埋めるのはレビュワー）
 - ❌ 手順 11 で数えずに報告すること（AI は文字数を正確に数えられない）。Node.js が無い・実行を断られたときを除く
