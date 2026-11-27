@@ -4,7 +4,9 @@ name: リリース
 # その PR をマージしたら、タグ v<version> と GitHub Release を作る。マージは人が行う
 on:
   issues:
-    types: [opened]
+    # Issue フォームのラベルは、Issue を作った後に付く。opened のときの Issue には release ラベルが無いことがあり、
+    # opened だけでは動かないため、ラベルが付いたとき（labeled）も受ける。同じ Issue で 2 回動かない仕組みは、create_release_pr の最初の step
+    types: [opened, labeled]
   pull_request:
     types: [closed]
     branches: [main]
@@ -20,9 +22,13 @@ jobs:
   checks:
     name: リリースする内容の検査
     # 公開リポジトリでは誰でも Issue フォームから release ラベルを付けられるため、書き込み権限のある人の Issue だけを受ける
+    # opened は Issue の release ラベルを、labeled は今付いたラベルを見る。labeled で別のラベルが付いたときは動かさない
     if: >-
       github.event_name == 'issues'
-      && contains(github.event.issue.labels.*.name, 'release')
+      && (
+        (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'release'))
+        || (github.event.action == 'labeled' && github.event.label.name == 'release')
+      )
       && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
     permissions:
       contents: read
@@ -42,7 +48,25 @@ jobs:
       pull-requests: write
       issues: write
     steps:
+      # opened と labeled の両方で動いたり、ラベルを付け直したりしても、同じ Issue で 2 回動かさない。
+      # 作り済みの印は、この workflow が PR を作った後に書くコメント。失敗したときは書かないため、直した後に再び動かせる。
+      # 利用者のコメントで止められないよう、github-actions が書いたものだけを見る
+      - name: この Issue でリリースの PR を作り済みかを確かめる
+        id: once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          count=$(gh issue view "${ISSUE_NUMBER}" --json comments \
+            --jq '[.comments[] | select(.author.login == "github-actions" and (.body | startswith("リリースの PR を作りました")))] | length')
+          if [ "${count}" != "0" ]; then
+            echo "created=true" >> "$GITHUB_OUTPUT"
+            echo "この Issue では、リリースの PR を作り済みのため、何もしない" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.once.outputs.created != 'true'
         with:
           ref: develop
           # main との差分と、既存のタグを見るため
@@ -52,11 +76,13 @@ jobs:
           persist-credentials: true
 
       - name: 版を読む
+        if: steps.once.outputs.created != 'true'
         id: meta
         # 3 つの plugin.json の版がそろっていることは、checks の check.py が確かめている
         run: echo "version=v$(jq -r .version plugins/aidd/.claude-plugin/plugin.json)" >> "$GITHUB_OUTPUT"
 
       - name: リリースできるかを確かめる
+        if: steps.once.outputs.created != 'true'
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
@@ -74,11 +100,13 @@ jobs:
           fi
 
       - name: release ブランチを作る
+        if: steps.once.outputs.created != 'true'
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: git push origin "HEAD:refs/heads/release/${VERSION}"
 
       - name: main への PR を作る
+        if: steps.once.outputs.created != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.meta.outputs.version }}
