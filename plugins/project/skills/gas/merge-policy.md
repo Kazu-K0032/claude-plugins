@@ -8,16 +8,17 @@
 | `.clasp.json` | 既存を正とする。`scriptId` は残し、`rootDir` は手順 3 で直した値（方針 A）か既存の値（方針 B。手順 1 で絶対パスを直すことにした場合は直した値）にする |
 | `src/*.js` | 既存のコードを捨てない。上書きせず、手順 6 の振り分けで扱う。`trigger.js` に足りない `onOpen`・`TRIGGERS` の `description` は、足す案を示す。`menu.js` が使うため |
 | `tests/*.js` | 既存を正とする。同じ名前のテストがあれば、上書きしない |
-| `.claude/rules/gas.md`・`.claude/rules/gas-file-name.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md` | 既存の規約に足りない項目だけを足す |
+| `.claude/rules/gas.md`・`.claude/rules/gas-file-name.md`・`.claude/rules/gas-runtime.md`・`.claude/rules/gas-sheet-style.md`・`.claude/rules/gas-clasp.md` | 既存の規約に足りない項目だけを足す |
 | `.claude/hooks/guard-clasp.sh` | 既存を正とする。止めるコマンドが足りなければ、`deny_patterns` に足すことを提案する |
 
 ## 古い 1 ファイル版
 
-前の版の `gas.md` には、実行時間とトリガーの節があった。今は `gas-runtime.md` に移している。
+前の版の `gas.md` には、実行時間・トリガー・clasp の節があった。今は `gas-runtime.md` と `gas-clasp.md` に移している。
 
-| 古い `gas.md` の節 | 移した先（`gas-runtime.md`） |
+| 古い `gas.md` の節 | 移した先 |
 | --- | --- |
-| 実行時間の上限を前提に作る | 時間のかかる処理を書く場合 |
-| トリガーは登録用の関数から作る | トリガーを作る・変える場合 |
+| 実行時間の上限を前提に作る | `gas-runtime.md` の「時間のかかる処理を書く場合」 |
+| トリガーは登録用の関数から作る | `gas-runtime.md` の「トリガーを作る・変える場合」 |
+| clasp で反映する場合 | `gas-clasp.md` の「clasp で反映する場合」 |
 
 `gas.md` を上書きしないとき（手でマージ・据え置き）は、古い `gas.md` に移した節が残り、同じ規則が 2 か所になる。重なる節を消すかを、利用者に聞く。
