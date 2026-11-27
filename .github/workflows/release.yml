@@ -2,10 +2,11 @@ name: リリース
 
 # 手順は docs/release.md。release ラベル付きの Issue で、develop から release/v<version> と main への PR を作る。
 # その PR をマージしたら、タグ v<version> と GitHub Release を作る。マージは人が行う
+# issues のイベントは、既定のブランチ（main）にある版で動く。ラベルが付いたときも動く変更（labeled）は、main に入ってから効く
 on:
   issues:
     # Issue フォームのラベルは、Issue を作った後に付く。opened のときの Issue には release ラベルが無いことがあり、
-    # opened だけでは動かないため、ラベルが付いたとき（labeled）も受ける。同じ Issue で 2 回動かない仕組みは、create_release_pr の最初の step
+    # opened だけでは動かないため、ラベルが付いたとき（labeled）も受ける。同じ Issue で 2 回動かない仕組みは、once のジョブ
     types: [opened, labeled]
   pull_request:
     types: [closed]
@@ -13,14 +14,13 @@ on:
 
 permissions: {}
 
-# 2 つのリリースが同時に走り、同じ版のブランチやタグを作り合わないようにする
-concurrency:
-  group: release
-  cancel-in-progress: false
+# 2 つのリリースが同時に走り、同じ版のブランチやタグを作り合わないようにする。
+# 排他は、ブランチやタグを作る create_release_pr と publish_release のジョブだけに付ける。
+# ワークフロー全体に付けると、関係の無い Issue のラベル付けで起きた実行が、待っている publish_release を取り消すため
 
 jobs:
-  checks:
-    name: リリースする内容の検査
+  once:
+    name: リリースの PR を作り済みかを確かめる
     # 公開リポジトリでは誰でも Issue フォームから release ラベルを付けられるため、書き込み権限のある人の Issue だけを受ける
     # opened は Issue の release ラベルを、labeled は今付いたラベルを見る。labeled で別のラベルが付いたときは動かさない
     if: >-
@@ -30,25 +30,15 @@ jobs:
         || (github.event.action == 'labeled' && github.event.label.name == 'release')
       )
       && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
-    permissions:
-      contents: read
-    # zizmor の self-repository は、書き方の勧め（$/ の形）で安全の問題ではない。リリースを手元で試せない書き方に変えないため、この行だけ無視する
-    uses: ./.github/workflows/plugin-checks.yml # zizmor: ignore[self-repository]
-    with:
-      ref: develop
-      base_ref: main
-
-  create_release_pr:
-    name: リリースの PR を作る
-    needs: checks
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
+      issues: read
+    outputs:
+      created: ${{ steps.once.outputs.created }}
     steps:
       # opened と labeled の両方で動いたり、ラベルを付け直したりしても、同じ Issue で 2 回動かさない。
+      # 検査より前に確かめ、作り済みなら、検査も失敗の報告も動かさない。
       # 作り済みの印は、この workflow が PR を作った後に書くコメント。失敗したときは書かないため、直した後に再び動かせる。
       # 利用者のコメントで止められないよう、github-actions が書いたものだけを見る
       - name: この Issue でリリースの PR を作り済みかを確かめる
@@ -65,8 +55,33 @@ jobs:
             echo "この Issue では、リリースの PR を作り済みのため、何もしない" >> "$GITHUB_STEP_SUMMARY"
           fi
 
+  checks:
+    name: リリースする内容の検査
+    # once が動かなかったとき（ラベルや書き込み権限の条件に合わない）は、この検査も動かない。作り済みのときも動かさない
+    needs: once
+    if: needs.once.outputs.created != 'true'
+    permissions:
+      contents: read
+    # zizmor の self-repository は、書き方の勧め（$/ の形）で安全の問題ではない。リリースを手元で試せない書き方に変えないため、この行だけ無視する
+    uses: ./.github/workflows/plugin-checks.yml # zizmor: ignore[self-repository]
+    with:
+      ref: develop
+      base_ref: main
+
+  create_release_pr:
+    name: リリースの PR を作る
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: steps.once.outputs.created != 'true'
         with:
           ref: develop
           # main との差分と、既存のタグを見るため
@@ -76,13 +91,11 @@ jobs:
           persist-credentials: true
 
       - name: 版を読む
-        if: steps.once.outputs.created != 'true'
         id: meta
         # 3 つの plugin.json の版がそろっていることは、checks の check.py が確かめている
         run: echo "version=v$(jq -r .version plugins/aidd/.claude-plugin/plugin.json)" >> "$GITHUB_OUTPUT"
 
       - name: リリースできるかを確かめる
-        if: steps.once.outputs.created != 'true'
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
@@ -100,13 +113,11 @@ jobs:
           fi
 
       - name: release ブランチを作る
-        if: steps.once.outputs.created != 'true'
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: git push origin "HEAD:refs/heads/release/${VERSION}"
 
       - name: main への PR を作る
-        if: steps.once.outputs.created != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.meta.outputs.version }}
@@ -128,7 +139,7 @@ jobs:
 
   report_failure:
     name: 失敗を Issue に知らせる
-    needs: [checks, create_release_pr]
+    needs: [once, checks, create_release_pr]
     if: failure() && github.event_name == 'issues'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -154,6 +165,9 @@ jobs:
       && startsWith(github.event.pull_request.head.ref, 'release/v')
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    concurrency:
+      group: release
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write

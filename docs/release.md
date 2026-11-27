@@ -43,6 +43,8 @@ CI（`.github/workflows/plugin-checks.yml`）が、次の場合に落ちる。
 
 手順 5 の `release.yml` は、同じ Issue では 1 度だけ動く。Issue に `release.yml` の「リリースの PR を作りました」のコメントがあると、ラベルを付け直しても何もしない。`release` ラベルが付いたのに動かなかったときは、ラベルを外して付け直すと、もう一度動く。
 
+Issue のイベントで動く `release.yml` は、既定のブランチ（`main`）にある版で動く。ラベルが付いたときも動く変更は、それを含むリリースが `main` に入るまで効かない。それまでは、Issue を作る時点で `release` ラベルが付いている必要がある（例：`gh issue create --label release`）。
+
 手順 5 で失敗すると、Issue に Actions のログの URL がコメントされる。原因を直したら、Actions の画面でその実行を再実行する（**Re-run jobs**）。再実行では、検査も release ブランチも、その時点の `develop` から作り直される。ただし、`release/v<version>` を作った後に失敗したときは、そのブランチを消してから再実行する。
 
 `plugins/` を変えずに README や docs だけを出すときは、版を上げず、Release も作らない。リリースの Issue は使わず、`develop` から `release/<YYYY-MM-DD>` を作り、`main` へ PR を出してマージする。`develop` に未リリースの `plugins/` の変更があると CI が落ちるため、そのときは次のリリースに含める。
