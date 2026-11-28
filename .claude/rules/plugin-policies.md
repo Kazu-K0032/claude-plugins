@@ -26,6 +26,7 @@
 | Issue・PR の本文やコメントを書く手順、`init-repo` の PR・Issue のテンプレート | [P8](../../docs/policies/p08-short-body.md) |
 | Issue・PR のタイトルやラベルを決める手順、`init-repo` の Issue フォームの `title`・`labels`・`labels.yml` | [P12](../../docs/policies/p12-title-category.md) |
 | `SKILL.md` の「想定している引数」・`argument-hint` | [P11](../../docs/policies/p11-options-and-supplements.md)、`.claude/rules/argument-hint.md` |
+| `claude-issue-to-pr.yml`・`issue-to-pr` のマージの扱い | [P14](../../docs/policies/p14-bot-delegation.md) |
 | `SKILL.md`・同梱の参照ファイル・規約（`.claude/rules/`・`files/.claude/rules/`）の本文 | [P9](../../docs/policies/p09-readable-ai-docs.md)、`.claude/rules/ai-docs.md` |
 | `plugins/aidd/references/harness-principles.md`（`harness-audit` の物差し） | [docs/values/](../../docs/values/README.md)、[P1](../../docs/policies/p01-operation-boundary.md)・[P3](../../docs/policies/p03-check-placement.md)・[P4](../../docs/policies/p04-tmp-output.md)・[P7](../../docs/policies/p07-readme-guide.md)・[P8](../../docs/policies/p08-short-body.md)・[P9](../../docs/policies/p09-readable-ai-docs.md)、`init-repo` の README の「収録物」 |
 
@@ -46,3 +47,4 @@
 | [P11](../../docs/policies/p11-options-and-supplements.md) | 動きはオプションで切り替え、自然な言葉の補足は承認の前に示すこと | スキルの引数（「想定している引数」・`argument-hint`）を足す・直すとき |
 | [P12](../../docs/policies/p12-title-category.md) | Issue・PR のタイトルで、変更の種類が一目で分かるようにすること | Issue・PR のタイトルを決める手順、Issue フォーム・ラベルを直すとき |
 | [P13](../../docs/policies/p13-ask-only-for-judgment.md) | 選択肢で聞くのは、人の判断が要る場面だけにすること | スキルの手順で、`AskUserQuestion` を使うか決めるとき |
+| [P14](../../docs/policies/p14-bot-delegation.md) | bot の PR は、自動でマージしないこと | bot のマージの扱いを直すとき |

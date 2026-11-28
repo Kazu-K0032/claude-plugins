@@ -19,6 +19,7 @@
 | [P11](p11-options-and-supplements.md) | 動きはオプションで切り替え、自然な言葉の補足は承認の前に示すこと | スキルの引数（「想定している引数」・`argument-hint`）を足す・直すとき |
 | [P12](p12-title-category.md) | Issue・PR のタイトルで、変更の種類が一目で分かるようにすること | Issue・PR のタイトルを決める手順、Issue フォーム・ラベルを直すとき |
 | [P13](p13-ask-only-for-judgment.md) | 選択肢で聞くのは、人の判断が要る場面だけにすること | スキルの手順で、`AskUserQuestion` を使うか決めるとき |
+| [P14](p14-bot-delegation.md) | bot の PR は、自動でマージしないこと | このリポジトリの bot（Actions の Claude）のマージの扱いを直すとき |
 
 スキルの操作と、`init-repo` が配る権限設定との対応は [skill-permission-map.md](skill-permission-map.md) にまとめる。
 
