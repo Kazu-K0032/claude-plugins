@@ -24,7 +24,7 @@
 
 ## 方針と価値
 
-- `docs/policies/`：プラグインが何をして何をしないかと、その理由（P1〜P13）。理由を書く唯一の場所。一覧は `docs/policies/README.md`
+- `docs/policies/`：プラグインが何をして何をしないかと、その理由（P1〜P14）。理由を書く唯一の場所。一覧は `docs/policies/README.md`
 - `docs/values/`：方針の土台になる AI 駆動開発の価値（V1〜V5）
 - `CONTRIBUTING.md`：ブランチと PR の決まり。`docs/release.md`：リリースの手順
 
